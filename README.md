@@ -168,13 +168,17 @@ A definição dos perfis e respectivas responsabilidades faz parte da modelagem 
 
 ## 📐 Diagramas
 
-Os principais diagramas produzidos para o projeto estão disponíveis no diretório [`documentacao/diagramas`](./documentacao/diagramas/).
+Os diagramas que compõem a modelagem e a arquitetura do QuimiPort estão disponíveis na pasta [`docs/diagramas`](./docs/diagramas/).
 
-### Diagrama de Domínio
+| Diagrama | Descrição |
+|---|---|
+| [Diagrama de Domínio](./docs/diagramas/4.5_diagrama_de_dominio.md) | Representação das principais entidades, agregados e relacionamentos do domínio. |
+| [Diagrama de Casos de Uso](./docs/diagramas/6.1_diagrama_de_casos_de_uso.md) | Principais casos de uso e atores envolvidos. |
+| [Diagrama de Arquitetura](./docs/diagramas/8.3_diagrama_de_arquitetura.md) | Organização arquitetural e responsabilidades das camadas. |
+| [Contexto de Aplicação](./docs/diagramas/8.5_contexto_da_aplicacao.md) | Representação do contexto de aplicação. |
+| [Pirâmide de Testes](./docs/diagramas/10.3_piramide_de_testes.md) | Estratégia e níveis de testes planejados para o projeto. |
 
-Representa as principais entidades, relacionamentos e o agregado central da solução.
 
-![Diagrama de Domínio](./documentacao/diagramas/diagrama-dominio.png)
 
 ---
 
@@ -182,7 +186,8 @@ Representa as principais entidades, relacionamentos e o agregado central da solu
 
 Representa o contexto delimitado do QuimiPort e as integrações externas previstas para a evolução da solução.
 
-![Mapa de Contexto](./documentacao/diagramas/mapa-contexto.png)
+| [Mapa de Contexto](./docs/diagramas/4.7_mapa_de_contexto.md) | Contexto delimitado e relacionamentos com sistemas externos. |
+
 
 O QuimiPort é inicialmente tratado como um contexto delimitado único, com integrações futuras previstas para identidade, armazenamento de documentos, órgãos reguladores e notificações.
 
@@ -192,7 +197,7 @@ O QuimiPort é inicialmente tratado como um contexto delimitado único, com inte
 
 Representa a máquina de estados da carga química e as condições necessárias para cada transição.
 
-![Fluxo de Status](./documentacao/diagramas/fluxo-status.png)
+| [Diagrama de Transição](./docs/diagramas/7.1_diagrama_de_transicao.md) | Fluxo de transição dos status da carga química. |
 
 O fluxo foi projetado para impedir que cargas avancem para etapas incompatíveis com seu estado atual ou com os requisitos de segurança definidos.
 
@@ -306,7 +311,7 @@ Esses pontos fazem parte dos requisitos técnicos previstos para a primeira fase
 
 A documentação técnica completa está disponível em:
 
-📄 **[Documentação Técnica e Arquitetural](./documentacao/documentacao-tecnica.md)**
+📄 **[Documentação Técnica e Arquitetural](./docs/documentacao_tecnica.md)**
 
 O documento apresenta detalhadamente:
 
@@ -348,15 +353,18 @@ Atualmente, o repositório está organizado da seguinte forma:
 Tech-Challenge-QuimiPort/
 │
 ├── docs/
+│   ├── documentacao-tecnica.md
+│   ├── decisoes-arquiteturais.md
 │   ├── diagramas/
 │   │   ├── 4.5_diagrama_de_dominio.md
 │   │   ├── 4.7_mapa_de_contexto.md
-│   │   ├── 6.1_diagrama_de_casos_de_uso
+│   │   ├── 6.1_diagrama_de_casos_de_uso.md
 │   │   ├── 7.1_diagrama_de_transicao.md
 │   │   ├── 8.3_diagrama_de_arquitetura.md
 │   │   ├── 8.5_contexto_de_aplicacao.md
 │   │   └── 10.3_piramide_de_testes.md
 │   │
+│   ├── QuimiPort_Apresentacao.pptx
 │   ├── documentacao_tecnica.md
 │   └── fase_1.md
 │
@@ -445,10 +453,10 @@ O desafio tem como objetivo consolidar os conhecimentos dessas disciplinas na co
 
 | Recurso | Acesso |
 |---|---|
-| 📄 Documentação técnica | [Abrir documentação](./documentacao/documentacao-tecnica.md) |
-| 🧩 Diagrama de domínio | [Abrir diagrama](./documentacao/diagramas/diagrama-dominio.png) |
-| 🗺️ Mapa de contexto | [Abrir diagrama](./documentacao/diagramas/mapa-contexto.png) |
-| 🔄 Fluxo de status | [Abrir diagrama](./documentacao/diagramas/fluxo-status.png) |
+| 📄 Documentação técnica | [Abrir documentação](./docs/documentacao_tecnica.md) |
+| 🧩 Diagrama de domínio | [Abrir diagrama](./docs/diagramas/4.5_diagrama_de_dominio.md) |
+| 🗺️ Mapa de contexto | [Abrir diagrama](./docs/diagramas/4.7_mapa_de_contexto.md) |
+| 🔄 Fluxo de status | [Abrir diagrama](./docs/diagramas/7.1_diagrama_de_transicao.md) |
 | 🎥 Apresentação | [Assistir no YouTube](https://youtu.be/6RWVwgywFtA) |
 
 ---
@@ -458,3 +466,4 @@ O desafio tem como objetivo consolidar os conhecimentos dessas disciplinas na co
 Este projeto foi desenvolvido com base no enunciado oficial do **Tech Challenge — Fase 1 — Full Stack Development** da FIAP POSTECH e na documentação técnica elaborada pela equipe.
 
 O desafio estabelece que o README deve apresentar o nome da solução, o contexto do problema, o objetivo da aplicação e a forma de navegação pela documentação.
+
