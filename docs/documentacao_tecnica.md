@@ -17,7 +17,7 @@ Glauton Feitosa da Silva - glauton.silva@outlook.com
 
 ## Video da Apresentação da Doc QuimiPort
 
-[▶️ Video de Apresentação da Proposta Tcnica](https://youtu.be/6RWVwgywFtA)
+[▶️ Video de Apresentação da Proposta Tcnica](https://youtu.be/Wdpwq6Uye4E)
 
 ---
 
@@ -592,8 +592,6 @@ flowchart LR
 ```text
 quimiport/
 ├── docs/
-│   ├── documentacao-tecnica.md
-│   ├── decisoes-arquiteturais.md
 │   ├── diagramas/
 │   │   ├── 4.5_diagrama_de_dominio.md
 │   │   ├── 4.7_mapa_de_contexto.md

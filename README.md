@@ -339,7 +339,7 @@ O documento apresenta detalhadamente:
 
 A apresentação da proposta técnica do QuimiPort está disponível no YouTube:
 
-### ▶️ [Assistir à apresentação do QuimiPort](https://youtu.be/6RWVwgywFtA)
+### ▶️ [Assistir à apresentação do QuimiPort](https://youtu.be/Wdpwq6Uye4E)
 
 O vídeo apresenta a concepção da solução, o domínio, as principais decisões técnicas, a modelagem e a arquitetura proposta.
 
@@ -353,8 +353,6 @@ Atualmente, o repositório está organizado da seguinte forma:
 Tech-Challenge-QuimiPort/
 │
 ├── docs/
-│   ├── documentacao-tecnica.md
-│   ├── decisoes-arquiteturais.md
 │   ├── diagramas/
 │   │   ├── 4.5_diagrama_de_dominio.md
 │   │   ├── 4.7_mapa_de_contexto.md
@@ -457,7 +455,7 @@ O desafio tem como objetivo consolidar os conhecimentos dessas disciplinas na co
 | 🧩 Diagrama de domínio | [Abrir diagrama](./docs/diagramas/4.5_diagrama_de_dominio.md) |
 | 🗺️ Mapa de contexto | [Abrir diagrama](./docs/diagramas/4.7_mapa_de_contexto.md) |
 | 🔄 Fluxo de status | [Abrir diagrama](./docs/diagramas/7.1_diagrama_de_transicao.md) |
-| 🎥 Apresentação | [Assistir no YouTube](https://youtu.be/6RWVwgywFtA) |
+| 🎥 Apresentação | [Assistir no YouTube](https://youtu.be/Wdpwq6Uye4E) |
 
 ---
 
