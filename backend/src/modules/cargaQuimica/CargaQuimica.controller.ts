@@ -11,6 +11,7 @@ import {
 import { CargaQuimicaService } from './CargaQuimica.service.js';
 import { CreateOrUpdateCargaQuimicaDto } from './dtos/CargaQuimica.request.dtos.js';
 import { CargaQuimicaResponseDto } from './dtos/CargaQuimica.response.dtos.js';
+import { ApiParam } from '@nestjs/swagger';
 
 @Controller('carga-quimica')
 export class CargaQuimicaController {
@@ -29,13 +30,16 @@ export class CargaQuimicaController {
   }
 
   @Get(':id')
+  @ApiParam({ name: 'id', example: 1, type: Number })
   async findOne(
-    @Param('id', new ParseIntPipe()) id: number,
+    @Param('id', new ParseIntPipe())
+    id: number,
   ): Promise<CargaQuimicaResponseDto> {
     return await this.service.findOne({ id });
   }
 
   @Put(':id')
+  @ApiParam({ name: 'id', example: 1, type: Number })
   async update(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: CreateOrUpdateCargaQuimicaDto,
@@ -44,6 +48,7 @@ export class CargaQuimicaController {
   }
 
   @Delete(':id')
+  @ApiParam({ name: 'id', example: 1, type: Number })
   async remove(
     @Param('id', new ParseIntPipe()) id: number,
   ): Promise<{ id: number }> {
