@@ -8,10 +8,10 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { CargaQuimicaService } from './CargaQuimica.service.js';
-import { CreateOrUpdateCargaQuimicaDto } from './dtos/CargaQuimica.request.dtos.js';
-import { CargaQuimicaResponseDto } from './dtos/CargaQuimica.response.dtos.js';
 import { ApiParam } from '@nestjs/swagger';
+import { CargaQuimicaService } from '../../application/CargaQuimica.service.js';
+import { CreateOrUpdateCargaQuimicaDto } from '../dtos/CargaQuimica.request.dtos.js';
+import { CargaQuimicaResponseDto } from '../dtos/CargaQuimica.response.dtos.js';
 
 @Controller('carga-quimica')
 export class CargaQuimicaController {
