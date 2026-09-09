@@ -50,7 +50,7 @@ export class ProdutoQuimicoService {
       throw new NotFoundException('Produto quimico não encontrado');
     }
 
-    this.prisma.produtosQuimicos.update({
+    await this.prisma.produtosQuimicos.update({
       where: { id },
       data: { produto: body.name },
     });
