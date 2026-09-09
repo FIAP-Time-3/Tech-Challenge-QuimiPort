@@ -1,29 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrUpdateProdutoQuimicoDto } from './dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from './dtos/ProdutoQuimico.response.dtos.js';
 import { plainToInstance } from 'class-transformer';
+import { PrismaService } from '../../database/prisma.service.js';
 
 @Injectable()
 export class ProdutoQuimicoService {
+  constructor(private readonly prisma: PrismaService) {}
+
   async create({
     body,
   }: {
     body: CreateOrUpdateProdutoQuimicoDto;
   }): Promise<ProdutoQuimicoResponseDto> {
-    return plainToInstance(ProdutoQuimicoResponseDto, body);
+    const newProduct = await this.prisma.produtosQuimicos.create({
+      data: { produto: body.name },
+    });
+
+    return await this.findOne({ id: newProduct.id });
   }
 
   async findAll(): Promise<ProdutoQuimicoResponseDto[]> {
-    const examples = [
-      { id: 1, name: 'carga 1' },
-      { id: 2, name: 'carga 2' },
-    ];
-    return plainToInstance(ProdutoQuimicoResponseDto, examples);
+    const products = await this.prisma.produtosQuimicos.findMany();
+    return plainToInstance(ProdutoQuimicoResponseDto, products);
   }
 
   async findOne({ id }: { id: number }): Promise<ProdutoQuimicoResponseDto> {
-    const example = { id, name: 'carga 1' };
-    return plainToInstance(ProdutoQuimicoResponseDto, example);
+    const product = await this.prisma.produtosQuimicos.findUnique({
+      where: { id },
+    });
+    if (!product) {
+      throw new NotFoundException('Produto quimico não encontrado');
+    }
+
+    return plainToInstance(ProdutoQuimicoResponseDto, product);
   }
 
   async update({
@@ -33,10 +43,25 @@ export class ProdutoQuimicoService {
     id: number;
     body: CreateOrUpdateProdutoQuimicoDto;
   }): Promise<ProdutoQuimicoResponseDto> {
-    return plainToInstance(ProdutoQuimicoResponseDto, { id, body });
+    const product = await this.prisma.produtosQuimicos.findUnique({
+      where: { id },
+    });
+    if (!product) {
+      throw new NotFoundException('Produto quimico não encontrado');
+    }
+
+    this.prisma.produtosQuimicos.update({
+      where: { id },
+      data: { produto: body.name },
+    });
+    return await this.findOne({ id });
   }
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
-    return { id };
+    await this.findOne({ id });
+
+    return this.prisma.produtosQuimicos.delete({
+      where: { id },
+    });
   }
 }

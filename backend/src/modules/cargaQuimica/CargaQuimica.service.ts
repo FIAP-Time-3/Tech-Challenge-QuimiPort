@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { CreateOrUpdateCargaQuimicaDto } from './dtos/CargaQuimica.request.dtos.js';
 import { CargaQuimicaResponseDto } from './dtos/CargaQuimica.response.dtos.js';
 import { plainToInstance } from 'class-transformer';
+import { PrismaService } from '../../database/prisma.service.js';
 
 @Injectable()
 export class CargaQuimicaService {
+  constructor(private readonly prisma: PrismaService) {}
+
   async create({
     body,
   }: {
