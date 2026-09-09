@@ -5,7 +5,7 @@ import configuration from './configuration.js';
 @Module({
   imports: [
     Config.forRoot({
-      envFilePath: 'src/configuration/.env',
+      envFilePath: '.env',
       load: [configuration],
       isGlobal: true,
     }),
