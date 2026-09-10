@@ -1,3 +1,20 @@
+#!/bin/sh
+
 cd backend
-npm run lint
-npm run format
+
+FILES=$(git -C .. diff --cached --name-only --diff-filter=ACMR -- 'backend/*.ts' 'backend/*.tsx' 'backend/**/*.ts' 'backend/**/*.tsx')
+
+FILES=$(echo "$FILES" | sed 's#^backend/##')
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+echo "$FILES" | xargs npx prettier --check
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Commit cancelado: existem arquivos fora do padrão do Prettier."
+  echo "Execute npm run format para corrigir."
+  exit 1
+fi
