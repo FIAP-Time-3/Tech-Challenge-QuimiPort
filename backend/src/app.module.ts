@@ -11,16 +11,6 @@ import { HealthModule } from './infra/health/health.module.js';
     ConfigsModule,
     CargaQuimicaModule,
     ProdutoQuimicoModule,
-
-
-
-
-
-
-
-
-
-    
   ],
   controllers: [],
   providers: [],
