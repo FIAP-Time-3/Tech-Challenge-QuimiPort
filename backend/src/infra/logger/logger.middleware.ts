@@ -14,9 +14,14 @@ export class LoggerMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const { statusCode, statusMessage } = res;
       const ping = new Date().getTime() - init;
-      this.logger.log(
-        `${statusCode} ${statusMessage} | ${ping}ms | ${method} > ${baseUrl} `,
-      );
+
+      const message = `${statusCode} ${statusMessage} | ${ping}ms | ${method} > ${baseUrl}`;
+
+      if (statusCode < 400) {
+        this.logger.log(message);
+      } else {
+        this.logger.error(message);
+      }
     });
 
     next();
