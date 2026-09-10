@@ -14,9 +14,7 @@ export class ProdutoQuimicoService {
     body: CreateOrUpdateProdutoQuimicoDto;
   }): Promise<ProdutoQuimicoResponseDto> {
     const newProduct = await this.prisma.produtosQuimicos.create({
-
       data: { produto: body.name },
-      
     });
 
     return await this.findOne({ id: newProduct.id });
