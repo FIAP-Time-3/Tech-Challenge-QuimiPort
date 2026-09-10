@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "fase2/dev"
+      - "fase2/main"
+
+  pull_request:
+    branches:
+      - "fase2/dev"
+      - "fase2/main"
+
+jobs:
+  pipeline:
+    name: CI/CD Pipeline
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Prepare Prisma
+        run: npm run prisma:generate
+
+      - name: Build
+        run: npm run build
+
+      - name: Execute Tests
+        run: npm test
