@@ -3,9 +3,15 @@ import { ConfigsModule } from './infra/configurations/configurations.module.js';
 import { CargaQuimicaModule } from './modules/cargaQuimica/CargaQuimica.module.js';
 import { ProdutoQuimicoModule } from './modules/produtoQuimico/ProdutoQuimico.module.js';
 import { LoggerMiddleware } from './infra/logger/logger.middleware.js';
+import { HealthModule } from './infra/health/health.module.js';
 
 @Module({
-  imports: [ConfigsModule, CargaQuimicaModule, ProdutoQuimicoModule],
+  imports: [
+    HealthModule,
+    ConfigsModule,
+    CargaQuimicaModule,
+    ProdutoQuimicoModule,
+  ],
   controllers: [],
   providers: [],
 })
