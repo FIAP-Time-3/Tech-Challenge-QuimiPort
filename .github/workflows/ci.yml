@@ -2,14 +2,16 @@ name: CI
 
 on:
   push:
-    - bruno
-    # - fase2/dev
-    # - fase2/main
+    branches:
+      - bruno
+      # - "fase2/dev"
+      # - "fase2/main"
   pull_request:
-    - bruno
+    branches:
+      - bruno
+      # - "fase2/dev"
+      # - "fase2/main"
 
-    # - fase2/dev
-    # - fase2/main
 jobs:
   install:
     name: Install Dependencies
