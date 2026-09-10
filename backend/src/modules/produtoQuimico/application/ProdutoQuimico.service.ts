@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { PrismaService } from '../../../database/prisma.service.js';
+import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../infrastructure/dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from '../infrastructure/dtos/ProdutoQuimico.response.dtos.js';
 

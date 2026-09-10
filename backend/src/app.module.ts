@@ -1,11 +1,16 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from './configuration/configuration.module.js';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigsModule } from './infra/configurations/configurations.module.js';
 import { CargaQuimicaModule } from './modules/cargaQuimica/CargaQuimica.module.js';
 import { ProdutoQuimicoModule } from './modules/produtoQuimico/ProdutoQuimico.module.js';
+import { LoggerMiddleware } from './infra/logger/logger.middleware.js';
 
 @Module({
-  imports: [ConfigModule, CargaQuimicaModule, ProdutoQuimicoModule],
+  imports: [ConfigsModule, CargaQuimicaModule, ProdutoQuimicoModule],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

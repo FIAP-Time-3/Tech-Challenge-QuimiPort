@@ -2,7 +2,7 @@
 // npm install --save-dev prisma dotenv
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
-import configuration from './src/configuration/configuration.js';
+import configuration from './src/infra/configurations/configurations.js';
 
 console.log(configuration().database.url);
 

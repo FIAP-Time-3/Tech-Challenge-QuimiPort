@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule as Config } from '@nestjs/config';
-import configuration from './configuration.js';
+import configuration from './configurations.js';
 
 @Module({
   imports: [
@@ -11,4 +11,4 @@ import configuration from './configuration.js';
     }),
   ],
 })
-export class ConfigModule {}
+export class ConfigsModule {}

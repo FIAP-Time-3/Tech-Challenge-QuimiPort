@@ -59,4 +59,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 tsconfig.build.tsbuildinfo
 /src/generated/prisma
 
-/src/database/generated/prisma
+**/generated/prisma
