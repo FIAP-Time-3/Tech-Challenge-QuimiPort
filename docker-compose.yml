@@ -1,0 +1,28 @@
+services:
+
+  api:
+    build: 
+      context: ./backend
+      dockerfile: ../.docker/Dockerfile
+    env_file:
+      - ./backend/.env.docker
+    environment:
+      - APP_PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres
+    container_name: quimiport_postgres
+    restart: unless-stopped
+    environment: 
+      POSTGRES_USER: postgres 
+      POSTGRES_PASSWORD: postgres 
+      POSTGRES_DB: quimiport
+    ports: 
+      - "5432:5432"
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+volumes: 
+  postgres_data:

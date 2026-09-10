@@ -15,6 +15,11 @@ async function bootstrap() {
     }),
   );
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
   const swaggerOptions = new DocumentBuilder()
     .setTitle(configuration().swagger.title)
     .setDescription(configuration().swagger.description)
