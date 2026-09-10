@@ -8,7 +8,8 @@ RUN npm ci
 
 COPY . .
 
-# Gera o client Prisma durante o build (não aplica migrations aqui)
+COPY ./.env.docker ./.env
+
 RUN npm run prisma:generate
 
 RUN npm run build

@@ -102,6 +102,13 @@ A API normalmente fica disponível em:
 - http://localhost:3010
 - ou na porta definida em `APP_PORT`
 
+### Health
+
+Endpoints de verificação de saúde (operacionais):
+
+- `GET /health` → checagem geral da API (status, timestamp, uptime, database)
+- `GET /health/db` → checagem específica do banco de dados
+
 ### Swagger
 
 A documentação interativa da API fica disponível em:
