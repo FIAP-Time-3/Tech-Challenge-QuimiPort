@@ -44,5 +44,3 @@ jobs:
 
       - name: Execute Tests
         run: npm test
-
-      # Deploy DockerHub entraremos depois
