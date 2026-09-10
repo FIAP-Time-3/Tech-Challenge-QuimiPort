@@ -2,10 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
-import configuration from './configuration/configuration.js';
+import configuration from './infra/configurations/configurations.js';
+import { DatabaseExceptionFilter } from './infra/filters/database-exception.filter.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {});
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,6 +30,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerOptions);
   SwaggerModule.setup('api-docs', app, swaggerDocument);
 
+  app.useGlobalFilters(new DatabaseExceptionFilter());
   await app.listen(configuration().application.port ?? 3000);
 }
 await bootstrap();

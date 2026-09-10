@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { PrismaService } from '../../../database/prisma.service.js';
+import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { CreateOrUpdateCargaQuimicaDto } from '../infrastructure/dtos/CargaQuimica.request.dtos.js';
 import { CargaQuimicaResponseDto } from '../infrastructure/dtos/CargaQuimica.response.dtos.js';
 
