@@ -36,13 +36,17 @@ jobs:
         run: npm ci
 
   build:
-    - name: Checkout
-      uses: actions/checkout@v4
+    name: Build Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
   test:
-    - name: Checkout
-      uses: actions/checkout@v4
+    name: Execute Tests
+    runs-on: ubuntu-latest
 
-  deploy:
-    - name: Checkout
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
