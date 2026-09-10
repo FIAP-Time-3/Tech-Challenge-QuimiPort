@@ -36,7 +36,13 @@ jobs:
         run: npm ci
 
   build:
+    - name: Checkout
+      uses: actions/checkout@v4
 
   test:
+    - name: Checkout
+      uses: actions/checkout@v4
 
   deploy:
+    - name: Checkout
+      uses: actions/checkout@v4
