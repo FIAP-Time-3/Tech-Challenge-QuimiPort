@@ -6,6 +6,7 @@ on:
       - bruno
       # - "fase2/dev"
       # - "fase2/main"
+
   pull_request:
     branches:
       - bruno
@@ -13,8 +14,8 @@ on:
       # - "fase2/main"
 
 jobs:
-  install:
-    name: Install Dependencies
+  pipeline:
+    name: CI/CD Pipeline
     runs-on: ubuntu-latest
 
     defaults:
@@ -35,18 +36,10 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-  build:
-    name: Build Image
-    runs-on: ubuntu-latest
+      - name: Build
+        run: npm run build
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Execute Tests
+        run: npm test
 
-  test:
-    name: Execute Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Deploy DockerHub entraremos depois
