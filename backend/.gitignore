@@ -60,3 +60,7 @@ tsconfig.build.tsbuildinfo
 /src/generated/prisma
 
 **/generated/prisma
+
+
+
+/bruno
