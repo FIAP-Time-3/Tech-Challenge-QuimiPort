@@ -4,15 +4,7 @@ import { Prisma } from '../database/generated/prisma/client.js';
 
 @Catch(Prisma.PrismaClientKnownRequestError)
 export class DatabaseExceptionFilter implements ExceptionFilter {
-
-
-
-
-
-
-
-
-  private      readonly logger = new Logger('DATABASE ERROR'        )       ;
+  private readonly logger = new Logger('DATABASE ERROR');
 
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
