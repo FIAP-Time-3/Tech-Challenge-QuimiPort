@@ -3,11 +3,13 @@ name: CI
 on:
   push:
     branches:
+      - "bruno"
       - "fase2/dev"
       - "fase2/main"
 
   pull_request:
     branches:
+      - "bruno"
       - "fase2/dev"
       - "fase2/main"
 
