@@ -4,9 +4,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import configuration from './infra/configurations/configurations.js';
 import { DatabaseExceptionFilter } from './infra/filters/database-exception.filter.js';
+import { RolesGuard } from './infra/security/guards/roles.guard.js';
+import { AuthGuard } from './infra/security/guards/auth.guard.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
+
+  app.useGlobalGuards(new AuthGuard(), new RolesGuard());
 
   app.useGlobalPipes(
     new ValidationPipe({
