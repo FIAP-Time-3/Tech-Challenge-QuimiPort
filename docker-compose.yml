@@ -1,7 +1,11 @@
-services:
+# Comando para executar compose (API e Banco):
+# docker compose up -d
+# OU caso precise somente do banco:
+# docker compose up -d postgres
 
+services:
   api:
-    build: 
+    build:
       context: ./backend
       dockerfile: ../.docker/Dockerfile
     env_file:
@@ -16,13 +20,13 @@ services:
     image: postgres
     container_name: quimiport_postgres
     restart: unless-stopped
-    environment: 
-      POSTGRES_USER: postgres 
-      POSTGRES_PASSWORD: postgres 
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: quimiport
-    ports: 
+    ports:
       - "5432:5432"
-    volumes: 
+    volumes:
       - postgres_data:/var/lib/postgresql/data
-volumes: 
+volumes:
   postgres_data:

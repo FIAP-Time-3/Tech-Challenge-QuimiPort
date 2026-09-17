@@ -1,3 +1,6 @@
+# Para executar esse compose:
+# docker compose -f docker-compose-db-only.yml up -d
+
 services:
   postgres:
     image: postgres
