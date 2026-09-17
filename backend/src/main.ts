@@ -7,6 +7,7 @@ import { DatabaseExceptionFilter } from './infra/filters/database-exception.filt
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
+  app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -37,7 +38,7 @@ async function bootstrap() {
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerOptions);
-  SwaggerModule.setup('api-docs', app, swaggerDocument);
+  SwaggerModule.setup('api/api-docs', app, swaggerDocument);
 
   app.useGlobalFilters(new DatabaseExceptionFilter());
   await app.listen(configuration().application.port ?? 3000);
