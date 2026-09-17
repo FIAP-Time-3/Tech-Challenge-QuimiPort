@@ -13,7 +13,7 @@ import { UserService } from '../../application/User.service.js';
 import { CreateOrUpdateUserDto } from '../dtos/User.request.dtos.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 
-@Controller('carga-quimica')
+@Controller('users')
 export class UserController {
   constructor(private readonly service: UserService) {}
 
