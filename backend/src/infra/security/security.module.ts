@@ -7,6 +7,8 @@ import configurations from '../configurations/configurations.js';
 import { LoginController } from './login/infrastructure/controller/login.controller.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { LoginService } from './login/application/Login.service.js';
+import { UserController } from './user/infrastructure/controller/User.controller.js';
+import { UserService } from './user/application/User.service.js';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { LoginService } from './login/application/Login.service.js';
     }),
   ],
   exports: [JwtModule],
-  controllers: [LoginController],
+  controllers: [LoginController, UserController],
   providers: [
+    UserService,
     PrismaService,
     LoginService,
     { provide: APP_GUARD, useClass: AuthGuard },

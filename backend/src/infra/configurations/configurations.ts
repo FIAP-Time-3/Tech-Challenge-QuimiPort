@@ -2,7 +2,8 @@ export default () => ({
   application: {
     port: Number(process.env.APP_PORT ?? 3000),
   },
-  jwt: { secret: process.env.JWT_SECRET ?? 'secret' },
+  password: { salt: Number(process.env.PASSWORD_SALT) },
+  jwt: { secret: process.env.JWT_SECRET },
   swagger: {
     title: process.env.SWAGGER_TITLE ?? '',
     description: process.env.SWAGGER_DESCRIPTION ?? '',

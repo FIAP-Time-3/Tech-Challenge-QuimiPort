@@ -5,54 +5,10 @@ import {
   LoginRequestDto,
   RefreshRequestDto,
 } from '../infrastructure/dtos/login.request.dtos.js';
-import { RolesEnum } from '../../enums/roles.enum.js';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from '../infrastructure/dtos/login.response.dtos.js';
-
-const mockedUsers = [
-  {
-    id: 1,
-    username: 'mockADMINISTRADOR',
-    password: 'mockedPass',
-    roles: [RolesEnum.ADMINISTRADOR],
-  },
-  {
-    id: 2,
-    username: 'mockGESTOR',
-    password: 'mockedPass',
-    roles: [RolesEnum.GESTOR],
-  },
-  {
-    id: 3,
-    username: 'mockOPERADOR',
-    password: 'mockedPass',
-    roles: [RolesEnum.OPERADOR],
-  },
-  {
-    id: 4,
-    username: 'mockTECNICO',
-    password: 'mockedPass',
-    roles: [RolesEnum.TECNICO],
-  },
-  {
-    id: 5,
-    username: 'mockDOCUMENTACAO',
-    password: 'mockedPass',
-    roles: [RolesEnum.DOCUMENTACAO],
-  },
-  {
-    id: 6,
-    username: 'mockQUALIDADE',
-    password: 'mockedPass',
-    roles: [RolesEnum.QUALIDADE],
-  },
-  {
-    id: 7,
-    username: 'mockINSPETOR',
-    password: 'mockedPass',
-    roles: [RolesEnum.INSPETOR],
-  },
-];
+import { mockedUsers } from '../../user/application/User.service.js';
+import { PasswordService } from '../../password/password.service.js';
 
 @Injectable()
 export class LoginService {
@@ -67,7 +23,13 @@ export class LoginService {
       (user) => user.username.toLowerCase() === username.toLowerCase(),
     );
 
-    if (user?.password !== password) {
+    if (
+      !user ||
+      (await PasswordService.compare({
+        hash: user?.password,
+        password: password,
+      }))
+    ) {
       throw new UnauthorizedException('Login ou Senha incorreta');
     }
     const { id, roles } = user;
