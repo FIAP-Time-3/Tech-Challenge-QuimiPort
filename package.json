@@ -4,5 +4,8 @@
   },
   "scripts": {
     "prepare": "husky"
+  },
+  "dependencies": {
+    "@nestjs/jwt": "^12.0.2"
   }
 }

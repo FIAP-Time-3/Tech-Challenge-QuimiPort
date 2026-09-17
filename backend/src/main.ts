@@ -22,6 +22,15 @@ async function bootstrap() {
   });
 
   const swaggerOptions = new DocumentBuilder()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'jwt',
+    )
+    .addSecurityRequirements('jwt')
     .setTitle(configuration().swagger.title)
     .setDescription(configuration().swagger.description)
     .setVersion(configuration().swagger.version)

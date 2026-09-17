@@ -4,9 +4,11 @@ import { CargaQuimicaModule } from './modules/cargaQuimica/CargaQuimica.module.j
 import { ProdutoQuimicoModule } from './modules/produtoQuimico/ProdutoQuimico.module.js';
 import { LoggerMiddleware } from './infra/logger/logger.middleware.js';
 import { HealthModule } from './infra/health/health.module.js';
+import { SecurityModule } from './infra/security/security.module.js';
 
 @Module({
   imports: [
+    SecurityModule,
     HealthModule,
     ConfigsModule,
     CargaQuimicaModule,
