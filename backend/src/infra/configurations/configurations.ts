@@ -2,6 +2,7 @@ export default () => ({
   application: {
     port: Number(process.env.APP_PORT ?? 3000),
   },
+  jwt: { secret: process.env.JWT_SECRET ?? 'secret' },
   swagger: {
     title: process.env.SWAGGER_TITLE ?? '',
     description: process.env.SWAGGER_DESCRIPTION ?? '',
