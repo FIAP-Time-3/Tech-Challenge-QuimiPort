@@ -13,8 +13,58 @@ datasource db {
 }
 
 model ProdutosQuimicos {
-  id        Int      @id @default(autoincrement())
-  produto   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int             @id @default(autoincrement())
+  produto       String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  cargaQuimicas CargaQuimicas[]
+}
+
+model CargaQuimicas {
+  id                Int               @id @default(autoincrement())
+  produtoQuimicoId  Int
+  produtoQuimico    ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
+  quantidade        Int
+  unidadeMedida     String
+  destino           String
+  statusCarga       String
+  classeRiscoONU    Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  movimentacoes     Movimentacoes[]
+  documentoCargases DocumentoCargas[]
+  inspecoes         Inspecoes[]
+}
+
+model Movimentacoes {
+  id             Int           @id @default(autoincrement())
+  cargaQuimicaId Int
+  cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  step           Int
+  statusAnterior String
+  notes          String
+  statusAtual    String
+  date           DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model DocumentoCargas {
+  id             Int           @id @default(autoincrement())
+  cargaQuimicaId Int
+  cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  tipoDocumento  String
+  validado       Boolean
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Inspecoes {
+  id                Int           @id @default(autoincrement())
+  cargaQuimicaId    Int
+  cargaQuimica      CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  resultadoInspecao String
+  observacoes       String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
