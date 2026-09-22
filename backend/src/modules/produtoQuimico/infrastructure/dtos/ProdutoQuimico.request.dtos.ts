@@ -1,9 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateOrUpdateProdutoQuimicoDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  name: string;
+  nome: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  descricao: string;
+
+  @IsNumber()
+  @Min(1)
+  @Max(9)
+  classeRisco: number;
+
+  @IsBoolean()
+  @IsOptional()
+  status: boolean;
 }

@@ -14,7 +14,10 @@ datasource db {
 
 model ProdutosQuimicos {
   id            Int             @id @default(autoincrement())
-  produto       String
+  nome          String          @unique
+  descricao     String?
+  classeRisco   Int
+  status        Boolean         @default(true)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   cargaQuimicas CargaQuimicas[]
