@@ -2,8 +2,8 @@ const { execFileSync } = require("node:child_process");
 
 const isWindows = process.platform === "win32";
 
-const npm = isWindows ? "npm.cmd" : "npm";
-const npx = isWindows ? "npx.cmd" : "npx";
+const npm = isWindows ? "npm.exe" : "npm";
+const npx = isWindows ? "npx.exe" : "npx";
 
 function run(command, args) {
 	try {
