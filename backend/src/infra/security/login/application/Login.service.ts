@@ -25,8 +25,8 @@ export class LoginService {
 
     if (
       !user ||
-      (await PasswordService.compare({
-        hash: user?.password,
+      !(await PasswordService.compare({
+        hash: user.password,
         password: password,
       }))
     ) {

@@ -60,6 +60,18 @@ export class ProdutoQuimicoService {
   async remove({ id }: { id: number }): Promise<{ id: number }> {
     await this.findOne({ id });
 
+    const cargasAssociadas = await this.prisma.cargaQuimicas.count({
+      where: {
+        produtoQuimicoId: id,
+      },
+    });
+
+    if (cargasAssociadas > 0) {
+      throw new Error(
+        'O produto químico não pode ser excluído pois está associado a uma carga.',
+      );
+    }
+
     return this.prisma.produtosQuimicos.delete({
       where: { id },
     });
