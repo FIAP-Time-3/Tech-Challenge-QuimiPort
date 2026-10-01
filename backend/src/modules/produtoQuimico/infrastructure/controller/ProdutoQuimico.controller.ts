@@ -9,10 +9,18 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiParam } from '@nestjs/swagger';
+import { AllowedRoles } from '../../../../infra/security/decorators/allowedRoles.decorator.js';
+import { RolesEnum } from '../../../../infra/security/enums/roles.enum.js';
 import { ProdutoQuimicoService } from '../../application/ProdutoQuimico.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from '../dtos/ProdutoQuimico.response.dtos.js';
 
+@AllowedRoles([
+  RolesEnum.ADMINISTRADOR,
+  RolesEnum.GESTOR,
+  RolesEnum.OPERADOR,
+  RolesEnum.TECNICO,
+])
 @Controller('produto-quimico')
 export class ProdutoQuimicoController {
   constructor(private readonly service: ProdutoQuimicoService) {}
