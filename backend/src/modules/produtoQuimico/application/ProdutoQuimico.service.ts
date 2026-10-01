@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../infrastructure/dtos/ProdutoQuimico.request.dtos.js';
@@ -59,6 +59,18 @@ export class ProdutoQuimicoService {
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
     await this.findOne({ id });
+
+    const cargasAssociadas = await this.prisma.cargaQuimicas.count({
+      where: {
+        produtoQuimicoId: id,
+      },
+    });
+
+    if (cargasAssociadas > 0) {
+      throw new ConflictException(
+        'O produto químico não pode ser excluído pois está associado a uma carga.',
+      );
+    }
 
     return this.prisma.produtosQuimicos.delete({
       where: { id },

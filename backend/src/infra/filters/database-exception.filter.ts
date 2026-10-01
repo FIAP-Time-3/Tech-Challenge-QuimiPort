@@ -26,6 +26,9 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
       case 'P1001':
         return 503;
 
+      case 'P2002':
+        return 409;
+
       default:
         return 500;
     }
@@ -35,6 +38,9 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
     switch (exception.code) {
       case 'P1001':
         return 'Banco de dados inacessível';
+
+      case 'P2002':
+        return 'Já existe um produto químico com este nome';    
 
       default:
         return 'Erro interno do servidor';

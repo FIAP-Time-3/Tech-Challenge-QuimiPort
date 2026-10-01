@@ -12,7 +12,10 @@ import { ApiParam } from '@nestjs/swagger';
 import { UserService } from '../../application/User.service.js';
 import { CreateOrUpdateUserDto } from '../dtos/User.request.dtos.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
+import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
+import { RolesEnum } from '../../../enums/roles.enum.js';
 
+@AllowedRoles([RolesEnum.ADMINISTRADOR])
 @Controller('users')
 export class UserController {
   constructor(private readonly service: UserService) {}

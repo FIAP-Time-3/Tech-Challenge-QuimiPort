@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
@@ -14,6 +14,7 @@ export class AuthGuard implements CanActivate {
       'isPublic',
       context.getHandler(),
     );
+
     const publicContextClass = this.reflector.get<boolean>(
       'isPublic',
       context.getClass(),
@@ -25,15 +26,26 @@ export class AuthGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
 
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return false;
+    const authorization = req.headers.authorization;
+
+    if (!authorization) {
+      throw new UnauthorizedException('Token não informado');
     }
 
-    const data = await this.jwtService.decode(token);
-    // valida se é ativo
-    // valida se usuário existe no banco
-    req.user = data;
-    return true;
+    const [type, token] = authorization.split(' ');
+
+    if (type !== 'Bearer' || !token) {
+      throw new UnauthorizedException('Token inválido');
+    }
+
+    try {
+      const data = await this.jwtService.verifyAsync(token);
+
+      req.user = data;
+
+      return true;
+    } catch {
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
   }
 }

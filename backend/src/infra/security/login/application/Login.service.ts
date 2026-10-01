@@ -7,7 +7,6 @@ import {
 } from '../infrastructure/dtos/login.request.dtos.js';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from '../infrastructure/dtos/login.response.dtos.js';
-import { mockedUsers } from '../../user/application/User.service.js';
 import { PasswordService } from '../../password/password.service.js';
 
 @Injectable()
@@ -19,22 +18,34 @@ export class LoginService {
 
   async login(body: LoginRequestDto) {
     const { password, username } = body;
-    const user = mockedUsers.find(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
-    );
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+      },
+    });
 
     if (
       !user ||
-      (await PasswordService.compare({
-        hash: user?.password,
-        password: password,
+      !(await PasswordService.compare({
+        hash: user.password,
+        password,
       }))
     ) {
       throw new UnauthorizedException('Login ou Senha incorreta');
     }
+
     const { id, roles } = user;
 
-    const access_token = await this.jwt.signAsync({ id, username, roles });
+    const access_token = await this.jwt.signAsync({
+      id,
+      username: user.username,
+      roles,
+    });
+
     const refresh_token = await this.jwt.signAsync(
       {
         id,
@@ -44,23 +55,45 @@ export class LoginService {
       },
     );
 
-    return plainToInstance(LoginResponseDto, { access_token, refresh_token });
+    return plainToInstance(LoginResponseDto, {
+      access_token,
+      refresh_token,
+    });
   }
 
   async refresh(body: RefreshRequestDto) {
     const { refresh_token } = body;
 
-    const decodedToken = await this.jwt.decode(refresh_token);
+    let decodedToken;
 
-    const user = mockedUsers.find((user) => user.id === decodedToken?.id);
+    try {
+      decodedToken = await this.jwt.verifyAsync(refresh_token);
+    } catch {
+      throw new UnauthorizedException('Token Invalido');
+    }
 
-    if (!user || !decodedToken) {
+    if (!decodedToken || typeof decodedToken !== 'object' || !decodedToken.id) {
+      throw new UnauthorizedException('Token Invalido');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: Number(decodedToken.id),
+      },
+    });
+
+    if (!user) {
       throw new UnauthorizedException('Token Invalido');
     }
 
     const { id, username, roles } = user;
 
-    const access_token = await this.jwt.signAsync({ id, username, roles });
+    const access_token = await this.jwt.signAsync({
+      id,
+      username,
+      roles,
+    });
+
     const new_refresh_token = await this.jwt.signAsync(
       {
         id,
