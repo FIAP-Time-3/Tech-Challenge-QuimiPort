@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { CreateOrUpdateUserDto } from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
@@ -14,6 +18,7 @@ export class UserService {
   }: {
     body: CreateOrUpdateUserDto;
   }): Promise<UserResponseDto> {
+    await this.checkDuplicated({ body });
     const hashedPassword = await PasswordService.hash({
       password: body.password,
     });
@@ -24,6 +29,7 @@ export class UserService {
         name: body.name,
         password: hashedPassword,
         roles: body.roles ?? [],
+        status: body.status,
       },
     });
 
@@ -55,6 +61,7 @@ export class UserService {
     id: number;
     body: CreateOrUpdateUserDto;
   }): Promise<UserResponseDto> {
+    await this.checkDuplicated({ body, id });
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -74,6 +81,7 @@ export class UserService {
         name: body.name,
         password: hashedPassword,
         roles: body.roles ?? [],
+        status: body.status,
       },
     });
 
@@ -83,10 +91,29 @@ export class UserService {
   async remove({ id }: { id: number }): Promise<{ id: number }> {
     await this.findOne({ id });
 
-    await this.prisma.user.delete({
+    await this.prisma.user.update({
       where: { id },
+      data: { status: false },
     });
 
     return { id };
+  }
+
+  private async checkDuplicated({
+    id,
+    body,
+  }: {
+    id?: number;
+    body: CreateOrUpdateUserDto;
+  }) {
+    const duplicated = await this.prisma.user.count({
+      where: {
+        username: { equals: body.username, mode: 'insensitive' },
+        NOT: { id: id ?? undefined },
+      },
+    });
+    if (duplicated > 0) {
+      throw new ConflictException('O username ja esta em uso');
+    }
   }
 }

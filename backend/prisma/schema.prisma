@@ -73,9 +73,10 @@ model Inspecoes {
 }
 
 model User {
-  id       Int        @id @default(autoincrement())
-  username String     @unique
+  id       Int      @id @default(autoincrement())
+  username String   @unique
   name     String
   password String
   roles    String[]
+  status   Boolean  @default(true)
 }

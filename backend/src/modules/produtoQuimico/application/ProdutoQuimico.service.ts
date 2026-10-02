@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../infrastructure/dtos/ProdutoQuimico.request.dtos.js';
@@ -13,6 +17,7 @@ export class ProdutoQuimicoService {
   }: {
     body: CreateOrUpdateProdutoQuimicoDto;
   }): Promise<ProdutoQuimicoResponseDto> {
+    await this.checkDuplicated({ body });
     const newProduct = await this.prisma.produtosQuimicos.create({
       data: body,
     });
@@ -43,6 +48,7 @@ export class ProdutoQuimicoService {
     id: number;
     body: CreateOrUpdateProdutoQuimicoDto;
   }): Promise<ProdutoQuimicoResponseDto> {
+    await this.checkDuplicated({ body, id });
     const product = await this.prisma.produtosQuimicos.findUnique({
       where: { id },
     });
@@ -68,12 +74,30 @@ export class ProdutoQuimicoService {
 
     if (cargasAssociadas > 0) {
       throw new ConflictException(
-        'O produto químico não pode ser excluído pois está associado a uma carga.',
+        'O produto químico não pode ser excluído pois está associado a uma ou mais cargas.',
       );
     }
 
     return this.prisma.produtosQuimicos.delete({
       where: { id },
     });
+  }
+
+  private async checkDuplicated({
+    id,
+    body,
+  }: {
+    id?: number;
+    body: CreateOrUpdateProdutoQuimicoDto;
+  }) {
+    const duplicated = await this.prisma.produtosQuimicos.count({
+      where: {
+        nome: { equals: body.nome, mode: 'insensitive' },
+        NOT: { id: id ?? undefined },
+      },
+    });
+    if (duplicated > 0) {
+      throw new ConflictException('Produto Quimico Duplicado');
+    }
   }
 }
