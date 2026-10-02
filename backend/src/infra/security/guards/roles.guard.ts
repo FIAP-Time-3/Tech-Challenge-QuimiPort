@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { RolesEnum } from '../enums/roles.enum.js';
+import { isPublic } from '../decorators/setPublic.decorator.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -10,6 +11,10 @@ export class RolesGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
+    if (isPublic({ reflector: this.reflector, context })) {
+      return true;
+    }
+
     const rolesContextHandler =
       this.reflector.get<RolesEnum[]>('roles', context.getHandler()) ?? [];
 
