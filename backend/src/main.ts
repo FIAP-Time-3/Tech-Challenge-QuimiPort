@@ -4,6 +4,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import configuration from './infra/configurations/configurations.js';
 import { DatabaseExceptionFilter } from './infra/filters/database-exception.filter.js';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
@@ -33,7 +35,9 @@ async function bootstrap() {
     )
     .addSecurityRequirements('jwt')
     .setTitle(configuration().swagger.title)
-    .setDescription(configuration().swagger.description)
+    .setDescription(
+      ' [⬇️ Baixar Postman Collection](/api/public/collection.json)',
+    )
     .setVersion(configuration().swagger.version)
     .build();
 
@@ -47,6 +51,15 @@ async function bootstrap() {
   logger.log(
     `Serviço iniciado com sucesso: http://localhost:${configuration().application.port}`,
   );
+
+  const publicDir = join(process.cwd(), 'public');
+
+  mkdirSync(publicDir, { recursive: true });
+  writeFileSync(
+    './public/collection.json',
+    JSON.stringify(swaggerDocument, null, 2),
+  );
+
   logger.log(
     `\n\nCaso seja o primeiro acesso\nrealizar criação do usuário admin inicial em:\nPOST> http://localhost:${configuration().application.port}/api/users/first_access\n
     {
