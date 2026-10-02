@@ -40,7 +40,7 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
         return 'Banco de dados inacessível';
 
       case 'P2002':
-        return 'Já existe um produto químico com este nome';    
+        return 'Informação duplicada';
 
       default:
         return 'Erro interno do servidor';

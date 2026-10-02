@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { RolesEnum } from '../../../enums/roles.enum.js';
 
 export class CreateOrUpdateUserDto {
@@ -22,4 +28,9 @@ export class CreateOrUpdateUserDto {
   @IsOptional()
   @IsEnum(RolesEnum, { each: true })
   roles: RolesEnum[];
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  status: boolean = true;
 }

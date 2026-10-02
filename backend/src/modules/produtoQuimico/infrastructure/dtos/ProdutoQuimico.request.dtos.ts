@@ -20,11 +20,13 @@ export class CreateOrUpdateProdutoQuimicoDto {
   @IsOptional()
   descricao: string;
 
+  @ApiProperty()
   @IsNumber()
   @Min(1)
   @Max(9)
   classeRisco: number;
 
+  @ApiProperty()
   @IsBoolean()
   @IsOptional()
   status: boolean;

@@ -1,11 +1,18 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../database/prisma.service.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -41,7 +48,17 @@ export class AuthGuard implements CanActivate {
     try {
       const data = await this.jwtService.verifyAsync(token);
 
-      req.user = data;
+      const user = await this.prisma.user.findFirst({ where: { id: data.id } });
+      if (!user || !user.status) {
+        throw new UnauthorizedException('Token inválido');
+      }
+      req.user = {
+        id: user.id,
+        username: user.username,
+        roles: user.roles,
+        iat: data.iat,
+        exp: data.exp,
+      };
 
       return true;
     } catch {
