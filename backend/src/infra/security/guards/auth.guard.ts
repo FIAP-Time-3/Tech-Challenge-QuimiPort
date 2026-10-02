@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service.js';
+import { isPublic } from '../decorators/setPublic.decorator.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -17,17 +18,7 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const publicContextHandler = this.reflector.get<boolean>(
-      'isPublic',
-      context.getHandler(),
-    );
-
-    const publicContextClass = this.reflector.get<boolean>(
-      'isPublic',
-      context.getClass(),
-    );
-
-    if (publicContextClass || publicContextHandler) {
+    if (isPublic({ reflector: this.reflector, context })) {
       return true;
     }
 
