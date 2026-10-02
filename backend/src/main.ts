@@ -4,7 +4,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import configuration from './infra/configurations/configurations.js';
 import { DatabaseExceptionFilter } from './infra/filters/database-exception.filter.js';
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
@@ -51,6 +52,9 @@ async function bootstrap() {
     `Serviço iniciado com sucesso: http://localhost:${configuration().application.port}`,
   );
 
+  const publicDir = join(process.cwd(), 'public');
+
+  mkdirSync(publicDir, { recursive: true });
   writeFileSync(
     './public/collection.json',
     JSON.stringify(swaggerDocument, null, 2),
