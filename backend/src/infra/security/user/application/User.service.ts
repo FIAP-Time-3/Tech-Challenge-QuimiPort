@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import { CreateOrUpdateUserDto } from '../infrastructure/dtos/User.request.dtos.
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
+import { RolesEnum } from '../../enums/roles.enum.js';
 
 @Injectable()
 export class UserService {
@@ -61,6 +63,7 @@ export class UserService {
     id: number;
     body: CreateOrUpdateUserDto;
   }): Promise<UserResponseDto> {
+    await this.validateUniqueAdmin();
     await this.checkDuplicated({ body, id });
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -89,6 +92,8 @@ export class UserService {
   }
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
+    await this.validateUniqueAdmin();
+
     await this.findOne({ id });
 
     await this.prisma.user.update({
@@ -114,6 +119,16 @@ export class UserService {
     });
     if (duplicated > 0) {
       throw new ConflictException('O username ja esta em uso');
+    }
+  }
+
+  private async validateUniqueAdmin() {
+    const countAdmin = await this.prisma.user.count({
+      where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+    });
+
+    if (countAdmin === 0) {
+      throw new BadRequestException('Nenhum ADMINISTRADOR no sistema');
     }
   }
 }
