@@ -63,7 +63,8 @@ export class UserService {
     id: number;
     body: CreateOrUpdateUserDto;
   }): Promise<UserResponseDto> {
-    await this.validateUniqueAdmin();
+    await this.validateUniqueAdmin({ id });
+
     await this.checkDuplicated({ body, id });
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -92,7 +93,7 @@ export class UserService {
   }
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
-    await this.validateUniqueAdmin();
+    await this.validateUniqueAdmin({ id });
 
     await this.findOne({ id });
 
@@ -122,9 +123,13 @@ export class UserService {
     }
   }
 
-  private async validateUniqueAdmin() {
+  private async validateUniqueAdmin({ id }: { id: number }) {
     const countAdmin = await this.prisma.user.count({
-      where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+      where: {
+        roles: { has: RolesEnum.ADMINISTRADOR },
+        status: true,
+        id: { not: id },
+      },
     });
 
     if (countAdmin === 0) {
