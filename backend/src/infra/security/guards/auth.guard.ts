@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  PreconditionFailedException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -18,6 +19,16 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const countUsers = await this.prisma.user.count({
+      where: { status: true },
+    });
+
+    if (countUsers === 0) {
+      throw new PreconditionFailedException(
+        'Necessário criar usuário usuário inicial',
+      );
+    }
+
     if (isPublic({ reflector: this.reflector, context })) {
       return true;
     }

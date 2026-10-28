@@ -34,3 +34,20 @@ export class CreateOrUpdateUserDto {
   @IsOptional()
   status: boolean = true;
 }
+
+export class CreateFirstUserDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
