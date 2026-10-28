@@ -19,18 +19,18 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (isPublic({ reflector: this.reflector, context })) {
+      return true;
+    }
+
     const countUsers = await this.prisma.user.count({
       where: { status: true },
     });
 
     if (countUsers === 0) {
       throw new PreconditionFailedException(
-        'Necessário criar usuário usuário inicial',
+        'Necessário criar usuário usuário inicial /users/first_access',
       );
-    }
-
-    if (isPublic({ reflector: this.reflector, context })) {
-      return true;
     }
 
     const req = context.switchToHttp().getRequest();

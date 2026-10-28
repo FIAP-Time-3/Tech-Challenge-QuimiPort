@@ -17,17 +17,19 @@ import {
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
 import { RolesEnum } from '../../../enums/roles.enum.js';
+import { SetPublic } from '../../../decorators/setPublic.decorator.js';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly service: UserService) {}
 
-  @Post('first')
+  @Post('first_access')
+  @SetPublic()
   async createFirstAdmin(
     @Body() body: CreateFirstUserDto,
   ): Promise<UserResponseDto> {
-    return await this.service.create({
-      body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+    return await this.service.createFirst({
+      body,
     });
   }
 

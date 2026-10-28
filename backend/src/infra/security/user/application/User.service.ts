@@ -1,11 +1,15 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { CreateOrUpdateUserDto } from '../infrastructure/dtos/User.request.dtos.js';
+import {
+  CreateFirstUserDto,
+  CreateOrUpdateUserDto,
+} from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
@@ -14,6 +18,27 @@ import { RolesEnum } from '../../enums/roles.enum.js';
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createFirst({
+    body,
+  }: {
+    body: CreateFirstUserDto;
+  }): Promise<UserResponseDto> {
+    const countAdmin = await this.prisma.user.count({
+      where: {
+        roles: { has: RolesEnum.ADMINISTRADOR },
+        status: true,
+      },
+    });
+
+    if (countAdmin > 0) {
+      throw new ForbiddenException();
+    }
+
+    return await this.create({
+      body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+    });
+  }
 
   async create({
     body,
