@@ -44,8 +44,8 @@ model Movimentacoes {
   cargaQuimicaId Int
   cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
   step           Int
-  statusAnterior String
-  notes          String
+  statusAnterior String?
+  notes          String?
   statusAtual    String
   date           DateTime      @default(now())
   createdAt      DateTime      @default(now())
