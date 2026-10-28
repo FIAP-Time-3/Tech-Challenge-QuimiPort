@@ -10,27 +10,43 @@ import {
 } from '@nestjs/common';
 import { ApiParam } from '@nestjs/swagger';
 import { UserService } from '../../application/User.service.js';
-import { CreateOrUpdateUserDto } from '../dtos/User.request.dtos.js';
+import {
+  CreateFirstUserDto,
+  CreateOrUpdateUserDto,
+} from '../dtos/User.request.dtos.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
 import { RolesEnum } from '../../../enums/roles.enum.js';
+import { SetPublic } from '../../../decorators/setPublic.decorator.js';
 
-@AllowedRoles([RolesEnum.ADMINISTRADOR])
 @Controller('users')
 export class UserController {
   constructor(private readonly service: UserService) {}
 
+  @Post('first_access')
+  @SetPublic()
+  async createFirstAdmin(
+    @Body() body: CreateFirstUserDto,
+  ): Promise<UserResponseDto> {
+    return await this.service.createFirst({
+      body,
+    });
+  }
+
   @Post()
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   async create(@Body() body: CreateOrUpdateUserDto): Promise<UserResponseDto> {
     return await this.service.create({ body });
   }
 
   @Get()
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   async findAll(): Promise<UserResponseDto[]> {
     return await this.service.findAll();
   }
 
   @Get(':id')
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: Number })
   async findOne(
     @Param('id', new ParseIntPipe())
@@ -40,6 +56,7 @@ export class UserController {
   }
 
   @Put(':id')
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: Number })
   async update(
     @Param('id', new ParseIntPipe()) id: number,
@@ -49,6 +66,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: Number })
   async remove(
     @Param('id', new ParseIntPipe()) id: number,
