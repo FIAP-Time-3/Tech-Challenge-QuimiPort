@@ -24,19 +24,22 @@ model ProdutosQuimicos {
 }
 
 model CargaQuimicas {
-  id                Int               @id @default(autoincrement())
-  produtoQuimicoId  Int
-  produtoQuimico    ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
-  quantidade        Int
-  unidadeMedida     String
-  destino           String
-  statusCarga       String
-  classeRiscoONU    Int
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  movimentacoes     Movimentacoes[]
-  documentoCargases DocumentoCargas[]
-  inspecoes         Inspecoes[]
+  id                 Int               @id @default(autoincrement())
+  produtoQuimicoId   Int
+  produtoQuimico     ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
+  quantidade         Int
+  unidadeMedida      String
+  origem             String            @default("NAO INFORMADA")
+  destino            String
+  responsavelTecnico String            @default("NAO INFORMADO")
+  dataEntrada        DateTime          @default(now())
+  statusCarga        String
+  classeRiscoONU     Int
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  movimentacoes      Movimentacoes[]
+  documentoCargases  DocumentoCargas[]
+  inspecoes          Inspecoes[]
 }
 
 model Movimentacoes {
@@ -47,9 +50,12 @@ model Movimentacoes {
   statusAnterior String?
   notes          String?
   statusAtual    String
+  usuarioId      Int?
   date           DateTime      @default(now())
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@unique([cargaQuimicaId, step])
 }
 
 model DocumentoCargas {
@@ -60,6 +66,8 @@ model DocumentoCargas {
   validado       Boolean
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@unique([cargaQuimicaId, tipoDocumento])
 }
 
 model Inspecoes {

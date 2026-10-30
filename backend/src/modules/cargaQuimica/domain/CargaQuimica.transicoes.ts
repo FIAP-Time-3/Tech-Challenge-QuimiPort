@@ -18,3 +18,8 @@ export function podeTransicionar(de: S, para: S): boolean {
 export function ehTerminal(status: S): boolean {
   return transicoes[status].length === 0;
 }
+
+export const STATUS_QUE_EXIGEM_MOTIVO: readonly S[] = [
+  S.BLOQUEADA,
+  S.CANCELADA,
+];
