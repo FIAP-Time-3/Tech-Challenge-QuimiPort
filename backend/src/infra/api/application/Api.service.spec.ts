@@ -1,11 +1,27 @@
 import { NotFoundException, StreamableFile } from '@nestjs/common';
+import { mkdtemp, mkdir, rm, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { ApiService } from './Api.service.js';
 
 describe('ApiService', () => {
   let service: ApiService;
+  let temporaryDirectory: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     service = new ApiService();
+    temporaryDirectory = await mkdtemp(join(tmpdir(), 'quimiport-api-test-'));
+    await mkdir(join(temporaryDirectory, 'public'));
+    await writeFile(
+      join(temporaryDirectory, 'public', 'collection.json'),
+      JSON.stringify({ openapi: '3.0.0' }),
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(temporaryDirectory);
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
   it('retorna arquivo público existente como StreamableFile', async () => {
