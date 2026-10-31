@@ -45,6 +45,7 @@ describe('LoginService', () => {
         username: 'Bruno',
         password: 'hash',
         roles: ['OPERADOR'],
+        status: true,
       };
       prismaMock.user.findFirst.mockResolvedValue(user);
       comparePassword.mockResolvedValue(true);
@@ -97,11 +98,28 @@ describe('LoginService', () => {
         username: 'Bruno',
         password: 'hash',
         roles: ['OPERADOR'],
+        status: true,
       });
 
       await expect(
         service.login({ username: 'Bruno', password: 'errada' }),
       ).rejects.toThrow(UnauthorizedException);
+      expect(jwtMock.signAsync).not.toHaveBeenCalled();
+    });
+
+    it('recusa usuário inativo sem comparar senha ou emitir tokens', async () => {
+      prismaMock.user.findFirst.mockResolvedValue({
+        id: 8,
+        username: 'Bruno',
+        password: 'hash',
+        roles: ['OPERADOR'],
+        status: false,
+      });
+
+      await expect(
+        service.login({ username: 'Bruno', password: 'correct-password' }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(comparePassword).not.toHaveBeenCalled();
       expect(jwtMock.signAsync).not.toHaveBeenCalled();
     });
   });
@@ -113,6 +131,7 @@ describe('LoginService', () => {
         id: 8,
         username: 'Bruno',
         roles: ['OPERADOR'],
+        status: true,
       });
       jwtMock.signAsync
         .mockResolvedValueOnce('new-access')
@@ -167,6 +186,21 @@ describe('LoginService', () => {
 
       await expect(
         service.refresh({ refresh_token: 'orphaned' }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(jwtMock.signAsync).not.toHaveBeenCalled();
+    });
+
+    it('recusa refresh token de usuário inativo', async () => {
+      jwtMock.verifyAsync.mockResolvedValue({ id: 8 });
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 8,
+        username: 'Bruno',
+        roles: ['OPERADOR'],
+        status: false,
+      });
+
+      await expect(
+        service.refresh({ refresh_token: 'old-refresh' }),
       ).rejects.toThrow(UnauthorizedException);
       expect(jwtMock.signAsync).not.toHaveBeenCalled();
     });

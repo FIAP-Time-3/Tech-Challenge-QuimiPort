@@ -30,6 +30,7 @@ export class LoginService {
 
     if (
       !user ||
+      !user.status ||
       !(await PasswordService.compare({
         hash: user.password,
         password,
@@ -82,7 +83,7 @@ export class LoginService {
       },
     });
 
-    if (!user) {
+    if (!user || !user.status) {
       throw new UnauthorizedException('Token Invalido');
     }
 

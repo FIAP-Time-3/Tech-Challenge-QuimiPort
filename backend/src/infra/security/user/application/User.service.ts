@@ -60,13 +60,13 @@ export class UserService {
       },
     });
 
-    return plainToInstance(UserResponseDto, user);
+    return this.toResponse(user);
   }
 
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.prisma.user.findMany();
 
-    return plainToInstance(UserResponseDto, users);
+    return users.map((user) => this.toResponse(user));
   }
 
   async findOne({ id }: { id: number }): Promise<UserResponseDto> {
@@ -78,7 +78,7 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return plainToInstance(UserResponseDto, user);
+    return this.toResponse(user);
   }
 
   async update({
@@ -114,7 +114,7 @@ export class UserService {
       },
     });
 
-    return plainToInstance(UserResponseDto, updatedUser);
+    return this.toResponse(updatedUser);
   }
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
@@ -160,5 +160,11 @@ export class UserService {
     if (countAdmin === 0) {
       throw new BadRequestException('Nenhum ADMINISTRADOR no sistema');
     }
+  }
+
+  private toResponse<T extends { password: string }>(user: T): UserResponseDto {
+    const safeUser = { ...user };
+    Reflect.deleteProperty(safeUser, 'password');
+    return plainToInstance(UserResponseDto, safeUser);
   }
 }

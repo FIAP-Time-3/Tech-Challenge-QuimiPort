@@ -29,4 +29,26 @@ describe('validação do cadastro de produto químico', () => {
       'classeRisco',
     );
   });
+
+  it('recusa classe de risco fracionária', async () => {
+    expect(
+      await camposInvalidos({ nome: 'Acetona', classeRisco: 3.5 }),
+    ).toContain('classeRisco');
+  });
+
+  it('aceita descrição e status opcionais quando ausentes', async () => {
+    expect(await camposInvalidos({ nome: 'Acetona', classeRisco: 3 })).toEqual(
+      [],
+    );
+  });
+
+  it('recusa status que não seja booleano', async () => {
+    expect(
+      await camposInvalidos({
+        nome: 'Acetona',
+        classeRisco: 3,
+        status: 'ativo',
+      }),
+    ).toContain('status');
+  });
 });

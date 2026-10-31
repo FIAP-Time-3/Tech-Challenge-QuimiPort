@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsNotEmpty,
-  IsNumber,
+  IsInt,
   IsOptional,
   IsString,
   Max,
@@ -21,7 +21,7 @@ export class CreateOrUpdateProdutoQuimicoDto {
   descricao: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   @Max(9)
   classeRisco: number;

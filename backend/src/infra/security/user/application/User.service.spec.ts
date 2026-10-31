@@ -128,6 +128,24 @@ describe('UserService', () => {
   });
 
   describe('consultas e alterações', () => {
+    it('lista usuários sem expor hashes de senha', async () => {
+      prismaMock.user.findMany.mockResolvedValue([
+        {
+          id: 20,
+          username: 'bruno',
+          name: 'Bruno Dias',
+          password: 'stored-hash',
+          roles: [RolesEnum.OPERADOR],
+        },
+      ]);
+
+      const users = await service.findAll();
+
+      expect(users).toHaveLength(1);
+      expect(users[0]).toHaveProperty('id', 20);
+      expect(JSON.stringify(users[0])).not.toContain('stored-hash');
+    });
+
     it('devolve 404 ao consultar usuário inexistente', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
@@ -158,6 +176,17 @@ describe('UserService', () => {
           status: true,
         },
       });
+    });
+
+    it('devolve 404 ao atualizar usuário inexistente sem gerar hash', async () => {
+      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.update({ id: 20, body: userBody })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(hashPassword).not.toHaveBeenCalled();
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
 
     it('impede desativar o último administrador', async () => {
