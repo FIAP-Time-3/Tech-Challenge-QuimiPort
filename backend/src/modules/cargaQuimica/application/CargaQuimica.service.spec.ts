@@ -122,7 +122,54 @@ describe('CargaQuimicaService', () => {
     });
   });
 
+  describe('consultas', () => {
+    it('lista cargas em ordem crescente com documentos e código público', async () => {
+      prismaMock.cargaQuimicas.findMany.mockResolvedValue([
+        { ...carga(S.CADASTRADA), documentoCargases: [] },
+      ]);
+
+      const result = await service.findAll();
+
+      expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
+        include: { produtoQuimico: true, documentoCargases: true },
+        orderBy: { id: 'asc' },
+      });
+      expect(result[0].codigo).toBe('CQ-000010');
+    });
+
+    it('devolve 404 ao consultar carga inexistente', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.findOne({ id: 99 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('consulta histórico em ordem crescente de step', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.movimentacoes.findMany.mockResolvedValue([]);
+
+      await expect(service.historico({ id: 10 })).resolves.toEqual([]);
+
+      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
+        where: { cargaQuimicaId: 10 },
+        orderBy: { step: 'asc' },
+      });
+    });
+  });
+
   describe('atualização de dados', () => {
+    it('devolve 404 ao atualizar carga inexistente', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.update({ id: 99, body })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
     it('recusa trocar o produto fora de CADASTRADA', async () => {
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
         carga(S.EM_PREPARACAO),
@@ -399,6 +446,20 @@ describe('CargaQuimicaService', () => {
           tipoDocumento: TipoDocumentoEnum.FISPQ,
         }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('recusa adicionar documento a carga em estado terminal', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.FINALIZADA),
+      );
+
+      await expect(
+        service.adicionarDocumento({
+          id: 10,
+          tipoDocumento: TipoDocumentoEnum.FISPQ,
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prismaMock.documentoCargas.create).not.toHaveBeenCalled();
     });
 
     it('valida documento da carga', async () => {
