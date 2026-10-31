@@ -202,6 +202,26 @@ describe('CargaQuimicaService', () => {
       });
     });
 
+    it('mantém a classe herdada quando o produto não mudou', async () => {
+      prismaMock.cargaQuimicas.findUnique
+        .mockResolvedValueOnce(carga(S.CADASTRADA))
+        .mockResolvedValueOnce({
+          ...carga(S.CADASTRADA),
+          documentoCargases: [],
+        });
+
+      await service.update({ id: 10, body });
+
+      expect(prismaMock.produtosQuimicos.findUnique).not.toHaveBeenCalled();
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: expect.objectContaining({
+          produtoQuimicoId: 1,
+          classeRiscoONU: 3,
+        }),
+      });
+    });
+
     it('recusa alterar carga em estado terminal', async () => {
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
         carga(S.FINALIZADA),
@@ -233,6 +253,29 @@ describe('CargaQuimicaService', () => {
         step: 2,
         statusAnterior: 'CADASTRADA',
         statusAtual: 'EM_PREPARACAO',
+      });
+    });
+
+    it('inicia step em 1 quando o histórico não possui movimentações', async () => {
+      prismaMock.cargaQuimicas.findUnique
+        .mockResolvedValueOnce(carga(S.CADASTRADA))
+        .mockResolvedValueOnce({
+          ...carga(S.EM_PREPARACAO),
+          documentoCargases: [],
+        });
+      prismaMock.movimentacoes.aggregate.mockResolvedValue({
+        _max: { step: null },
+      });
+
+      await service.transicionar({
+        id: 10,
+        statusDestino: S.EM_PREPARACAO,
+        usuario: admin,
+      });
+
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        step: 1,
+        notes: null,
       });
     });
 

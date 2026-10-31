@@ -116,6 +116,22 @@ describe('UserService', () => {
       });
     });
 
+    it('usa lista vazia quando perfis não são informados', async () => {
+      const bodyWithoutRoles = { ...userBody, roles: undefined };
+      prismaMock.user.count.mockResolvedValue(0);
+      prismaMock.user.create.mockResolvedValue({
+        ...bodyWithoutRoles,
+        roles: [],
+        password: 'hashed',
+      });
+
+      await service.create({ body: bodyWithoutRoles });
+
+      expect(prismaMock.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ roles: [] }),
+      });
+    });
+
     it('recusa username duplicado sem gerar hash', async () => {
       prismaMock.user.count.mockResolvedValue(1);
 
@@ -175,6 +191,24 @@ describe('UserService', () => {
           roles: [RolesEnum.OPERADOR],
           status: true,
         },
+      });
+    });
+
+    it('usa lista vazia quando atualização não informa perfis', async () => {
+      const bodyWithoutRoles = { ...userBody, roles: undefined };
+      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
+      prismaMock.user.update.mockResolvedValue({
+        id: 20,
+        ...bodyWithoutRoles,
+        password: 'updated-hash',
+      });
+
+      await service.update({ id: 20, body: bodyWithoutRoles });
+
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 20 },
+        data: expect.objectContaining({ roles: [] }),
       });
     });
 

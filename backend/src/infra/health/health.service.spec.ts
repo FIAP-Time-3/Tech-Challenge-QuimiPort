@@ -35,6 +35,15 @@ describe('HealthService', () => {
     expect(health.uptime).toMatch(/^(?:\d+h )?\d+min$/);
   });
 
+  it('formata uptime incluindo horas', async () => {
+    prismaMock.$queryRaw.mockResolvedValue([]);
+    vi.spyOn(process, 'uptime').mockReturnValue(3_661);
+
+    const health = await service.getHealth();
+
+    expect(health.uptime).toBe('1h 1min');
+  });
+
   it('informa estado degradado quando o banco não responde', async () => {
     prismaMock.$queryRaw.mockRejectedValue(new Error('database unavailable'));
 

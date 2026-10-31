@@ -8,11 +8,13 @@ function setup({
   handlerRoles = [],
   classRoles = [],
   userRoles = [],
+  noRoleMetadata = false,
 }: {
   publicRoute?: boolean;
   handlerRoles?: RolesEnum[];
   classRoles?: RolesEnum[];
   userRoles?: RolesEnum[];
+  noRoleMetadata?: boolean;
 } = {}) {
   const handler = {};
   const controller = {};
@@ -26,6 +28,7 @@ function setup({
   const reflectorMock = {
     get: vi.fn((key: string, target: object) => {
       if (key === 'isPublic') return publicRoute;
+      if (noRoleMetadata) return undefined;
       if (target === handler) return handlerRoles;
       if (target === controller) return classRoles;
       return undefined;
@@ -49,6 +52,12 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
+  it('permite rota sem metadata de perfis', () => {
+    const { guard, context } = setup({ noRoleMetadata: true });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
   it('permite quando usuário possui perfil exigido pelo handler', () => {
     const { guard, context } = setup({
       handlerRoles: [RolesEnum.ADMINISTRADOR],
@@ -58,9 +67,28 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(context)).toBe(true);
   });
 
+  it('permite quando o perfil exigido está somente no controller', () => {
+    const { guard, context } = setup({
+      classRoles: [RolesEnum.GESTOR],
+      userRoles: [RolesEnum.GESTOR],
+    });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
   it('considera perfis declarados no controller e no handler', () => {
     const { guard, context } = setup({
       classRoles: [RolesEnum.ADMINISTRADOR],
+      handlerRoles: [RolesEnum.GESTOR],
+      userRoles: [RolesEnum.GESTOR],
+    });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('deduplica perfis repetidos sem negar acesso', () => {
+    const { guard, context } = setup({
+      classRoles: [RolesEnum.GESTOR],
       handlerRoles: [RolesEnum.GESTOR],
       userRoles: [RolesEnum.GESTOR],
     });

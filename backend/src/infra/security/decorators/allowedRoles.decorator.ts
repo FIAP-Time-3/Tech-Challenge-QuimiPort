@@ -6,7 +6,7 @@ import { SetMetadata } from '@nestjs/common';
 import { RolesEnum } from '../enums/roles.enum.js';
 
 export const AllowedRoles = (
-  allowedRoles: RolesEnum[],
+  allowedRoles: RolesEnum | RolesEnum[],
 ): MethodDecorator & ClassDecorator => {
   const rolesArray = Array.isArray(allowedRoles)
     ? allowedRoles

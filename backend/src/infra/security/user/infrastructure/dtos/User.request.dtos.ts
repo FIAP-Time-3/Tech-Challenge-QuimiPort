@@ -27,7 +27,7 @@ export class CreateOrUpdateUserDto {
   @ApiProperty()
   @IsOptional()
   @IsEnum(RolesEnum, { each: true })
-  roles: RolesEnum[];
+  roles?: RolesEnum[];
 
   @ApiProperty()
   @IsBoolean()
