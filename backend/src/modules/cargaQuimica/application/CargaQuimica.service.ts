@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
+import { RolesEnum } from '../../../infra/security/enums/roles.enum.js';
 import { gerarCodigoCarga } from '../domain/CargaQuimica.codigo.js';
 import { documentosFaltantes } from '../domain/CargaQuimica.documentos.js';
 import {
@@ -32,6 +33,7 @@ import {
 const INCLUDE_CARGA = {
   produtoQuimico: true,
   documentoCargases: true,
+  responsavelTecnico: { select: { id: true, name: true, username: true } },
 } as const;
 
 @Injectable()
@@ -48,6 +50,7 @@ export class CargaQuimicaService {
     usuario: UsuarioLogado;
   }): Promise<CargaQuimicaResponseDto> {
     const produto = await this.getProdutoAtivo(body.produtoQuimicoId);
+    await this.getTecnicoAtivo(body.responsavelTecnicoId);
 
     const carga = await this.prisma.$transaction(async (tx) => {
       const created = await tx.cargaQuimicas.create({
@@ -57,7 +60,7 @@ export class CargaQuimicaService {
           unidadeMedida: body.unidadeMedida,
           origem: body.origem,
           destino: body.destino,
-          responsavelTecnico: body.responsavelTecnico,
+          responsavelTecnicoId: body.responsavelTecnicoId,
           dataEntrada: body.dataEntrada,
           statusCarga: StatusCargaEnum.CADASTRADA,
           classeRiscoONU: produto.classeRisco,
@@ -141,6 +144,10 @@ export class CargaQuimicaService {
       classeRiscoONU = produto.classeRisco;
     }
 
+    if (body.responsavelTecnicoId !== carga.responsavelTecnicoId) {
+      await this.getTecnicoAtivo(body.responsavelTecnicoId);
+    }
+
     await this.prisma.cargaQuimicas.update({
       where: { id },
       data: {
@@ -149,7 +156,7 @@ export class CargaQuimicaService {
         unidadeMedida: body.unidadeMedida,
         origem: body.origem,
         destino: body.destino,
-        responsavelTecnico: body.responsavelTecnico,
+        responsavelTecnicoId: body.responsavelTecnicoId,
         dataEntrada: body.dataEntrada,
         classeRiscoONU,
       },
@@ -361,5 +368,25 @@ export class CargaQuimicaService {
       );
     }
     return produto;
+  }
+
+  private async getTecnicoAtivo(usuarioId: number) {
+    const usuario = await this.prisma.user.findUnique({
+      where: { id: usuarioId },
+    });
+    if (!usuario) {
+      throw new BadRequestException('Responsável técnico não encontrado');
+    }
+    if (!usuario.status) {
+      throw new BadRequestException(
+        'Responsável técnico inativo não pode ser designado.',
+      );
+    }
+    if (!usuario.roles.includes(RolesEnum.TECNICO)) {
+      throw new BadRequestException(
+        'O usuário informado não possui o perfil TECNICO.',
+      );
+    }
+    return usuario;
   }
 }

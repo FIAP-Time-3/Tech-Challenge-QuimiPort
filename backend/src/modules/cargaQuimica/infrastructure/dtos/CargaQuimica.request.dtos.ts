@@ -38,10 +38,13 @@ export class CreateOrUpdateCargaQuimicaDto {
   @IsNotEmpty()
   destino: string;
 
-  @ApiProperty({ example: 'Maria Souza', description: 'Obrigatório' })
-  @IsString()
-  @IsNotEmpty()
-  responsavelTecnico: string;
+  @ApiProperty({
+    example: 3,
+    description: 'ID de um usuário ativo com perfil TECNICO. Obrigatório.',
+  })
+  @IsInt()
+  @IsPositive()
+  responsavelTecnicoId: number;
 
   @ApiPropertyOptional({ example: '2026-11-01T10:00:00.000Z' })
   @IsOptional()

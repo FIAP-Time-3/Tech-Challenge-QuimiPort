@@ -39,6 +39,9 @@ jobs:
       - name: Prepare Prisma
         run: npm run prisma:generate
 
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
 

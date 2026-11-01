@@ -15,6 +15,7 @@ describe('CargaQuimicaService', () => {
 
   const prismaMock = {
     produtosQuimicos: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn() },
     cargaQuimicas: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -27,13 +28,14 @@ describe('CargaQuimicaService', () => {
   };
 
   const admin = { id: 1, roles: ['ADMINISTRADOR'] };
+  const tecnico = { id: 3, status: true, roles: ['TECNICO'] };
   const body = {
     produtoQuimicoId: 1,
     quantidade: 100,
     unidadeMedida: 'kg',
     origem: 'Rotterdam',
     destino: 'Santos',
-    responsavelTecnico: 'Maria Souza',
+    responsavelTecnicoId: 3,
   };
   const docsOk = [
     { tipoDocumento: 'FISPQ', validado: true },
@@ -43,6 +45,7 @@ describe('CargaQuimicaService', () => {
   const carga = (statusCarga: S, documentoCargases: unknown[] = []) => ({
     id: 10,
     produtoQuimicoId: 1,
+    responsavelTecnicoId: 3,
     statusCarga,
     classeRiscoONU: 3,
     documentoCargases,
@@ -75,6 +78,7 @@ describe('CargaQuimicaService', () => {
         status: true,
         classeRisco: 3,
       });
+      prismaMock.user.findUnique.mockResolvedValue(tecnico);
       prismaMock.cargaQuimicas.create.mockResolvedValue({ id: 10 });
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue({
         ...carga(S.CADASTRADA),
@@ -87,7 +91,7 @@ describe('CargaQuimicaService', () => {
         data: expect.objectContaining({
           statusCarga: 'CADASTRADA',
           classeRiscoONU: 3,
-          responsavelTecnico: 'Maria Souza',
+          responsavelTecnicoId: 3,
         }),
       });
       expect(dadosDaUltimaMovimentacao()).toMatchObject({
@@ -120,6 +124,54 @@ describe('CargaQuimicaService', () => {
         BadRequestException,
       );
     });
+
+    it('recusa responsável técnico inexistente', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+
+    it('recusa responsável técnico inativo', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...tecnico,
+        status: false,
+      });
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+
+    it('recusa usuário sem o perfil TECNICO', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...tecnico,
+        roles: ['OPERADOR'],
+      });
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        /TECNICO/,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('consultas', () => {
@@ -131,7 +183,13 @@ describe('CargaQuimicaService', () => {
       const result = await service.findAll();
 
       expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
-        include: { produtoQuimico: true, documentoCargases: true },
+        include: {
+          produtoQuimico: true,
+          documentoCargases: true,
+          responsavelTecnico: {
+            select: { id: true, name: true, username: true },
+          },
+        },
         orderBy: { id: 'asc' },
       });
       expect(result[0].codigo).toBe('CQ-000010');
@@ -213,6 +271,7 @@ describe('CargaQuimicaService', () => {
       await service.update({ id: 10, body });
 
       expect(prismaMock.produtosQuimicos.findUnique).not.toHaveBeenCalled();
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
       expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
         where: { id: 10 },
         data: expect.objectContaining({
@@ -230,6 +289,43 @@ describe('CargaQuimicaService', () => {
       await expect(service.update({ id: 10, body })).rejects.toThrow(
         ConflictException,
       );
+    });
+
+    it('valida o novo técnico ao trocar o responsável', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 4,
+        status: true,
+        roles: ['OPERADOR'],
+      });
+
+      await expect(
+        service.update({ id: 10, body: { ...body, responsavelTecnicoId: 4 } }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('troca para outro técnico válido', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 4,
+        status: true,
+        roles: ['TECNICO', 'DOCUMENTACAO'],
+      });
+
+      await service.update({
+        id: 10,
+        body: { ...body, responsavelTecnicoId: 4 },
+      });
+
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: expect.objectContaining({ responsavelTecnicoId: 4 }),
+      });
     });
   });
 

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
@@ -10,6 +11,8 @@ import { ProdutoQuimicoResponseDto } from '../infrastructure/dtos/ProdutoQuimico
 
 @Injectable()
 export class ProdutoQuimicoService {
+  private readonly logger = new Logger(ProdutoQuimicoService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create({
@@ -21,6 +24,7 @@ export class ProdutoQuimicoService {
     const newProduct = await this.prisma.produtosQuimicos.create({
       data: body,
     });
+    this.logger.log(`Produto químico ${newProduct.id} cadastrado`);
 
     return await this.findOne({ id: newProduct.id });
   }
@@ -60,6 +64,25 @@ export class ProdutoQuimicoService {
       where: { id },
       data: body,
     });
+    return await this.findOne({ id });
+  }
+
+  async inativar({ id }: { id: number }): Promise<ProdutoQuimicoResponseDto> {
+    const product = await this.prisma.produtosQuimicos.findUnique({
+      where: { id },
+    });
+    if (!product) {
+      throw new NotFoundException('Produto quimico não encontrado');
+    }
+
+    if (product.status) {
+      await this.prisma.produtosQuimicos.update({
+        where: { id },
+        data: { status: false },
+      });
+      this.logger.log(`Produto químico ${id} inativado`);
+    }
+
     return await this.findOne({ id });
   }
 

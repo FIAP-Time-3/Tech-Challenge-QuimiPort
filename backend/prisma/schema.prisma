@@ -24,22 +24,23 @@ model ProdutosQuimicos {
 }
 
 model CargaQuimicas {
-  id                 Int               @id @default(autoincrement())
-  produtoQuimicoId   Int
-  produtoQuimico     ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
-  quantidade         Int
-  unidadeMedida      String
-  origem             String            @default("NAO INFORMADA")
-  destino            String
-  responsavelTecnico String            @default("NAO INFORMADO")
-  dataEntrada        DateTime          @default(now())
-  statusCarga        String
-  classeRiscoONU     Int
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  movimentacoes      Movimentacoes[]
-  documentoCargases  DocumentoCargas[]
-  inspecoes          Inspecoes[]
+  id                   Int               @id @default(autoincrement())
+  produtoQuimicoId     Int
+  produtoQuimico       ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
+  quantidade           Int
+  unidadeMedida        String
+  origem               String            @default("NAO INFORMADA")
+  destino              String
+  responsavelTecnicoId Int?
+  responsavelTecnico   User?             @relation("ResponsavelTecnico", fields: [responsavelTecnicoId], references: [id], onDelete: Restrict)
+  dataEntrada          DateTime          @default(now())
+  statusCarga          String
+  classeRiscoONU       Int
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  movimentacoes        Movimentacoes[]
+  documentoCargases    DocumentoCargas[]
+  inspecoes            Inspecoes[]
 }
 
 model Movimentacoes {
@@ -81,10 +82,11 @@ model Inspecoes {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  username String   @unique
-  name     String
-  password String
-  roles    String[]
-  status   Boolean  @default(true)
+  id                Int             @id @default(autoincrement())
+  username          String          @unique
+  name              String
+  password          String
+  roles             String[]
+  status            Boolean         @default(true)
+  cargasComoTecnico CargaQuimicas[] @relation("ResponsavelTecnico")
 }

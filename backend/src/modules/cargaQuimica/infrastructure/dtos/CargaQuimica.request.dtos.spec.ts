@@ -15,7 +15,7 @@ const valido = {
   unidadeMedida: 'kg',
   origem: 'Rotterdam',
   destino: 'Santos',
-  responsavelTecnico: 'Maria Souza',
+  responsavelTecnicoId: 3,
 };
 
 async function camposInvalidos(dados: Record<string, unknown>) {
@@ -41,12 +41,39 @@ describe('validação do cadastro de carga', () => {
     'unidadeMedida',
     'origem',
     'destino',
-    'responsavelTecnico',
+    'responsavelTecnicoId',
   ])('recusa carga sem %s', async (campo) => {
     const dados: Record<string, unknown> = { ...valido };
     delete dados[campo];
 
     expect(await camposInvalidos(dados)).toContain(campo);
+  });
+
+  it('recusa responsável técnico que não seja um id numérico', async () => {
+    expect(
+      await camposInvalidos({ ...valido, responsavelTecnicoId: 'Maria' }),
+    ).toContain('responsavelTecnicoId');
+  });
+
+  it.each([0, -1])(
+    'recusa responsável técnico com id %s',
+    async (responsavelTecnicoId) => {
+      expect(
+        await camposInvalidos({ ...valido, responsavelTecnicoId }),
+      ).toContain('responsavelTecnicoId');
+    },
+  );
+
+  it('recusa o campo antigo responsavelTecnico (texto)', async () => {
+    const erros = await validate(
+      plainToInstance(CreateOrUpdateCargaQuimicaDto, {
+        ...valido,
+        responsavelTecnico: 'Maria Souza',
+      }),
+      { whitelist: true, forbidNonWhitelisted: true },
+    );
+
+    expect(erros.map((erro) => erro.property)).toContain('responsavelTecnico');
   });
 
   it('aceita data de entrada opcional no formato Date', async () => {

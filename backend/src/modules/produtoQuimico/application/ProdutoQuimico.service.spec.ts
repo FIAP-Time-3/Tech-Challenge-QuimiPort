@@ -152,6 +152,47 @@ describe('ProdutoQuimicoService', () => {
     });
   });
 
+  describe('inativar', () => {
+    it('inativa um produto ativo e devolve o registro atualizado', async () => {
+      prismaMock.produtosQuimicos.findUnique
+        .mockResolvedValueOnce(product)
+        .mockResolvedValueOnce({ ...product, status: false });
+      prismaMock.produtosQuimicos.update.mockResolvedValue({
+        ...product,
+        status: false,
+      });
+
+      await expect(service.inativar({ id: 1 })).resolves.toMatchObject({
+        status: false,
+      });
+      expect(prismaMock.produtosQuimicos.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { status: false },
+      });
+    });
+
+    it('não altera um produto que já está inativo', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        ...product,
+        status: false,
+      });
+
+      await expect(service.inativar({ id: 1 })).resolves.toMatchObject({
+        status: false,
+      });
+      expect(prismaMock.produtosQuimicos.update).not.toHaveBeenCalled();
+    });
+
+    it('devolve 404 ao inativar produto inexistente', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue(null);
+
+      await expect(service.inativar({ id: 99 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.produtosQuimicos.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('remove', () => {
     it('remove produto sem cargas associadas', async () => {
       prismaMock.produtosQuimicos.findUnique.mockResolvedValue(product);

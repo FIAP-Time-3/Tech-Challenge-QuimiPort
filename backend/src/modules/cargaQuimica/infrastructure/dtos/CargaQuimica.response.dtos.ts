@@ -24,6 +24,12 @@ export class MovimentacaoResponseDto {
   @Expose() date: Date;
 }
 
+export class ResponsavelTecnicoDto {
+  @Expose() id: number;
+  @Expose() name: string;
+  @Expose() username: string;
+}
+
 export class CargaQuimicaResponseDto {
   @Expose() id: number;
   @Expose() codigo: string;
@@ -37,7 +43,10 @@ export class CargaQuimicaResponseDto {
   @Expose() unidadeMedida: string;
   @Expose() origem: string;
   @Expose() destino: string;
-  @Expose() responsavelTecnico: string;
+  @Expose() responsavelTecnicoId: number | null;
+  @Expose()
+  @Type(() => ResponsavelTecnicoDto)
+  responsavelTecnico: ResponsavelTecnicoDto | null;
   @Expose() dataEntrada: Date;
   @Expose() statusCarga: string;
   @Expose() classeRiscoONU: number;
