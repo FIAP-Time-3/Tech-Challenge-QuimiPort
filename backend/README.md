@@ -55,7 +55,7 @@ A **Fase 1** do Tech Challenge definiu o domínio, as regras, a arquitetura e a 
 | Produtos químicos | Cadastrar, listar, buscar, atualizar, **inativar** e excluir (sem cargas associadas) |
 | Cargas químicas | Registrar, listar, buscar, atualizar dados, atualizar status, **bloquear**, **liberar**, **cancelar** e consultar histórico |
 | Controle de status | Máquina de estados com transições permitidas e proibidas |
-| Documentos da carga | Registro e validação de documentos obrigatórios, exigidos para liberar |
+| Documentos da carga | Upload/download de PDFs e validação de documentos obrigatórios, exigidos para liberar |
 | Banco de dados | **PostgreSQL**, com **Prisma** e migrations versionadas |
 | Autenticação e autorização | JWT, perfis de usuário e permissões por etapa da carga |
 | Docker | `Dockerfile` e `docker-compose.yml` (API + banco) |
@@ -475,7 +475,8 @@ Todas as rotas têm prefixo **`/api`**. O Swagger permite autenticar (botão **A
 | `PATCH` | `/api/cargas-quimicas/:id/bloquear` | Conforme a etapa da carga | Bloqueia (exige `motivo`) | `200` |
 | `PATCH` | `/api/cargas-quimicas/:id/liberar` | Conforme a etapa da carga | Libera (exige documentação validada) | `200` |
 | `PATCH` | `/api/cargas-quimicas/:id/cancelar` | `ADMINISTRADOR`, `GESTOR` | Cancela (exige `motivo`) | `200` |
-| `POST` | `/api/cargas-quimicas/:id/documentos` | `ADMINISTRADOR`, `GESTOR`, `TECNICO`, `DOCUMENTACAO` | Registra documento | `201` |
+| `POST` | `/api/cargas-quimicas/:id/documentos` | `ADMINISTRADOR`, `GESTOR`, `TECNICO`, `DOCUMENTACAO` | Registra documento (`multipart/form-data`: `tipoDocumento` e PDF em `arquivo`, até 10 MB) | `201` |
+| `GET` | `/api/cargas-quimicas/:id/documentos/:docId` | Qualquer usuário autenticado | Baixa o PDF do documento da carga | `200` |
 | `PATCH` | `/api/cargas-quimicas/:id/documentos/:docId/validar` | `ADMINISTRADOR`, `GESTOR`, `QUALIDADE`, `INSPETOR` | Valida documento | `200` |
 
 **Saúde da aplicação**
@@ -492,7 +493,7 @@ Os exemplos usam `BASE=http://localhost:3010/api` (execução local). Para o Doc
 
 ```bash
 curl -X POST $BASE/login \
-  -H "Content-Type: application/json" \
+  \
   -d '{"username": "admin", "password": "<senha>"}'
 ```
 ```json
@@ -507,7 +508,7 @@ curl -X POST $BASE/login \
 ```bash
 curl -X POST $BASE/produtos-quimicos \
   -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
+  \
   -d '{"nome": "Acetona", "descricao": "Solvente orgânico", "classeRisco": 3}'
 ```
 
@@ -518,7 +519,7 @@ O `responsavelTecnicoId` é o `id` de um usuário **ativo** com o perfil `TECNIC
 ```bash
 curl -X POST $BASE/cargas-quimicas \
   -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
+  \
   -d '{
     "produtoQuimicoId": 1,
     "quantidade": 500,
@@ -555,7 +556,7 @@ A classe de risco (`classeRiscoONU`) é **herdada do produto** e não pode ser i
 ```bash
 curl -X PATCH $BASE/cargas-quimicas/1/status \
   -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
+  \
   -d '{"statusCarga": "EM_PREPARACAO"}'
 ```
 
@@ -576,8 +577,12 @@ curl -X PATCH $BASE/cargas-quimicas/1/liberar -H "Authorization: Bearer <TOKEN>"
 
 ```bash
 curl -X POST $BASE/cargas-quimicas/1/documentos \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
-  -d '{"tipoDocumento": "FISPQ"}'
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "tipoDocumento=FISPQ" \
+  -F "arquivo=@./fispq.pdf;type=application/pdf"
+
+curl -X GET $BASE/cargas-quimicas/1/documentos/1 \
+  -H "Authorization: ******" -o documento.pdf
 
 curl -X PATCH $BASE/cargas-quimicas/1/documentos/1/validar \
   -H "Authorization: Bearer <TOKEN>"
@@ -587,11 +592,11 @@ curl -X PATCH $BASE/cargas-quimicas/1/documentos/1/validar \
 
 ```bash
 curl -X PATCH $BASE/cargas-quimicas/1/bloquear \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
   -d '{"motivo": "Inconsistência na documentação"}'
 
 curl -X PATCH $BASE/cargas-quimicas/1/cancelar \
-  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
   -d '{"motivo": "Embarque desistido pelo cliente"}'
 ```
 
@@ -818,7 +823,7 @@ erDiagram
 | **Como o responsável técnico é guardado?** | Por chave estrangeira para `User` (`responsavelTecnicoId`), com `onDelete: Restrict`: um usuário que é responsável por cargas não pode ser removido. |
 | **Como o status da carga é controlado?** | A coluna `statusCarga` guarda o status atual. Mudanças só ocorrem pela função de transição do serviço, que valida a matriz de estados e grava, **na mesma transação**, uma linha em `Movimentacoes`. A restrição única `(cargaQuimicaId, step)` impede passos duplicados. |
 | **Como o histórico é guardado?** | Em `Movimentacoes`: `step`, status anterior, status atual, motivo (`notes`), usuário e data. Só há inserções, o histórico não é alterado. |
-| **Como os documentos são guardados?** | Em `DocumentoCargas`: tipo, indicador de validação e a carga à qual pertencem. A restrição única `(cargaQuimicaId, tipoDocumento)` impede o mesmo documento duas vezes. |
+| **Como os documentos são guardados?** | Os metadados ficam em `DocumentoCargas`; os PDFs são salvos em `public/docs/{idCarga}/documento-{idDocumento}.pdf`. A restrição única `(cargaQuimicaId, tipoDocumento)` impede o mesmo tipo de documento duas vezes por carga. |
 | **E as senhas?** | Em `User.password`, somente como **hash bcrypt**. A senha nunca é devolvida pela API. |
 
 O status da carga é um **texto validado pela aplicação** (enum TypeScript), e não um `enum` do banco. Isso facilita evoluir o fluxo sem migrations de tipo.

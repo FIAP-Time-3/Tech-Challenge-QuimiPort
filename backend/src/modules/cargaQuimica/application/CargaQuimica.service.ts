@@ -6,6 +6,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { plainToInstance } from 'class-transformer';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { RolesEnum } from '../../../infra/security/enums/roles.enum.js';
@@ -32,9 +34,30 @@ import {
 
 const INCLUDE_CARGA = {
   produtoQuimico: true,
-  documentoCargases: true,
+  documentoCargases: {
+    select: { id: true, tipoDocumento: true, validado: true, createdAt: true },
+  },
   responsavelTecnico: { select: { id: true, name: true, username: true } },
 } as const;
+
+function caminhoDocumento(idCarga: number, docId: number): string {
+  return join(
+    process.cwd(),
+    'public',
+    'docs',
+    String(idCarga),
+    `documento-${docId}.pdf`,
+  );
+}
+
+function isFileNotFound(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
 
 @Injectable()
 export class CargaQuimicaService {
@@ -274,9 +297,11 @@ export class CargaQuimicaService {
   async adicionarDocumento({
     id,
     tipoDocumento,
+    arquivo,
   }: {
     id: number;
     tipoDocumento: TipoDocumentoEnum;
+    arquivo: Buffer;
   }): Promise<DocumentoResponseDto> {
     const carga = await this.getCarga(id);
     if (ehTerminal(carga.statusCarga as StatusCargaEnum)) {
@@ -295,14 +320,67 @@ export class CargaQuimicaService {
     }
 
     const documento = await this.prisma.documentoCargas.create({
-      data: { cargaQuimicaId: id, tipoDocumento, validado: false },
+      data: {
+        cargaQuimicaId: id,
+        tipoDocumento,
+        validado: false,
+      },
     });
+    const diretorio = join(process.cwd(), 'public', 'docs', String(id));
+    try {
+      await mkdir(diretorio, { recursive: true });
+      await writeFile(caminhoDocumento(id, documento.id), arquivo);
+    } catch (error) {
+      try {
+        await this.prisma.documentoCargas.delete({
+          where: { id: documento.id },
+        });
+      } catch (cleanupError) {
+        this.logger.error(
+          `Não foi possível remover o registro do documento ${documento.id} após falha ao salvar o arquivo.`,
+          cleanupError instanceof Error
+            ? cleanupError.stack
+            : String(cleanupError),
+        );
+      }
+      throw error;
+    }
+
     this.logger.log(
       `Documento ${tipoDocumento} registrado na carga ${gerarCodigoCarga(id)}`,
     );
     return plainToInstance(DocumentoResponseDto, documento, {
       excludeExtraneousValues: true,
     });
+  }
+
+  async obterArquivoDocumento({
+    id,
+    docId,
+  }: {
+    id: number;
+    docId: number;
+  }): Promise<Buffer> {
+    const documento = await this.prisma.documentoCargas.findFirst({
+      where: { id: docId, cargaQuimicaId: id },
+      select: { id: true },
+    });
+    if (!documento) {
+      throw new NotFoundException(
+        'Arquivo do documento não encontrado nesta carga',
+      );
+    }
+
+    try {
+      return await readFile(caminhoDocumento(id, docId));
+    } catch (error) {
+      if (isFileNotFound(error)) {
+        throw new NotFoundException(
+          'Arquivo do documento não encontrado nesta carga',
+        );
+      }
+      throw error;
+    }
   }
 
   async validarDocumento({

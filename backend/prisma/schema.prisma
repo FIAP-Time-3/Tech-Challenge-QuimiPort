@@ -65,6 +65,7 @@ model DocumentoCargas {
   cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
   tipoDocumento  String
   validado       Boolean
+  arquivo        Bytes?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

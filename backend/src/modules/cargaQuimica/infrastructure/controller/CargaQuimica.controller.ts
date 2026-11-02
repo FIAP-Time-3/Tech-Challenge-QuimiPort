@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,20 +9,29 @@ import {
   Post,
   Put,
   Req,
+  StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiConflictResponse,
+  ApiConsumes,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import { AllowedRoles } from '../../../../infra/security/decorators/allowedRoles.decorator.js';
 import { RolesEnum } from '../../../../infra/security/enums/roles.enum.js';
 import { CargaQuimicaService } from '../../application/CargaQuimica.service.js';
 import { type UsuarioLogado } from '../../application/CargaQuimica.permissoes.js';
+import { TipoDocumentoEnum } from '../../domain/value-objects/TipoDocumento.enum.js';
 import {
   CreateDocumentoDto,
   CreateOrUpdateCargaQuimicaDto,
@@ -36,6 +46,10 @@ import {
 
 interface RequisicaoAutenticada {
   user: UsuarioLogado;
+}
+
+interface ArquivoPdfUpload {
+  buffer: Buffer;
 }
 
 const PERFIS_CADASTRO = [
@@ -214,15 +228,66 @@ export class CargaQuimicaController {
   @ApiConflictResponse({
     description: 'Documento já registrado ou carga encerrada',
   })
+  @ApiBadRequestResponse({
+    description: 'Arquivo ausente ou conteúdo não é um PDF válido',
+  })
   @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['tipoDocumento', 'arquivo'],
+      properties: {
+        tipoDocumento: {
+          type: 'string',
+          enum: Object.values(TipoDocumentoEnum),
+        },
+        arquivo: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   @Post(':id/documentos')
+  @UseInterceptors(
+    FileInterceptor('arquivo', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   async adicionarDocumento(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: CreateDocumentoDto,
+    @UploadedFile() arquivo?: ArquivoPdfUpload,
   ): Promise<DocumentoResponseDto> {
+    if (!arquivo) {
+      throw new BadRequestException('O arquivo PDF é obrigatório.');
+    }
+    if (!arquivo.buffer.subarray(0, 1024).includes(Buffer.from('%PDF-'))) {
+      throw new BadRequestException(
+        'O arquivo enviado deve ser um PDF válido.',
+      );
+    }
+
     return await this.service.adicionarDocumento({
       id,
       tipoDocumento: body.tipoDocumento,
+      arquivo: arquivo.buffer,
+    });
+  }
+
+  @ApiOperation({ summary: 'Baixar documento da carga' })
+  @ApiNotFoundResponse({
+    description: 'Carga ou arquivo do documento não encontrado',
+  })
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({ description: 'Arquivo PDF do documento' })
+  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'docId', example: 1, type: Number })
+  @Get(':id/documentos/:docId')
+  async obterArquivoDocumento(
+    @Param('id', new ParseIntPipe()) id: number,
+    @Param('docId', new ParseIntPipe()) docId: number,
+  ): Promise<StreamableFile> {
+    const arquivo = await this.service.obterArquivoDocumento({ id, docId });
+    return new StreamableFile(arquivo, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="documento-${docId}.pdf"`,
     });
   }
 

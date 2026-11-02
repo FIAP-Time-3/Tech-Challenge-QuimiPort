@@ -18,6 +18,7 @@ describe('CargaQuimicaController', () => {
     liberar: vi.fn(),
     cancelar: vi.fn(),
     adicionarDocumento: vi.fn(),
+    obterArquivoDocumento: vi.fn(),
     validarDocumento: vi.fn(),
   };
   const body = {
@@ -126,12 +127,26 @@ describe('CargaQuimicaController', () => {
 
   it('encaminha registro e validação de documentos', async () => {
     const documentBody = { tipoDocumento: TipoDocumentoEnum.FISPQ };
+    const pdf = Buffer.from('%PDF-1.7 conteúdo');
+    const arquivo = {
+      fieldname: 'arquivo',
+      originalname: 'documento.pdf',
+      encoding: '7bit',
+      mimetype: 'application/pdf',
+      size: pdf.length,
+      destination: '',
+      filename: '',
+      path: '',
+      buffer: pdf,
+    };
     serviceMock.adicionarDocumento.mockResolvedValue({ id: 3 });
+    serviceMock.obterArquivoDocumento.mockResolvedValue(arquivo.buffer);
     serviceMock.validarDocumento.mockResolvedValue({ id: 3, validado: true });
 
     await expect(
-      controller.adicionarDocumento(10, documentBody),
+      controller.adicionarDocumento(10, documentBody, arquivo),
     ).resolves.toEqual({ id: 3 });
+    const arquivoRetornado = await controller.obterArquivoDocumento(10, 3);
     await expect(controller.validarDocumento(10, 3)).resolves.toEqual({
       id: 3,
       validado: true,
@@ -139,10 +154,42 @@ describe('CargaQuimicaController', () => {
     expect(serviceMock.adicionarDocumento).toHaveBeenCalledWith({
       id: 10,
       tipoDocumento: TipoDocumentoEnum.FISPQ,
+      arquivo: arquivo.buffer,
+    });
+    expect(serviceMock.obterArquivoDocumento).toHaveBeenCalledWith({
+      id: 10,
+      docId: 3,
+    });
+    expect(arquivoRetornado.getHeaders()).toMatchObject({
+      type: 'application/pdf',
+      disposition: 'attachment; filename="documento-3.pdf"',
     });
     expect(serviceMock.validarDocumento).toHaveBeenCalledWith({
       id: 10,
       docId: 3,
     });
+  });
+
+  it('recusa ausência de PDF e conteúdo que não seja PDF', async () => {
+    const documentBody = { tipoDocumento: TipoDocumentoEnum.FISPQ };
+    const invalidArquivo = {
+      fieldname: 'arquivo',
+      originalname: 'documento.pdf',
+      encoding: '7bit',
+      mimetype: 'application/pdf',
+      size: 9,
+      destination: '',
+      filename: '',
+      path: '',
+      buffer: Buffer.from('não é PDF'),
+    };
+
+    await expect(
+      controller.adicionarDocumento(10, documentBody),
+    ).rejects.toThrow('O arquivo PDF é obrigatório.');
+    await expect(
+      controller.adicionarDocumento(10, documentBody, invalidArquivo),
+    ).rejects.toThrow('O arquivo enviado deve ser um PDF válido.');
+    expect(serviceMock.adicionarDocumento).not.toHaveBeenCalled();
   });
 });

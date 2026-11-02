@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import {
   BadRequestException,
   ConflictException,
@@ -9,6 +11,12 @@ import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { StatusCargaEnum as S } from '../domain/value-objects/StatusCarga.enum.js';
 import { TipoDocumentoEnum } from '../domain/value-objects/TipoDocumento.enum.js';
 import { CargaQuimicaService } from './CargaQuimica.service.js';
+
+vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+}));
 
 describe('CargaQuimicaService', () => {
   let service: CargaQuimicaService;
@@ -23,7 +31,12 @@ describe('CargaQuimicaService', () => {
       update: vi.fn(),
     },
     movimentacoes: { create: vi.fn(), aggregate: vi.fn(), findMany: vi.fn() },
-    documentoCargas: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    documentoCargas: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
     $transaction: vi.fn(),
   };
 
@@ -185,7 +198,14 @@ describe('CargaQuimicaService', () => {
       expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
         include: {
           produtoQuimico: true,
-          documentoCargases: true,
+          documentoCargases: {
+            select: {
+              id: true,
+              tipoDocumento: true,
+              validado: true,
+              createdAt: true,
+            },
+          },
           responsavelTecnico: {
             select: { id: true, name: true, username: true },
           },
@@ -553,12 +573,13 @@ describe('CargaQuimicaService', () => {
 
   describe('documentos', () => {
     it('registra documento como não validado', async () => {
+      const arquivo = Buffer.from('%PDF-1.7 conteúdo');
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
         carga(S.EM_PREPARACAO),
       );
       prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
       prismaMock.documentoCargas.create.mockResolvedValue({
-        id: 1,
+        id: 3,
         tipoDocumento: 'FISPQ',
         validado: false,
       });
@@ -566,10 +587,49 @@ describe('CargaQuimicaService', () => {
       await service.adicionarDocumento({
         id: 10,
         tipoDocumento: TipoDocumentoEnum.FISPQ,
+        arquivo,
       });
 
       expect(prismaMock.documentoCargas.create).toHaveBeenCalledWith({
-        data: { cargaQuimicaId: 10, tipoDocumento: 'FISPQ', validado: false },
+        data: {
+          cargaQuimicaId: 10,
+          tipoDocumento: 'FISPQ',
+          validado: false,
+        },
+      });
+      expect(mkdir).toHaveBeenCalledWith(
+        join(process.cwd(), 'public', 'docs', '10'),
+        { recursive: true },
+      );
+      expect(writeFile).toHaveBeenCalledWith(
+        join(
+          process.cwd(),
+          'public',
+          'docs',
+          '10',
+          'documento-3.pdf',
+        ),
+        arquivo,
+      );
+    });
+
+    it('remove o registro quando não consegue salvar o arquivo', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+      prismaMock.documentoCargas.create.mockResolvedValue({ id: 3 });
+      vi.mocked(writeFile).mockRejectedValue(new Error('Falha ao gravar'));
+
+      await expect(
+        service.adicionarDocumento({
+          id: 10,
+          tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
+        }),
+      ).rejects.toThrow('Falha ao gravar');
+      expect(prismaMock.documentoCargas.delete).toHaveBeenCalledWith({
+        where: { id: 3 },
       });
     });
 
@@ -583,6 +643,7 @@ describe('CargaQuimicaService', () => {
         service.adicionarDocumento({
           id: 10,
           tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
         }),
       ).rejects.toThrow(ConflictException);
     });
@@ -596,9 +657,41 @@ describe('CargaQuimicaService', () => {
         service.adicionarDocumento({
           id: 10,
           tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
         }),
       ).rejects.toThrow(ConflictException);
       expect(prismaMock.documentoCargas.create).not.toHaveBeenCalled();
+    });
+
+    it('retorna o PDF apenas quando o documento pertence à carga', async () => {
+      const arquivo = Buffer.from('%PDF-1.7 conteúdo');
+      prismaMock.documentoCargas.findFirst.mockResolvedValue({ id: 3 });
+      vi.mocked(readFile).mockResolvedValue(arquivo);
+
+      await expect(
+        service.obterArquivoDocumento({ id: 10, docId: 3 }),
+      ).resolves.toEqual(arquivo);
+      expect(prismaMock.documentoCargas.findFirst).toHaveBeenCalledWith({
+        where: { id: 3, cargaQuimicaId: 10 },
+        select: { id: true },
+      });
+      expect(readFile).toHaveBeenCalledWith(
+        join(
+          process.cwd(),
+          'public',
+          'docs',
+          '10',
+          'documento-3.pdf',
+        ),
+      });
+    });
+
+    it('devolve 404 para documento sem arquivo ou de outra carga', async () => {
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.obterArquivoDocumento({ id: 10, docId: 99 }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('valida documento da carga', async () => {
