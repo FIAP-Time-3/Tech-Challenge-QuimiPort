@@ -602,13 +602,7 @@ describe('CargaQuimicaService', () => {
         { recursive: true },
       );
       expect(writeFile).toHaveBeenCalledWith(
-        join(
-          process.cwd(),
-          'public',
-          'docs',
-          '10',
-          'documento-3.pdf',
-        ),
+        join(process.cwd(), 'public', 'docs', '10', 'documento-3.pdf'),
         arquivo,
       );
     });
@@ -676,14 +670,8 @@ describe('CargaQuimicaService', () => {
         select: { id: true },
       });
       expect(readFile).toHaveBeenCalledWith(
-        join(
-          process.cwd(),
-          'public',
-          'docs',
-          '10',
-          'documento-3.pdf',
-        ),
-      });
+        join(process.cwd(), 'public', 'docs', '10', 'documento-3.pdf'),
+      );
     });
 
     it('devolve 404 para documento sem arquivo ou de outra carga', async () => {
