@@ -13,8 +13,81 @@ datasource db {
 }
 
 model ProdutosQuimicos {
-  id        Int      @id @default(autoincrement())
-  produto   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int             @id @default(autoincrement())
+  nome          String          @unique
+  descricao     String?
+  classeRisco   Int
+  status        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  cargaQuimicas CargaQuimicas[]
+}
+
+model CargaQuimicas {
+  id                   Int               @id @default(autoincrement())
+  produtoQuimicoId     Int
+  produtoQuimico       ProdutosQuimicos  @relation(fields: [produtoQuimicoId], references: [id])
+  quantidade           Int
+  unidadeMedida        String
+  origem               String            @default("NAO INFORMADA")
+  destino              String
+  responsavelTecnicoId Int?
+  responsavelTecnico   User?             @relation("ResponsavelTecnico", fields: [responsavelTecnicoId], references: [id], onDelete: Restrict)
+  dataEntrada          DateTime          @default(now())
+  statusCarga          String
+  classeRiscoONU       Int
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  movimentacoes        Movimentacoes[]
+  documentoCargases    DocumentoCargas[]
+  inspecoes            Inspecoes[]
+}
+
+model Movimentacoes {
+  id             Int           @id @default(autoincrement())
+  cargaQuimicaId Int
+  cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  step           Int
+  statusAnterior String?
+  notes          String?
+  statusAtual    String
+  usuarioId      Int?
+  date           DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([cargaQuimicaId, step])
+}
+
+model DocumentoCargas {
+  id             Int           @id @default(autoincrement())
+  cargaQuimicaId Int
+  cargaQuimica   CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  tipoDocumento  String
+  validado       Boolean
+  arquivo        Bytes?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([cargaQuimicaId, tipoDocumento])
+}
+
+model Inspecoes {
+  id                Int           @id @default(autoincrement())
+  cargaQuimicaId    Int
+  cargaQuimica      CargaQuimicas @relation(fields: [cargaQuimicaId], references: [id])
+  resultadoInspecao String
+  observacoes       String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model User {
+  id                Int             @id @default(autoincrement())
+  username          String          @unique
+  name              String
+  password          String
+  roles             String[]
+  status            Boolean         @default(true)
+  cargasComoTecnico CargaQuimicas[] @relation("ResponsavelTecnico")
 }

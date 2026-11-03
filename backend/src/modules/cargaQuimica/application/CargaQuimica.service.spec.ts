@@ -1,25 +1,718 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
+import { StatusCargaEnum as S } from '../domain/value-objects/StatusCarga.enum.js';
+import { TipoDocumentoEnum } from '../domain/value-objects/TipoDocumento.enum.js';
 import { CargaQuimicaService } from './CargaQuimica.service.js';
 
-describe('TestService', () => {
+vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+}));
+
+describe('CargaQuimicaService', () => {
   let service: CargaQuimicaService;
 
+  const prismaMock = {
+    produtosQuimicos: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn() },
+    cargaQuimicas: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
+    movimentacoes: { create: vi.fn(), aggregate: vi.fn(), findMany: vi.fn() },
+    documentoCargas: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  };
+
+  const admin = { id: 1, roles: ['ADMINISTRADOR'] };
+  const tecnico = { id: 3, status: true, roles: ['TECNICO'] };
+  const body = {
+    produtoQuimicoId: 1,
+    quantidade: 100,
+    unidadeMedida: 'kg',
+    origem: 'Rotterdam',
+    destino: 'Santos',
+    responsavelTecnicoId: 3,
+  };
+  const docsOk = [
+    { tipoDocumento: 'FISPQ', validado: true },
+    { tipoDocumento: 'NOTA_FISCAL', validado: true },
+  ];
+
+  const carga = (statusCarga: S, documentoCargases: unknown[] = []) => ({
+    id: 10,
+    produtoQuimicoId: 1,
+    responsavelTecnicoId: 3,
+    statusCarga,
+    classeRiscoONU: 3,
+    documentoCargases,
+  });
+
+  const dadosDaUltimaMovimentacao = () =>
+    prismaMock.movimentacoes.create.mock.calls[0][0].data;
+
   beforeEach(async () => {
+    vi.resetAllMocks();
+    prismaMock.$transaction.mockImplementation((cb: (tx: unknown) => unknown) =>
+      cb(prismaMock),
+    );
+    prismaMock.movimentacoes.aggregate.mockResolvedValue({ _max: { step: 1 } });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CargaQuimicaService,
-        {
-          provide: PrismaService,
-          useValue: {},
-        },
+        { provide: PrismaService, useValue: prismaMock },
       ],
     }).compile();
 
-    service = module.get<CargaQuimicaService>(CargaQuimicaService);
+    service = module.get(CargaQuimicaService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('registro', () => {
+    it('cria carga CADASTRADA, herda a classe do produto e registra o step 1', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue(tecnico);
+      prismaMock.cargaQuimicas.create.mockResolvedValue({ id: 10 });
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue({
+        ...carga(S.CADASTRADA),
+        ...body,
+      });
+
+      const result = await service.create({ body, usuario: admin });
+
+      expect(prismaMock.cargaQuimicas.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          statusCarga: 'CADASTRADA',
+          classeRiscoONU: 3,
+          responsavelTecnicoId: 3,
+        }),
+      });
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        cargaQuimicaId: 10,
+        step: 1,
+        statusAnterior: null,
+        statusAtual: 'CADASTRADA',
+        usuarioId: 1,
+      });
+      expect(result.codigo).toBe('CQ-000010');
+    });
+
+    it('recusa produto inativo', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: false,
+        classeRisco: 3,
+      });
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+
+    it('recusa produto inexistente', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue(null);
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('recusa responsável técnico inexistente', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+
+    it('recusa responsável técnico inativo', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...tecnico,
+        status: false,
+      });
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+
+    it('recusa usuário sem o perfil TECNICO', async () => {
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 1,
+        status: true,
+        classeRisco: 3,
+      });
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...tecnico,
+        roles: ['OPERADOR'],
+      });
+
+      await expect(service.create({ body, usuario: admin })).rejects.toThrow(
+        /TECNICO/,
+      );
+      expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('consultas', () => {
+    it('lista cargas em ordem crescente com documentos e código público', async () => {
+      prismaMock.cargaQuimicas.findMany.mockResolvedValue([
+        { ...carga(S.CADASTRADA), documentoCargases: [] },
+      ]);
+
+      const result = await service.findAll();
+
+      expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
+        include: {
+          produtoQuimico: true,
+          documentoCargases: {
+            select: {
+              id: true,
+              tipoDocumento: true,
+              validado: true,
+              createdAt: true,
+            },
+          },
+          responsavelTecnico: {
+            select: { id: true, name: true, username: true },
+          },
+        },
+        orderBy: { id: 'asc' },
+      });
+      expect(result[0].codigo).toBe('CQ-000010');
+    });
+
+    it('devolve 404 ao consultar carga inexistente', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.findOne({ id: 99 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('consulta histórico em ordem crescente de step', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.movimentacoes.findMany.mockResolvedValue([]);
+
+      await expect(service.historico({ id: 10 })).resolves.toEqual([]);
+
+      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
+        where: { cargaQuimicaId: 10 },
+        orderBy: { step: 'asc' },
+      });
+    });
+  });
+
+  describe('atualização de dados', () => {
+    it('devolve 404 ao atualizar carga inexistente', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.update({ id: 99, body })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('recusa trocar o produto fora de CADASTRADA', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+
+      await expect(
+        service.update({ id: 10, body: { ...body, produtoQuimicoId: 2 } }),
+      ).rejects.toThrow(ConflictException);
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('troca o produto em CADASTRADA e atualiza a classe herdada', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.CADASTRADA),
+      );
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
+        id: 2,
+        status: true,
+        classeRisco: 8,
+      });
+
+      await service.update({ id: 10, body: { ...body, produtoQuimicoId: 2 } });
+
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: expect.objectContaining({
+          produtoQuimicoId: 2,
+          classeRiscoONU: 8,
+        }),
+      });
+    });
+
+    it('mantém a classe herdada quando o produto não mudou', async () => {
+      prismaMock.cargaQuimicas.findUnique
+        .mockResolvedValueOnce(carga(S.CADASTRADA))
+        .mockResolvedValueOnce({
+          ...carga(S.CADASTRADA),
+          documentoCargases: [],
+        });
+
+      await service.update({ id: 10, body });
+
+      expect(prismaMock.produtosQuimicos.findUnique).not.toHaveBeenCalled();
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: expect.objectContaining({
+          produtoQuimicoId: 1,
+          classeRiscoONU: 3,
+        }),
+      });
+    });
+
+    it('recusa alterar carga em estado terminal', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.FINALIZADA),
+      );
+
+      await expect(service.update({ id: 10, body })).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('valida o novo técnico ao trocar o responsável', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 4,
+        status: true,
+        roles: ['OPERADOR'],
+      });
+
+      await expect(
+        service.update({ id: 10, body: { ...body, responsavelTecnicoId: 4 } }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('troca para outro técnico válido', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 4,
+        status: true,
+        roles: ['TECNICO', 'DOCUMENTACAO'],
+      });
+
+      await service.update({
+        id: 10,
+        body: { ...body, responsavelTecnicoId: 4 },
+      });
+
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: expect.objectContaining({ responsavelTecnicoId: 4 }),
+      });
+    });
+  });
+
+  describe('status', () => {
+    it('atualiza o status e registra o próximo step', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.CADASTRADA),
+      );
+
+      await service.transicionar({
+        id: 10,
+        statusDestino: S.EM_PREPARACAO,
+        usuario: admin,
+      });
+
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { statusCarga: 'EM_PREPARACAO' },
+      });
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        step: 2,
+        statusAnterior: 'CADASTRADA',
+        statusAtual: 'EM_PREPARACAO',
+      });
+    });
+
+    it('inicia step em 1 quando o histórico não possui movimentações', async () => {
+      prismaMock.cargaQuimicas.findUnique
+        .mockResolvedValueOnce(carga(S.CADASTRADA))
+        .mockResolvedValueOnce({
+          ...carga(S.EM_PREPARACAO),
+          documentoCargases: [],
+        });
+      prismaMock.movimentacoes.aggregate.mockResolvedValue({
+        _max: { step: null },
+      });
+
+      await service.transicionar({
+        id: 10,
+        statusDestino: S.EM_PREPARACAO,
+        usuario: admin,
+      });
+
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        step: 1,
+        notes: null,
+      });
+    });
+
+    it('recusa transição fora do fluxo', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.CADASTRADA),
+      );
+
+      await expect(
+        service.transicionar({
+          id: 10,
+          statusDestino: S.FINALIZADA,
+          usuario: admin,
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('recusa movimentar carga bloqueada', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.BLOQUEADA));
+
+      await expect(
+        service.transicionar({
+          id: 10,
+          statusDestino: S.EM_MOVIMENTACAO,
+          usuario: admin,
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('recusa finalizar carga em inspeção sem liberar', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO),
+      );
+
+      await expect(
+        service.transicionar({
+          id: 10,
+          statusDestino: S.FINALIZADA,
+          usuario: admin,
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('recusa quem não atua na etapa', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.CADASTRADA),
+      );
+
+      await expect(
+        service.transicionar({
+          id: 10,
+          statusDestino: S.EM_PREPARACAO,
+          usuario: { id: 5, roles: ['QUALIDADE'] },
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('devolve 404 para carga inexistente', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.transicionar({
+          id: 99,
+          statusDestino: S.EM_PREPARACAO,
+          usuario: admin,
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('liberação e bloqueio', () => {
+    it('recusa liberar sem a documentação obrigatória', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO, [{ tipoDocumento: 'FISPQ', validado: true }]),
+      );
+
+      await expect(service.liberar({ id: 10, usuario: admin })).rejects.toThrow(
+        /NOTA_FISCAL/,
+      );
+      expect(prismaMock.cargaQuimicas.update).not.toHaveBeenCalled();
+    });
+
+    it('recusa liberar com documento ainda não validado', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO, [
+          { tipoDocumento: 'FISPQ', validado: true },
+          { tipoDocumento: 'NOTA_FISCAL', validado: false },
+        ]),
+      );
+
+      await expect(service.liberar({ id: 10, usuario: admin })).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('libera com a documentação completa e validada', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO, docsOk),
+      );
+
+      await service.liberar({ id: 10, usuario: admin });
+
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        statusAnterior: 'EM_INSPECAO',
+        statusAtual: 'LIBERADA',
+      });
+    });
+
+    it('exige motivo para bloquear', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO),
+      );
+
+      await expect(
+        service.bloquear({ id: 10, motivo: '   ', usuario: admin }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cancelamento', () => {
+    it('cancela com motivo e preserva o histórico', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.LIBERADA));
+
+      await service.cancelar({
+        id: 10,
+        motivo: 'Documento inválido',
+        usuario: admin,
+      });
+
+      expect(prismaMock.cargaQuimicas.update).toHaveBeenCalledWith({
+        where: { id: 10 },
+        data: { statusCarga: 'CANCELADA' },
+      });
+      expect(dadosDaUltimaMovimentacao()).toMatchObject({
+        statusAtual: 'CANCELADA',
+        notes: 'Documento inválido',
+      });
+    });
+
+    it('exige motivo para cancelar', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.LIBERADA));
+
+      await expect(
+        service.cancelar({ id: 10, motivo: '', usuario: admin }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('recusa cancelar carga finalizada', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.FINALIZADA),
+      );
+
+      await expect(
+        service.cancelar({ id: 10, motivo: 'x', usuario: admin }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('recusa cancelar carga já cancelada', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.CANCELADA));
+
+      await expect(
+        service.cancelar({ id: 10, motivo: 'x', usuario: admin }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('só administrador e gestor cancelam', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.LIBERADA));
+
+      await expect(
+        service.cancelar({
+          id: 10,
+          motivo: 'x',
+          usuario: { id: 7, roles: ['OPERADOR'] },
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('documentos', () => {
+    it('registra documento como não validado', async () => {
+      const arquivo = Buffer.from('%PDF-1.7 conteúdo');
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+      prismaMock.documentoCargas.create.mockResolvedValue({
+        id: 3,
+        tipoDocumento: 'FISPQ',
+        validado: false,
+      });
+
+      await service.adicionarDocumento({
+        id: 10,
+        tipoDocumento: TipoDocumentoEnum.FISPQ,
+        arquivo,
+      });
+
+      expect(prismaMock.documentoCargas.create).toHaveBeenCalledWith({
+        data: {
+          cargaQuimicaId: 10,
+          tipoDocumento: 'FISPQ',
+          validado: false,
+        },
+      });
+      expect(mkdir).toHaveBeenCalledWith(
+        join(process.cwd(), 'public', 'docs', '10'),
+        { recursive: true },
+      );
+      expect(writeFile).toHaveBeenCalledWith(
+        join(process.cwd(), 'public', 'docs', '10', 'documento-3.pdf'),
+        arquivo,
+      );
+    });
+
+    it('remove o registro quando não consegue salvar o arquivo', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+      prismaMock.documentoCargas.create.mockResolvedValue({ id: 3 });
+      vi.mocked(writeFile).mockRejectedValue(new Error('Falha ao gravar'));
+
+      await expect(
+        service.adicionarDocumento({
+          id: 10,
+          tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
+        }),
+      ).rejects.toThrow('Falha ao gravar');
+      expect(prismaMock.documentoCargas.delete).toHaveBeenCalledWith({
+        where: { id: 3 },
+      });
+    });
+
+    it('recusa documento duplicado', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue({ id: 1 });
+
+      await expect(
+        service.adicionarDocumento({
+          id: 10,
+          tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('recusa adicionar documento a carga em estado terminal', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.FINALIZADA),
+      );
+
+      await expect(
+        service.adicionarDocumento({
+          id: 10,
+          tipoDocumento: TipoDocumentoEnum.FISPQ,
+          arquivo: Buffer.from('%PDF-1.7'),
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prismaMock.documentoCargas.create).not.toHaveBeenCalled();
+    });
+
+    it('retorna o PDF apenas quando o documento pertence à carga', async () => {
+      const arquivo = Buffer.from('%PDF-1.7 conteúdo');
+      prismaMock.documentoCargas.findFirst.mockResolvedValue({ id: 3 });
+      vi.mocked(readFile).mockResolvedValue(arquivo);
+
+      await expect(
+        service.obterArquivoDocumento({ id: 10, docId: 3 }),
+      ).resolves.toEqual(arquivo);
+      expect(prismaMock.documentoCargas.findFirst).toHaveBeenCalledWith({
+        where: { id: 3, cargaQuimicaId: 10 },
+        select: { id: true },
+      });
+      expect(readFile).toHaveBeenCalledWith(
+        join(process.cwd(), 'public', 'docs', '10', 'documento-3.pdf'),
+      );
+    });
+
+    it('devolve 404 para documento sem arquivo ou de outra carga', async () => {
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.obterArquivoDocumento({ id: 10, docId: 99 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('valida documento da carga', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue({
+        id: 1,
+        tipoDocumento: 'FISPQ',
+      });
+      prismaMock.documentoCargas.update.mockResolvedValue({
+        id: 1,
+        tipoDocumento: 'FISPQ',
+        validado: true,
+      });
+
+      await service.validarDocumento({ id: 10, docId: 1 });
+
+      expect(prismaMock.documentoCargas.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { validado: true },
+      });
+    });
+
+    it('devolve 404 para documento de outra carga', async () => {
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_INSPECAO),
+      );
+      prismaMock.documentoCargas.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.validarDocumento({ id: 10, docId: 99 }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 });
