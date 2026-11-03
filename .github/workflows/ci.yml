@@ -3,18 +3,20 @@ name: CI
 on:
   push:
     branches:
+      - "bruno"
       - "fase2/dev"
       - "fase2/main"
 
   pull_request:
     branches:
+      - "bruno"
       - "fase2/dev"
       - "fase2/main"
 
 jobs:
   pipeline:
     name: CI/CD Pipeline
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     defaults:
       run:
@@ -22,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -37,8 +39,65 @@ jobs:
       - name: Prepare Prisma
         run: npm run prisma:generate
 
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
 
       - name: Execute Tests
         run: npm test
+
+  docker:
+    name: Build and Test Docker Image
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Create Docker environment
+        working-directory: ./backend
+        run: |
+          cp .env.docker.example .env.docker
+
+      - name: Build and Start Docker Compose
+        run: docker compose up -d --build
+
+      - name: Check containers
+        run: docker compose ps
+
+      - name: Wait for services
+        run: |
+          timeout 120s bash -c '
+            while true; do
+              postgres_status=$(docker inspect --format="{{.State.Health.Status}}" quimiport_postgres 2>/dev/null || echo "unknown")
+              api_status=$(docker inspect --format="{{.State.Health.Status}}" $(docker compose ps -q api) 2>/dev/null || echo "unknown")
+
+              echo "PostgreSQL: $postgres_status | API: $api_status"
+
+              if [ "$postgres_status" = "healthy" ] && [ "$api_status" = "healthy" ]; then
+                echo "All services are healthy!"
+                break
+              fi
+
+              sleep 2
+            done
+          '
+      - name: Check PostgreSQL
+        run: |
+          docker compose exec -T postgres \
+            pg_isready -U postgres -d quimiport
+
+      - name: Check API health
+        run: |
+          curl --fail --retry 10 --retry-delay 2 \
+            http://localhost:3000/api/health
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Shutdown
+        if: always()
+        run: docker compose down -v

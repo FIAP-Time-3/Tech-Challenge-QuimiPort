@@ -4,6 +4,8 @@
 
 > **FIAP POSTECH — Full Stack Development | Tech Challenge — Fase 1**
 
+- [Documentação da Fase 2 (backend)](backend/README.md)
+
 ---
 
 ## 📋 Sobre o projeto
@@ -94,16 +96,16 @@ A máquina de estados definida no projeto restringe as transições possíveis e
 
 ### Principais status
 
-| Status | Descrição |
-|---|---|
-| `CADASTRADA` | Estado inicial da carga |
-| `EM_PREPARACAO` | Preparação técnica e documental |
-| `EM_INSPECAO` | Carga aguardando análise |
-| `LIBERADA` | Carga aprovada para movimentação |
-| `BLOQUEADA` | Carga impedida de avançar devido a inconsistências |
-| `EM_MOVIMENTACAO` | Transporte/movimentação em andamento |
-| `FINALIZADA` | Operação concluída |
-| `CANCELADA` | Operação encerrada excepcionalmente |
+| Status            | Descrição                                          |
+| ----------------- | -------------------------------------------------- |
+| `CADASTRADA`      | Estado inicial da carga                            |
+| `EM_PREPARACAO`   | Preparação técnica e documental                    |
+| `EM_INSPECAO`     | Carga aguardando análise                           |
+| `LIBERADA`        | Carga aprovada para movimentação                   |
+| `BLOQUEADA`       | Carga impedida de avançar devido a inconsistências |
+| `EM_MOVIMENTACAO` | Transporte/movimentação em andamento               |
+| `FINALIZADA`      | Operação concluída                                 |
+| `CANCELADA`       | Operação encerrada excepcionalmente                |
 
 ---
 
@@ -152,15 +154,15 @@ A documentação completa apresenta as responsabilidades, atributos, relacioname
 
 O domínio contempla diferentes perfis de usuários, cada um com responsabilidades específicas:
 
-| Perfil | Responsabilidade |
-|---|---|
-| **Administrador** | Administração geral do sistema e acesso às etapas da carga |
-| **Gestor operacional** | Acompanhamento e condução das etapas operacionais |
-| **Operador portuário** | Atuação nas etapas de liberação e movimentação |
-| **Responsável técnico** | Preparação e correção técnica das cargas |
-| **Analista de documentação** | Organização e anexação dos documentos obrigatórios |
-| **Analista de qualidade** | Realização da inspeção |
-| **Inspetor responsável** | Validação das informações durante a inspeção |
+| Perfil                       | Responsabilidade                                           |
+| ---------------------------- | ---------------------------------------------------------- |
+| **Administrador**            | Administração geral do sistema e acesso às etapas da carga |
+| **Gestor operacional**       | Acompanhamento e condução das etapas operacionais          |
+| **Operador portuário**       | Atuação nas etapas de liberação e movimentação             |
+| **Responsável técnico**      | Preparação e correção técnica das cargas                   |
+| **Analista de documentação** | Organização e anexação dos documentos obrigatórios         |
+| **Analista de qualidade**    | Realização da inspeção                                     |
+| **Inspetor responsável**     | Validação das informações durante a inspeção               |
 
 A definição dos perfis e respectivas responsabilidades faz parte da modelagem do domínio apresentada na documentação técnica.
 
@@ -170,15 +172,13 @@ A definição dos perfis e respectivas responsabilidades faz parte da modelagem 
 
 Os diagramas que compõem a modelagem e a arquitetura do QuimiPort estão disponíveis na pasta [`docs/diagramas`](./docs/diagramas/).
 
-| Diagrama | Descrição |
-|---|---|
-| [Diagrama de Domínio](./docs/diagramas/4.5_diagrama_de_dominio.md) | Representação das principais entidades, agregados e relacionamentos do domínio. |
-| [Diagrama de Casos de Uso](./docs/diagramas/6.1_diagrama_de_casos_de_uso.md) | Principais casos de uso e atores envolvidos. |
-| [Diagrama de Arquitetura](./docs/diagramas/8.3_diagrama_de_arquitetura.md) | Organização arquitetural e responsabilidades das camadas. |
-| [Contexto de Aplicação](./docs/diagramas/8.5_contexto_da_aplicacao.md) | Representação do contexto de aplicação. |
-| [Pirâmide de Testes](./docs/diagramas/10.3_piramide_de_testes.md) | Estratégia e níveis de testes planejados para o projeto. |
-
-
+| Diagrama                                                                     | Descrição                                                                       |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [Diagrama de Domínio](./docs/diagramas/4.5_diagrama_de_dominio.md)           | Representação das principais entidades, agregados e relacionamentos do domínio. |
+| [Diagrama de Casos de Uso](./docs/diagramas/6.1_diagrama_de_casos_de_uso.md) | Principais casos de uso e atores envolvidos.                                    |
+| [Diagrama de Arquitetura](./docs/diagramas/8.3_diagrama_de_arquitetura.md)   | Organização arquitetural e responsabilidades das camadas.                       |
+| [Contexto de Aplicação](./docs/diagramas/8.5_contexto_da_aplicacao.md)       | Representação do contexto de aplicação.                                         |
+| [Pirâmide de Testes](./docs/diagramas/10.3_piramide_de_testes.md)            | Estratégia e níveis de testes planejados para o projeto.                        |
 
 ---
 
@@ -187,7 +187,6 @@ Os diagramas que compõem a modelagem e a arquitetura do QuimiPort estão dispon
 Representa o contexto delimitado do QuimiPort e as integrações externas previstas para a evolução da solução.
 
 | [Mapa de Contexto](./docs/diagramas/4.7_mapa_de_contexto.md) | Contexto delimitado e relacionamentos com sistemas externos. |
-
 
 O QuimiPort é inicialmente tratado como um contexto delimitado único, com integrações futuras previstas para identidade, armazenamento de documentos, órgãos reguladores e notificações.
 
@@ -224,6 +223,7 @@ A escolha busca reduzir a complexidade operacional inicial, mantendo fronteiras 
 ```
 
 **Apresentação**
+
 - API REST;
 - Controllers;
 - Validação de entrada;
@@ -231,6 +231,7 @@ A escolha busca reduzir a complexidade operacional inicial, mantendo fronteiras 
 - Autenticação de entrada.
 
 **Aplicação**
+
 - Casos de uso;
 - Autorização;
 - Transações;
@@ -238,6 +239,7 @@ A escolha busca reduzir a complexidade operacional inicial, mantendo fronteiras 
 - Publicação de eventos.
 
 **Domínio**
+
 - Entidades;
 - Objetos de valor;
 - Agregados;
@@ -246,6 +248,7 @@ A escolha busca reduzir a complexidade operacional inicial, mantendo fronteiras 
 - Erros de domínio.
 
 **Infraestrutura**
+
 - Persistência;
 - ORM;
 - Banco de dados;
@@ -261,14 +264,12 @@ A estratégia de qualidade foi definida com foco em **impedir estados operaciona
 
 A estratégia contempla diferentes níveis de testes:
 
-| Tipo | Objetivo |
-|---|---|
-| **Unitários** | Validar entidades, objetos de valor, políticas e máquina de estados |
-| **Aplicação** | Validar casos de uso, autorização e orquestração |
-| **Integração** | Validar banco, API, armazenamento e contratos externos |
-| **Aceitação** | Validar os principais fluxos de negócio |
-
-
+| Tipo           | Objetivo                                                            |
+| -------------- | ------------------------------------------------------------------- |
+| **Unitários**  | Validar entidades, objetos de valor, políticas e máquina de estados |
+| **Aplicação**  | Validar casos de uso, autorização e orquestração                    |
+| **Integração** | Validar banco, API, armazenamento e contratos externos              |
+| **Aceitação**  | Validar os principais fluxos de negócio                             |
 
 Entre os cenários prioritários estão:
 
@@ -441,7 +442,7 @@ O desafio tem como objetivo consolidar os conhecimentos dessas disciplinas na co
 🟢 Planejamento de qualidade definido  
 🟢 Diagramas produzidos  
 🟢 Documentação técnica concluída  
-🟢 Vídeo de apresentação disponível  
+🟢 Vídeo de apresentação disponível
 
 > **Observação:** nesta fase, o objetivo não é entregar uma aplicação funcional. O foco é estabelecer a base técnica que será utilizada na evolução do QuimiPort nas próximas fases do curso.
 
@@ -449,13 +450,13 @@ O desafio tem como objetivo consolidar os conhecimentos dessas disciplinas na co
 
 ## 📖 Navegação rápida
 
-| Recurso | Acesso |
-|---|---|
-| 📄 Documentação técnica | [Abrir documentação](./docs/documentacao_tecnica.md) |
-| 🧩 Diagrama de domínio | [Abrir diagrama](./docs/diagramas/4.5_diagrama_de_dominio.md) |
-| 🗺️ Mapa de contexto | [Abrir diagrama](./docs/diagramas/4.7_mapa_de_contexto.md) |
-| 🔄 Fluxo de status | [Abrir diagrama](./docs/diagramas/7.1_diagrama_de_transicao.md) |
-| 🎥 Apresentação | [Assistir no YouTube](https://youtu.be/Wdpwq6Uye4E) |
+| Recurso                 | Acesso                                                          |
+| ----------------------- | --------------------------------------------------------------- |
+| 📄 Documentação técnica | [Abrir documentação](./docs/documentacao_tecnica.md)            |
+| 🧩 Diagrama de domínio  | [Abrir diagrama](./docs/diagramas/4.5_diagrama_de_dominio.md)   |
+| 🗺️ Mapa de contexto     | [Abrir diagrama](./docs/diagramas/4.7_mapa_de_contexto.md)      |
+| 🔄 Fluxo de status      | [Abrir diagrama](./docs/diagramas/7.1_diagrama_de_transicao.md) |
+| 🎥 Apresentação         | [Assistir no YouTube](https://youtu.be/Wdpwq6Uye4E)             |
 
 ---
 
@@ -465,3 +466,4 @@ Este projeto foi desenvolvido com base no enunciado oficial do **Tech Challenge 
 
 O desafio estabelece que o README deve apresentar o nome da solução, o contexto do problema, o objetivo da aplicação e a forma de navegação pela documentação.
 
+## [Documentação da Fase 2 (backend)](backend/README.md)
