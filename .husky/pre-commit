@@ -1,0 +1,15 @@
+#!/bin/sh
+
+FILES=$(git diff --cached --name-only --diff-filter=ACMR -- 'backend/**/*.ts' 'backend/**/*.tsx')
+
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+if ! echo "$FILES" | xargs npx --prefix backend prettier --check; then
+  echo ""
+  echo "Arquivos não formatados encontrados."
+  echo "antes do commit execute: npm run format"
+  echo ""
+  exit 1
+fi
