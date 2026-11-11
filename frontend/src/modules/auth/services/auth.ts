@@ -24,6 +24,7 @@ export async function authenticate(
   email: string,
   password: string,
 ): Promise<AuthSession | null> {
+  // No lugar dessa função mockada tem que fazer chamar a API.
   await new Promise((resolve) => setTimeout(resolve, 350));
 
   if (
