@@ -1,4 +1,4 @@
-import { api } from '@/shared/lib/api';
+import { api } from '@/infrastructure/api';
 
 export interface CargaQuimica {
   id: number;
