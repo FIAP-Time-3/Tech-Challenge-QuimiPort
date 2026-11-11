@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { clearAccessToken } from '@/lib/auth';
+import { clearAccessToken } from '@/modules/auth/services/auth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

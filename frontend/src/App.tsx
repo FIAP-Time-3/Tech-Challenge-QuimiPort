@@ -4,9 +4,9 @@ import {
   clearAccessToken,
   getAccessToken,
   validateAccessToken,
-} from '@/lib/auth';
-import DashboardPage from '@/pages/DashboardPage';
-import LoginPage from '@/pages/LoginPage';
+} from '@/modules/auth/services/auth';
+import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
+import LoginPage from '@/modules/auth/pages/LoginPage';
 
 function AuthGate({
   children,

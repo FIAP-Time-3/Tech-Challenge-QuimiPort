@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { clearAccessToken, getAccessToken } from '@/lib/auth';
+import { clearAccessToken, getAccessToken } from '@/modules/auth/services/auth';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',

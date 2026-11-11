@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { authenticate, saveAccessToken } from '@/lib/auth';
+import { authenticate, saveAccessToken } from '@/modules/auth/services/auth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
