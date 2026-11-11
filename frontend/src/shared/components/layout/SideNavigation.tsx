@@ -1,28 +1,51 @@
-import { FlaskConical, LayoutDashboard, Ship } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const navigation = [
-  { label: 'Visão geral', href: '#overview', icon: LayoutDashboard },
-  { label: 'Cargas', href: '#loads', icon: Ship },
-  { label: 'Produtos', href: '#products', icon: FlaskConical },
-];
+export interface SideNavigationItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  badge?: string;
+  active?: boolean;
+}
 
-function DashboardSidebar() {
+interface SideNavigationProps {
+  brand: string;
+  description?: string;
+  brandHref?: string;
+  brandIcon: LucideIcon;
+  items: SideNavigationItem[];
+  status?: {
+    title: string;
+    description: string;
+  };
+}
+
+function SideNavigation({
+  brand,
+  description,
+  brandHref = '/',
+  brandIcon: BrandIcon,
+  items,
+  status,
+}: SideNavigationProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       <a
-        href="#overview"
+        href={brandHref}
         className="flex h-[76px] items-center gap-3 border-b border-sidebar-border px-6"
       >
         <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <FlaskConical className="size-5" aria-hidden="true" />
+          <BrandIcon className="size-5" aria-hidden="true" />
         </span>
         <span>
           <span className="block text-lg font-semibold tracking-tight">
-            QuimiPort
+            {brand}
           </span>
-          <span className="block text-xs text-muted-foreground">
-            gestão portuária
-          </span>
+          {description && (
+            <span className="block text-xs text-muted-foreground">
+              {description}
+            </span>
+          )}
         </span>
       </a>
 
@@ -33,24 +56,24 @@ function DashboardSidebar() {
         <p className="px-3 pb-2 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Menu principal
         </p>
-        {navigation.map((item, index) => {
+        {items.map((item) => {
           const Icon = item.icon;
           return (
             <a
-              key={item.label}
+              key={item.href}
               href={item.href}
-              aria-current={index === 0 ? 'page' : undefined}
+              aria-current={item.active ? 'page' : undefined}
               className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${
-                index === 0
+                item.active
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }`}
             >
               <Icon className="size-4" aria-hidden="true" />
               {item.label}
-              {item.label === 'Cargas' && (
+              {item.badge && (
                 <span className="ml-auto rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
-                  12
+                  {item.badge}
                 </span>
               )}
             </a>
@@ -58,17 +81,19 @@ function DashboardSidebar() {
         })}
       </nav>
 
-      <div className="m-3 rounded-xl border border-sidebar-border bg-background p-4">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <span className="size-2 rounded-full bg-emerald-500" />
-          Sistema operacional
+      {status && (
+        <div className="m-3 rounded-xl border border-sidebar-border bg-background p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            {status.title}
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {status.description}
+          </p>
         </div>
-        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-          Dados sincronizados há poucos minutos.
-        </p>
-      </div>
+      )}
     </aside>
   );
 }
 
-export default DashboardSidebar;
+export default SideNavigation;
