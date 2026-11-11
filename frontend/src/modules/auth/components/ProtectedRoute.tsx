@@ -8,13 +8,9 @@ import {
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiresAuthentication: boolean;
 }
 
-function ProtectedRoute({
-  children,
-  requiresAuthentication,
-}: ProtectedRouteProps) {
+function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -44,8 +40,8 @@ function ProtectedRoute({
     );
   }
 
-  if (requiresAuthentication !== isAuthenticated) {
-    return <Navigate to={requiresAuthentication ? '/login' : '/'} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return children;
