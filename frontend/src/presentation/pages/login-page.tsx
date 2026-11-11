@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   Ship,
 } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,9 @@ function LoginPage({ signIn }: LoginPageProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
+  ) {
     event.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
