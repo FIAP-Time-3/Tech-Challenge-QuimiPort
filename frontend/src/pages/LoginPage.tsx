@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  Check,
   Eye,
   EyeOff,
   FlaskConical,
@@ -10,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { authenticate, type User } from '@/lib/auth';
+import { authenticate, saveAccessToken } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,7 +33,6 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
 
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
@@ -43,22 +41,24 @@ function LoginPage() {
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const user = await authenticate(email, password);
-
-    setAuthenticatedUser(user);
-    setErrorMessage(
-      user
-        ? ''
-        : 'E-mail ou senha inválidos. Confira os dados e tente novamente.',
-    );
+    const session = await authenticate(email, password);
     setIsSubmitting(false);
+
+    if (!session) {
+      setErrorMessage(
+        'E-mail ou senha inválidos. Confira os dados e tente novamente.',
+      );
+      return;
+    }
+
+    saveAccessToken(session.accessToken);
+    navigate('/', { replace: true });
   }
 
   function fillDemoCredentials() {
     setEmail(demoCredentials.email);
     setPassword(demoCredentials.password);
     setErrorMessage('');
-    setAuthenticatedUser(null);
   }
 
   return (
@@ -163,155 +163,133 @@ function LoginPage() {
           </CardHeader>
 
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
-            {authenticatedUser ? (
-              <div
-                role="status"
-                className="rounded-xl border border-emerald-200 bg-emerald-50 p-5"
-              >
-                <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                  <Check className="size-5" aria-hidden="true" />
-                </span>
-                <h2 className="mt-4 font-semibold text-emerald-950">
-                  Acesso demonstrativo autorizado
-                </h2>
-                <p className="mt-1 text-sm text-emerald-800">
-                  Olá, {authenticatedUser.name}. Você entrou como{' '}
-                  {authenticatedUser.role}.
-                </p>
-                <Button className="mt-5 w-full" onClick={() => navigate('/')}>
-                  Ir para o painel
-                  <ArrowRight aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    E-mail
-                  </label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="username"
-                    placeholder="voce@empresa.com.br"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                    className="h-10 bg-background"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="password" className="text-sm font-medium">
-                      Senha
-                    </label>
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-primary hover:underline"
-                      onClick={() =>
-                        setErrorMessage(
-                          'Para esta demonstração, use as credenciais de acesso demo.',
-                        )
-                      }
-                    >
-                      Esqueceu a senha?
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      placeholder="Digite sua senha"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      required
-                      className="h-10 bg-background pr-11"
-                    />
-                    <button
-                      type="button"
-                      aria-label={
-                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
-                      }
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword((visible) => !visible)}
-                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" aria-hidden="true" />
-                      ) : (
-                        <Eye className="size-4" aria-hidden="true" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    className="size-4 rounded border-input accent-primary"
-                  />
-                  Manter conectado
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  E-mail
                 </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  placeholder="voce@empresa.com.br"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  className="h-10 bg-background"
+                />
+              </div>
 
-                {errorMessage && (
-                  <p
-                    role="alert"
-                    className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Senha
+                  </label>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-primary hover:underline"
+                    onClick={() =>
+                      setErrorMessage(
+                        'Para esta demonstração, use as credenciais de acesso demo.',
+                      )
+                    }
                   >
-                    {errorMessage}
-                  </p>
-                )}
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    className="h-10 bg-background pr-11"
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                    }
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="size-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  className="h-10 w-full"
-                  disabled={isSubmitting}
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  className="size-4 rounded border-input accent-primary"
+                />
+                Manter conectado
+              </label>
+
+              {errorMessage && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
                 >
-                  {isSubmitting ? 'Verificando acesso...' : 'Entrar'}
-                  {!isSubmitting && <ArrowRight aria-hidden="true" />}
-                </Button>
+                  {errorMessage}
+                </p>
+              )}
 
-                <div className="relative py-1">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-card px-3 text-xs text-muted-foreground">
-                      acesso de demonstração
-                    </span>
-                  </div>
-                </div>
+              <Button
+                type="submit"
+                className="h-10 w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Verificando acesso...' : 'Entrar'}
+                {!isSubmitting && <ArrowRight aria-hidden="true" />}
+              </Button>
 
-                <div className="rounded-lg border border-border bg-muted/40 p-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-xs leading-relaxed">
-                      <p className="font-medium text-foreground">
-                        Conta de operador
-                      </p>
-                      <p className="mt-1 text-muted-foreground">
-                        marina@quimiport.com.br
-                      </p>
-                      <p className="text-muted-foreground">
-                        Senha: quimiport2026
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 bg-background"
-                      onClick={fillDemoCredentials}
-                    >
-                      Preencher
-                    </Button>
-                  </div>
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
                 </div>
-              </form>
-            )}
+                <div className="relative flex justify-center">
+                  <span className="bg-card px-3 text-xs text-muted-foreground">
+                    acesso de demonstração
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/40 p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-xs leading-relaxed">
+                    <p className="font-medium text-foreground">
+                      Conta de operador
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      marina@quimiport.com.br
+                    </p>
+                    <p className="text-muted-foreground">
+                      Senha: quimiport2026
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 bg-background"
+                    onClick={fillDemoCredentials}
+                  >
+                    Preencher
+                  </Button>
+                </div>
+              </div>
+            </form>
           </CardContent>
         </Card>
 

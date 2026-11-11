@@ -8,11 +8,14 @@ import {
   ClipboardList,
   FlaskConical,
   LayoutDashboard,
+  LogOut,
   Search,
   Ship,
   Warehouse,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { clearAccessToken } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -131,6 +134,7 @@ function LoadStatus({ status }: { status: string }) {
 
 export default function DashboardPage() {
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
   const filteredLoads = loads.filter((load) =>
     `${load.code} ${load.product} ${load.origin} ${load.status}`
       .toLocaleLowerCase('pt-BR')
@@ -230,6 +234,17 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Operações</p>
               </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                clearAccessToken();
+                navigate('/login', { replace: true });
+              }}
+            >
+              <LogOut aria-hidden="true" />
+              Sair
+            </Button>
           </div>
         </header>
 
