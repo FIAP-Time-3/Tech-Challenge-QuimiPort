@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { authenticate, type User } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,19 +21,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import type { User } from '@/domain/entities/user';
-import type { SignInUseCase } from '@/application/use-cases/sign-in';
-
-interface LoginPageProps {
-  signIn: SignInUseCase;
-}
 
 const demoCredentials = {
   email: 'marina@quimiport.com.br',
   password: 'quimiport2026',
 };
 
-function LoginPage({ signIn }: LoginPageProps) {
+function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,7 +43,7 @@ function LoginPage({ signIn }: LoginPageProps) {
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const user = await signIn.execute({ email, password });
+    const user = await authenticate(email, password);
 
     setAuthenticatedUser(user);
     setErrorMessage(

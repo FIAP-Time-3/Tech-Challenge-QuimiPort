@@ -129,7 +129,7 @@ function LoadStatus({ status }: { status: string }) {
   );
 }
 
-function DashboardPage() {
+export default function DashboardPage() {
   const [search, setSearch] = useState('');
   const filteredLoads = loads.filter((load) =>
     `${load.code} ${load.product} ${load.origin} ${load.status}`
@@ -516,5 +516,3 @@ function DashboardPage() {
     </div>
   );
 }
-
-export default DashboardPage;
