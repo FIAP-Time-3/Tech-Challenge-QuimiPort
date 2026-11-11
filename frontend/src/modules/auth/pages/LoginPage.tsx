@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { authenticate, saveAccessToken } from '@/modules/auth/services/auth';
+import { demoCredentials } from '@/infrastructure/mocks/auth';
+import { login } from '@/modules/auth/use-cases/login';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -20,11 +21,6 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
-
-const demoCredentials = {
-  email: 'marina@quimiport.com.br',
-  password: 'quimiport2026',
-};
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -41,7 +37,7 @@ function LoginPage() {
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const session = await authenticate(email, password);
+    const session = await login(email, password);
     setIsSubmitting(false);
 
     if (!session) {
@@ -51,7 +47,6 @@ function LoginPage() {
       return;
     }
 
-    saveAccessToken(session.accessToken);
     navigate('/', { replace: true });
   }
 

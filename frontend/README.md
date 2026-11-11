@@ -16,28 +16,14 @@ npm install
 npm run dev
 ```
 
-Para configurar a URL da API, copie `.env.example` para `.env.local` e ajuste
-`VITE_API_URL`:
+Os dados de demonstração ficam em `src/infrastructure/mocks`. O login e os
+serviços de cargas usam esses mocks; nenhuma chamada ao backend é feita neste
+momento.
 
-```env
-VITE_API_URL=http://localhost:3000/api
-```
-
-O cliente Axios centralizado está em `src/lib/api.ts`. Ele envia o access token
-como `Bearer` automaticamente e redireciona para `/login` se a API responder
-com `401`. As chamadas tipadas de cargas estão em `src/services/cargas.ts`.
-
-Exemplo de uso em uma página ou componente:
-
-```ts
-import { listarCargas } from '@/services/cargas';
-
-const cargas = await listarCargas();
-```
-
-O login atual é demonstrativo e gera um token fake; portanto, chamadas à API
-que exigem um JWT real só funcionarão depois da integração com o endpoint de
-autenticação do backend.
+O cliente Axios para a futura integração com o backend está em
+`src/infrastructure/backend/api.ts`. Configure `VITE_API_URL` no ambiente
+quando for habilitar chamadas reais; os serviços de cargas continuam usando
+os mocks até essa integração.
 
 O Vite informa no terminal o endereço local da aplicação.
 

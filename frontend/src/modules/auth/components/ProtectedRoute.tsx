@@ -1,10 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router';
-import {
-  clearAccessToken,
-  getAccessToken,
-  validateAccessToken,
-} from '@/modules/auth/services/auth';
+import { validateSession } from '@/modules/auth/use-cases/validateSession';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -15,13 +11,8 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     let isMounted = true;
-    const accessToken = getAccessToken();
 
-    void validateAccessToken(accessToken ?? '').then((isValid) => {
-      if (!isValid) {
-        clearAccessToken();
-      }
-
+    void validateSession().then((isValid) => {
       if (isMounted) {
         setIsAuthenticated(isValid);
       }
