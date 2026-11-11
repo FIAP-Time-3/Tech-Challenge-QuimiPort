@@ -73,7 +73,7 @@ function DashboardPage() {
             active: true,
           },
           { label: 'Cargas', href: '#loads', icon: Ship, badge: '12' },
-          { label: 'Produtos', href: '#products', icon: FlaskConical },
+          { label: 'Produtos', href: '/produtos', icon: FlaskConical },
         ]}
         status={{
           title: 'Sistema operacional',
