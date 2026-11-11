@@ -16,16 +16,16 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { clearAccessToken } from '@/modules/auth/services/auth';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+} from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
 
 const navigation = [
   { label: 'Visão geral', href: '#overview', icon: LayoutDashboard },
