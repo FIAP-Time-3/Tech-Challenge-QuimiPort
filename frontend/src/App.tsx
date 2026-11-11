@@ -1,55 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
-import {
-  clearAccessToken,
-  getAccessToken,
-  validateAccessToken,
-} from '@/modules/auth/services/auth';
+import { BrowserRouter, Route, Routes } from 'react-router';
+import ProtectedRoute from '@/modules/auth/components/ProtectedRoute';
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage';
 import LoginPage from '@/modules/auth/pages/LoginPage';
-
-function AuthGate({
-  children,
-  requiresAuthentication,
-}: {
-  children: ReactNode;
-  requiresAuthentication: boolean;
-}) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const accessToken = getAccessToken();
-
-    void validateAccessToken(accessToken ?? '').then((isValid) => {
-      if (!isValid) {
-        clearAccessToken();
-      }
-
-      if (isMounted) {
-        setIsAuthenticated(isValid);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (isAuthenticated === null) {
-    return (
-      <main className="flex min-h-svh items-center justify-center bg-background text-sm text-muted-foreground">
-        Verificando acesso...
-      </main>
-    );
-  }
-
-  if (requiresAuthentication !== isAuthenticated) {
-    return <Navigate to={requiresAuthentication ? '/login' : '/'} replace />;
-  }
-
-  return children;
-}
 
 function App() {
   return (
@@ -58,17 +10,17 @@ function App() {
         <Route
           path="/"
           element={
-            <AuthGate key="dashboard" requiresAuthentication>
+            <ProtectedRoute key="dashboard" requiresAuthentication>
               <DashboardPage />
-            </AuthGate>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/login"
           element={
-            <AuthGate key="login" requiresAuthentication={false}>
+            <ProtectedRoute key="login" requiresAuthentication={false}>
               <LoginPage />
-            </AuthGate>
+            </ProtectedRoute>
           }
         />
       </Routes>
