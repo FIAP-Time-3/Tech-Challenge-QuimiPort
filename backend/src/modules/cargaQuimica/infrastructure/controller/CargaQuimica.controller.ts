@@ -87,7 +87,8 @@ export class CargaQuimicaController {
   })
   @ApiParam({ name: 'status', enum: StatusCargaEnum })
   @ApiOkResponse({
-    description: 'Lista de próximos status permitidos pela matriz de transições',
+    description:
+      'Lista de próximos status permitidos pela matriz de transições',
     schema: {
       type: 'array',
       items: { type: 'string', enum: Object.values(StatusCargaEnum) },
@@ -98,7 +99,8 @@ export class CargaQuimicaController {
     description: 'Dados inválidos, status inexistente',
   })
   transicoes(
-    @Param('status', new ParseEnumPipe(StatusCargaEnum)) status: StatusCargaEnum,
+    @Param('status', new ParseEnumPipe(StatusCargaEnum))
+    status: StatusCargaEnum,
   ): readonly StatusCargaEnum[] {
     return transicoes[status];
   }

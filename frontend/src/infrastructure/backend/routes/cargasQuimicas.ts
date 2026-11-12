@@ -6,12 +6,17 @@ import type {
   DocumentoResponseDto,
   MotivoRequestDto,
   MovimentacaoResponseDto,
+  StatusCarga,
+  TransicoesResponseDto,
   UpdateStatusRequestDto,
 } from '../dtos/cargasQuimicas';
 
 const baseUrl = 'cargas-quimicas';
 
 export const cargaQuimicaApiRoutes = {
+  transicoes: (status: StatusCarga) => {
+    return api.get<TransicoesResponseDto>(`${baseUrl}/transicoes/${status}`);
+  },
   create: (data: CreateOrUpdateCargaQuimicaRequestDto) => {
     return api.post<CargaQuimicaResponseDto>(baseUrl, data);
   },

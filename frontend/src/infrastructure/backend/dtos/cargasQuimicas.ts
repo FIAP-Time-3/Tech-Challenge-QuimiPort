@@ -10,6 +10,8 @@ export type StatusCarga =
 
 export type TipoDocumento = 'FISPQ' | 'NOTA_FISCAL';
 
+export type TransicoesResponseDto = StatusCarga[];
+
 export interface CreateOrUpdateCargaQuimicaRequestDto {
   produtoQuimicoId: number;
   quantidade: number;
