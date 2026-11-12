@@ -27,7 +27,7 @@ on:
 
 jobs:
   pipeline:
-    name: CI/CD Pipeline
+    name: Build and Test Node
     runs-on: ubuntu-24.04
 
     defaults:

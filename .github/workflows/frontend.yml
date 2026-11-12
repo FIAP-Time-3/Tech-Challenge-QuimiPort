@@ -1,0 +1,35 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - "bruno"
+      - "planning_bruno"
+      - "fase3/dev"
+      - "fase3/main"
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+
+  pull_request:
+    branches:
+      - "bruno"
+      - "planning_bruno"
+      - "fase3/dev"
+      - "fase3/main"
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+
+jobs:
+  pipeline:
+    name: CI/CD Pipeline
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
