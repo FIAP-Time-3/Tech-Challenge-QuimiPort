@@ -9,6 +9,9 @@ on:
       - "fase3/main"
     paths:
       - "frontend/**"
+      - ".docker/Dockerfile.frontend"
+      - ".docker/nginx.conf"
+      - "docker-compose.yml"
       - ".github/workflows/frontend.yml"
 
   pull_request:
@@ -19,17 +22,65 @@ on:
       - "fase3/main"
     paths:
       - "frontend/**"
+      - ".docker/Dockerfile.frontend"
+      - ".docker/nginx.conf"
+      - "docker-compose.yml"
       - ".github/workflows/frontend.yml"
 
 jobs:
   pipeline:
-    name: CI/CD Pipeline
+    name: Lint and Build
     runs-on: ubuntu-24.04
 
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./frontend
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck and build
+        run: npm run build
+
+  docker:
+    name: Build and Test Docker Compose
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Create Docker environment
+        run: cp backend/.env.docker.example backend/.env.docker
+
+      - name: Build and start services
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - name: Check frontend and SPA routes
+        run: |
+          curl --fail http://localhost:8080/
+          curl --fail http://localhost:8080/login
+
+      - name: Check API proxy
+        run: curl --fail http://localhost:8080/api/health
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Shutdown
+        if: always()
+        run: docker compose down -v

@@ -1,9 +1,25 @@
-# Comando para executar compose (API e Banco):
+# Comando para executar compose (Frontend, API e Banco):
 # docker compose up -d
 # OU caso precise somente do banco:
 # docker compose up -d postgres
 
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: ./backend

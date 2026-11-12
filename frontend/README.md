@@ -27,7 +27,20 @@ os mocks até essa integração.
 
 O Vite informa no terminal o endereço local da aplicação.
 
-## Verificações
+## Execução com Docker
+
+Na raiz do repositório, crie o arquivo de ambiente da API e suba os serviços:
+
+```bash
+cp backend/.env.docker.example backend/.env.docker
+docker compose up -d --build
+```
+
+O frontend fica em http://localhost:8080. O Nginx serve a aplicação, permite
+acessar diretamente as rotas do React e encaminha `/api/` para a API.
+Na imagem Docker, `VITE_API_URL` é definida como `/api` durante o build.
+
+## Verificações locais e CI
 
 ```bash
 npm run build
