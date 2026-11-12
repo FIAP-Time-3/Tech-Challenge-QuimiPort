@@ -13,17 +13,16 @@ Na pasta `frontend/`:
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 Os dados de demonstração ficam em `src/infrastructure/mocks`. O login e os
-serviços de cargas usam esses mocks; nenhuma chamada ao backend é feita neste
-momento.
+serviços de cargas usam esses mocks. A página pública `/health` consulta a API
+por meio do cliente Axios em `src/infrastructure/backend/api.ts`.
 
-O cliente Axios para a futura integração com o backend está em
-`src/infrastructure/backend/api.ts`. Configure `VITE_API_URL` no ambiente
-quando for habilitar chamadas reais; os serviços de cargas continuam usando
-os mocks até essa integração.
+O arquivo `.env` configura a API local em `http://localhost:3010/api`. Para
+usar outro endereço, altere `VITE_API_URL` e reinicie o servidor do Vite.
 
 O Vite informa no terminal o endereço local da aplicação.
 
