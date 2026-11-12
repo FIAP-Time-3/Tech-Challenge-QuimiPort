@@ -29,13 +29,13 @@ function ListarProdutosQuimicosPage() {
   const [deleting, setDeleting] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    let active = true;
+    let isEffectActive = true;
     listarProdutosQuimicos()
       .then((data) => {
-        if (active) setProducts(data);
+        if (isEffectActive) setProducts(data);
       })
       .catch((error: unknown) => {
-        if (active)
+        if (isEffectActive)
           setLoadError(
             mensagemErroProdutoQuimico(
               error,
@@ -44,10 +44,10 @@ function ListarProdutosQuimicosPage() {
           );
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isEffectActive) setLoading(false);
       });
     return () => {
-      active = false;
+      isEffectActive = false;
     };
   }, [attempt]);
   const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');

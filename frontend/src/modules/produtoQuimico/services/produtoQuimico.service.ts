@@ -6,7 +6,7 @@ import type {
   ProdutoQuimicoInput,
 } from '@/modules/produtoQuimico/models/produtoQuimico';
 
-function toProduct(data: ProdutoQuimicoResponseDto): ProdutoQuimico {
+function paraProdutoQuimico(data: ProdutoQuimicoResponseDto): ProdutoQuimico {
   return {
     id: data.id,
     nome: data.nome,
@@ -20,7 +20,7 @@ function toProduct(data: ProdutoQuimicoResponseDto): ProdutoQuimico {
 
 export async function listarProdutosQuimicos(): Promise<ProdutoQuimico[]> {
   const { data } = await produtoQuimicoApiRoutes.findAll();
-  return data.map(toProduct);
+  return data.map(paraProdutoQuimico);
 }
 
 export async function buscarProdutoQuimico(
@@ -28,7 +28,7 @@ export async function buscarProdutoQuimico(
 ): Promise<ProdutoQuimico | null> {
   try {
     const { data } = await produtoQuimicoApiRoutes.findOne(id);
-    return toProduct(data);
+    return paraProdutoQuimico(data);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404)
       return null;
@@ -40,7 +40,7 @@ export async function criarProdutoQuimico(
   input: ProdutoQuimicoInput,
 ): Promise<ProdutoQuimico> {
   const { data } = await produtoQuimicoApiRoutes.create(input);
-  return toProduct(data);
+  return paraProdutoQuimico(data);
 }
 
 export async function atualizarProdutoQuimico(
@@ -48,7 +48,7 @@ export async function atualizarProdutoQuimico(
   input: ProdutoQuimicoInput,
 ): Promise<ProdutoQuimico> {
   const { data } = await produtoQuimicoApiRoutes.update(id, input);
-  return toProduct(data);
+  return paraProdutoQuimico(data);
 }
 
 export async function excluirProdutoQuimico(id: number): Promise<void> {
@@ -59,5 +59,5 @@ export async function inativarProdutoQuimico(
   id: number,
 ): Promise<ProdutoQuimico> {
   const { data } = await produtoQuimicoApiRoutes.inativar(id);
-  return toProduct(data);
+  return paraProdutoQuimico(data);
 }

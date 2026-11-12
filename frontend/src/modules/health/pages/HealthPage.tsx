@@ -23,19 +23,19 @@ function HealthPage() {
 
   useEffect(() => {
     const request = getHealth();
-    let active = true;
+    let isEffectActive = true;
     async function loadHealth() {
       try {
         const data = await request.promise;
-        if (active) setState({ kind: 'loaded', data });
+        if (isEffectActive) setState({ kind: 'loaded', data });
       } catch {
-        if (active) setState({ kind: 'error' });
+        if (isEffectActive) setState({ kind: 'error' });
       }
     }
 
     void loadHealth();
     return () => {
-      active = false;
+      isEffectActive = false;
       request.cancel();
     };
   }, [attempt]);

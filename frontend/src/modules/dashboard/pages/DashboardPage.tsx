@@ -27,13 +27,13 @@ function DashboardPage() {
   const [search, setSearch] = useState('');
   const [data, setData] = useState<{
     loads: CargaQuimicaResponseDto[];
-    products: number | null;
+    totalProdutos: number | null;
   } | null>(null);
-  const [error, setError] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const user = useCurrentUser();
   useEffect(() => {
-    let active = true;
+    let isEffectActive = true;
     Promise.all([
       cargaQuimicaApiRoutes.findAll(),
       produtoQuimicoApiRoutes.findAll().catch((error: unknown) => {
@@ -43,17 +43,17 @@ function DashboardPage() {
       }),
     ])
       .then(([loads, products]) => {
-        if (active)
+        if (isEffectActive)
           setData({
             loads: loads.data,
-            products: products?.data.length ?? null,
+            totalProdutos: products?.data.length ?? null,
           });
       })
       .catch(() => {
-        if (active) setError(true);
+        if (isEffectActive) setHasLoadError(true);
       });
     return () => {
-      active = false;
+      isEffectActive = false;
     };
   }, [attempt]);
 
@@ -72,10 +72,10 @@ function DashboardPage() {
     },
     {
       label: 'Produtos cadastrados',
-      value: data?.products == null ? '—' : String(data.products),
+      value: data?.totalProdutos == null ? '—' : String(data.totalProdutos),
       change: '',
       detail:
-        data?.products == null
+        data?.totalProdutos == null
           ? 'Sem permissão para consultar produtos'
           : 'Total no catálogo',
       icon: FlaskConical,
@@ -137,12 +137,12 @@ function DashboardPage() {
       >
         Olá, {user.name}
       </Title>
-      {error ? (
+      {hasLoadError ? (
         <div role="alert" className="space-y-3">
           <p>Não foi possível carregar os dados do painel.</p>
           <Button
             onClick={() => {
-              setError(false);
+              setHasLoadError(false);
               setData(null);
               setAttempt((value) => value + 1);
             }}

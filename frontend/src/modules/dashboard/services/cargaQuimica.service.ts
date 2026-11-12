@@ -1,4 +1,3 @@
-import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargaQuimica.routes';
 import type {
   CargaQuimicaResponseDto,
   StatusCarga,
@@ -28,19 +27,4 @@ export function paraCargaQuimicaResumo(
     status: rotulosStatusCarga[load.statusCarga],
     updated: new Date(load.updatedAt).toLocaleString('pt-BR'),
   };
-}
-
-export async function listarCargasQuimicas(): Promise<CargaQuimicaResumo[]> {
-  const { data } = await cargaQuimicaApiRoutes.findAll();
-  return data
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map(paraCargaQuimicaResumo);
-}
-
-export async function buscarCargaQuimica(
-  codigo: string,
-): Promise<CargaQuimicaResumo | null> {
-  return (
-    (await listarCargasQuimicas()).find((load) => load.code === codigo) ?? null
-  );
 }

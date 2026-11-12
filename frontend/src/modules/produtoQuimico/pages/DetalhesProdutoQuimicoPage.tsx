@@ -23,13 +23,13 @@ export default function DetalhesProdutoQuimicoPage() {
 
 function DetalhesProdutoQuimico({ id }: { id: number }) {
   const { state, retry } = useProdutoQuimico(id);
-  const [confirming, setConfirming] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  async function deactivate() {
-    if (saving) return;
-    setSaving(true);
+  async function handleDeactivate() {
+    if (isDeactivating) return;
+    setIsDeactivating(true);
     setError('');
     setSuccess('');
     try {
@@ -44,8 +44,8 @@ function DetalhesProdutoQuimico({ id }: { id: number }) {
         ),
       );
     } finally {
-      setSaving(false);
-      setConfirming(false);
+      setIsDeactivating(false);
+      setIsDeactivateDialogOpen(false);
     }
   }
   return (
@@ -154,7 +154,10 @@ function DetalhesProdutoQuimico({ id }: { id: number }) {
                   Inative o produto para impedir seu uso em novas cargas. Os
                   registros e as cargas existentes serão preservados.
                 </p>
-                <Button variant="outline" onClick={() => setConfirming(true)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDeactivateDialogOpen(true)}
+                >
                   <PowerOff aria-hidden="true" />
                   Inativar produto
                 </Button>
@@ -164,15 +167,15 @@ function DetalhesProdutoQuimico({ id }: { id: number }) {
         </>
       )}
       <ConfirmDialog
-        open={confirming}
+        open={isDeactivateDialogOpen}
         title="Inativar produto?"
         description="O produto deixará de estar disponível para novas cargas. Você pode reativá-lo pela edição."
-        confirmLabel={saving ? 'Inativando...' : 'Inativar produto'}
-        pending={saving}
+        confirmLabel={isDeactivating ? 'Inativando...' : 'Inativar produto'}
+        pending={isDeactivating}
         onOpenChange={(open) => {
-          if (!saving) setConfirming(open);
+          if (!isDeactivating) setIsDeactivateDialogOpen(open);
         }}
-        onConfirm={deactivate}
+        onConfirm={handleDeactivate}
       />
     </>
   );

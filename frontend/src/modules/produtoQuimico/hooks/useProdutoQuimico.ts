@@ -15,16 +15,16 @@ export function useProdutoQuimico(id: number) {
   const validId = Number.isSafeInteger(id) && id > 0;
   useEffect(() => {
     if (!validId) return;
-    let active = true;
+    let isEffectActive = true;
     buscarProdutoQuimico(id)
       .then((product) => {
-        if (active)
+        if (isEffectActive)
           setState(
             product ? { kind: 'loaded', product } : { kind: 'not-found' },
           );
       })
       .catch((error: unknown) => {
-        if (active)
+        if (isEffectActive)
           setState({
             kind: 'error',
             message: mensagemErroProdutoQuimico(
@@ -34,7 +34,7 @@ export function useProdutoQuimico(id: number) {
           });
       });
     return () => {
-      active = false;
+      isEffectActive = false;
     };
   }, [id, validId, attempt]);
 
