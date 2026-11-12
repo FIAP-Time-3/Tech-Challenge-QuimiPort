@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseEnumPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -32,6 +33,8 @@ import { RolesEnum } from '../../../../infra/security/enums/roles.enum.js';
 import { CargaQuimicaService } from '../../application/CargaQuimica.service.js';
 import { type UsuarioLogado } from '../../application/CargaQuimica.permissoes.js';
 import { TipoDocumentoEnum } from '../../domain/value-objects/TipoDocumento.enum.js';
+import { StatusCargaEnum } from '../../domain/value-objects/StatusCarga.enum.js';
+import { transicoes } from '../../domain/CargaQuimica.transicoes.js';
 import {
   CreateDocumentoDto,
   CreateOrUpdateCargaQuimicaDto,
@@ -75,6 +78,30 @@ const PERFIS_VALIDAR_DOCUMENTO = [
 @Controller('cargas-quimicas')
 export class CargaQuimicaController {
   constructor(private readonly service: CargaQuimicaService) {}
+
+  @Get('transicoes/:status')
+  @ApiOperation({
+    summary: 'Consultar transições permitidas por status',
+    description:
+      'Retorna os próximos status previstos na matriz de transições. Não considera o perfil do usuário nem a documentação da carga. Status terminais retornam uma lista vazia.',
+  })
+  @ApiParam({ name: 'status', enum: StatusCargaEnum })
+  @ApiOkResponse({
+    description: 'Lista de próximos status permitidos pela matriz de transições',
+    schema: {
+      type: 'array',
+      items: { type: 'string', enum: Object.values(StatusCargaEnum) },
+      example: [StatusCargaEnum.EM_PREPARACAO, StatusCargaEnum.CANCELADA],
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos, status inexistente',
+  })
+  transicoes(
+    @Param('status', new ParseEnumPipe(StatusCargaEnum)) status: StatusCargaEnum,
+  ): readonly StatusCargaEnum[] {
+    return transicoes[status];
+  }
 
   @AllowedRoles(PERFIS_CADASTRO)
   @ApiOperation({
