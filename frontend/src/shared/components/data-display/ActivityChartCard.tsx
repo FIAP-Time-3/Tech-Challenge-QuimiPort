@@ -50,7 +50,9 @@ function ActivityChartCard({
                 className={`w-full max-w-10 rounded-t-md transition-colors ${
                   index === highlightIndex ? 'bg-primary' : 'bg-primary/15'
                 }`}
-                style={{ height: `${item.value}%` }}
+                style={{
+                  height: `${(item.value / Math.max(1, ...data.map((entry) => entry.value))) * 100}%`,
+                }}
                 role="img"
                 aria-label={`${item.label}: ${item.value}`}
               />

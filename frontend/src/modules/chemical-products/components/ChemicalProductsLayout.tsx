@@ -1,3 +1,4 @@
+import { getCurrentUser } from '@/modules/auth/services/currentUser';
 import { FlaskConical, LayoutDashboard, Package } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { logout } from '@/modules/auth/use-cases/logout';
@@ -35,10 +36,6 @@ function ChemicalProductsLayout() {
             active: isProductsPage,
           },
         ]}
-        status={{
-          title: 'Sistema operacional',
-          description: 'Dados sincronizados há poucos minutos.',
-        }}
       />
       <div className="lg:pl-64">
         <PageHeader
@@ -52,7 +49,7 @@ function ChemicalProductsLayout() {
                   : 'Edição de produto'
               : 'Produtos químicos'
           }
-          user={{ name: 'Marina Costa', role: 'Operações', initials: 'MC' }}
+          user={getCurrentUser()}
           onLogout={handleLogout}
         />
         <main className="mx-auto max-w-[1440px] space-y-6 p-4 sm:p-8">

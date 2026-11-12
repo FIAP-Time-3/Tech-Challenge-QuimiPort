@@ -3,6 +3,7 @@ import { Button } from '@/shared/components/ui/button';
 
 interface ConfirmDialogProps {
   open: boolean;
+  pending?: boolean;
   title: string;
   description: string;
   confirmLabel?: string;
@@ -13,6 +14,7 @@ interface ConfirmDialogProps {
 
 function ConfirmDialog({
   open,
+  pending = false,
   title,
   description,
   confirmLabel = 'Confirmar',
@@ -62,12 +64,18 @@ function ConfirmDialog({
         <div className="flex justify-end gap-2 pt-4">
           <Button
             type="button"
+            disabled={pending}
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
             {cancelLabel}
           </Button>
-          <Button type="button" variant="destructive" onClick={onConfirm}>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </div>

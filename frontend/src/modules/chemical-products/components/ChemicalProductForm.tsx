@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import type { ChemicalProductInput } from '@/modules/chemical-products/models/chemicalProduct';
 import { Button } from '@/shared/components/ui/button';
@@ -13,7 +13,7 @@ import { Input } from '@/shared/components/ui/input';
 interface ChemicalProductFormProps {
   title: string;
   initialValue?: ChemicalProductInput;
-  onSubmit: (input: ChemicalProductInput) => void;
+  onSubmit: (input: ChemicalProductInput) => Promise<void>;
 }
 
 function ChemicalProductForm({
@@ -21,7 +21,9 @@ function ChemicalProductForm({
   initialValue,
   onSubmit,
 }: ChemicalProductFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const nome = String(formData.get('nome') ?? '').trim();
@@ -29,7 +31,18 @@ function ChemicalProductForm({
     const classeRisco = Number(formData.get('classeRisco'));
     const status = formData.get('status') === 'on';
 
-    onSubmit({ nome, descricao, classeRisco, status });
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onSubmit({ nome, descricao, classeRisco, status });
+    } catch {
+      setError(
+        'Não foi possível salvar o produto. Confira os dados, o nome duplicado e suas permissões.',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -98,11 +111,18 @@ function ChemicalProductForm({
               Produto ativo
             </label>
           </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <div className="flex justify-end gap-2 border-t border-border pt-5">
             <Button asChild variant="outline">
               <Link to="/produtos">Cancelar</Link>
             </Button>
-            <Button type="submit">Salvar produto</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar produto'}
+            </Button>
           </div>
         </form>
       </CardContent>

@@ -1,49 +1,54 @@
-import { chemicalProducts } from '@/infrastructure/mocks/chemicalProducts';
+import axios from 'axios';
+import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtosQuimicos';
+import type { ProdutoQuimicoResponseDto } from '@/infrastructure/backend/dtos/produtosQuimicos';
 import type {
   ChemicalProduct,
   ChemicalProductInput,
 } from '@/modules/chemical-products/models/chemicalProduct';
 
-export function listChemicalProducts(): ChemicalProduct[] {
-  return chemicalProducts.map((product) => ({ ...product }));
-}
-
-export function getChemicalProduct(id: number): ChemicalProduct | null {
-  return chemicalProducts.find((product) => product.id === id) ?? null;
-}
-
-export function createChemicalProduct(
-  input: ChemicalProductInput,
-): ChemicalProduct {
-  const product: ChemicalProduct = {
-    ...input,
-    id: Math.max(0, ...chemicalProducts.map(({ id }) => id)) + 1,
+function toProduct(data: ProdutoQuimicoResponseDto): ChemicalProduct {
+  return {
+    id: data.id,
+    nome: data.nome,
+    descricao: data.descricao ?? '',
+    classeRisco: data.classeRisco,
+    status: data.status,
   };
-  chemicalProducts.push(product);
-  return { ...product };
 }
 
-export function updateChemicalProduct(
+export async function listChemicalProducts(): Promise<ChemicalProduct[]> {
+  const { data } = await produtoQuimicoApiRoutes.findAll();
+  return data.map(toProduct);
+}
+
+export async function getChemicalProduct(
+  id: number,
+): Promise<ChemicalProduct | null> {
+  try {
+    const { data } = await produtoQuimicoApiRoutes.findOne(id);
+    return toProduct(data);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404)
+      return null;
+    throw error;
+  }
+}
+
+export async function createChemicalProduct(
+  input: ChemicalProductInput,
+): Promise<ChemicalProduct> {
+  const { data } = await produtoQuimicoApiRoutes.create(input);
+  return toProduct(data);
+}
+
+export async function updateChemicalProduct(
   id: number,
   input: ChemicalProductInput,
-): ChemicalProduct | null {
-  const index = chemicalProducts.findIndex((product) => product.id === id);
-
-  if (index === -1) {
-    return null;
-  }
-
-  chemicalProducts[index] = { ...input, id };
-  return { ...chemicalProducts[index] };
+): Promise<ChemicalProduct> {
+  const { data } = await produtoQuimicoApiRoutes.update(id, input);
+  return toProduct(data);
 }
 
-export function deleteChemicalProduct(id: number): boolean {
-  const index = chemicalProducts.findIndex((product) => product.id === id);
-
-  if (index === -1) {
-    return false;
-  }
-
-  chemicalProducts.splice(index, 1);
-  return true;
+export async function deleteChemicalProduct(id: number): Promise<void> {
+  await produtoQuimicoApiRoutes.remove(id);
 }

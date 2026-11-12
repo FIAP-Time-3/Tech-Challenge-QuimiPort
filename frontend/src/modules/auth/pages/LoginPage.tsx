@@ -7,8 +7,6 @@ import {
   EyeOff,
   FlaskConical,
   LockKeyhole,
-  ShieldCheck,
-  Ship,
 } from 'lucide-react';
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
@@ -164,29 +162,6 @@ function LoginPage() {
             Centralize cargas, produtos e conformidade em uma plataforma feita
             para a rotina portuária.
           </p>
-
-          <div className="mt-10 grid max-w-md grid-cols-2 gap-3">
-            <div className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-              <Ship
-                className="mb-5 size-5 text-emerald-200"
-                aria-hidden="true"
-              />
-              <p className="text-2xl font-semibold">128</p>
-              <p className="mt-1 text-xs text-primary-foreground/70">
-                cargas em operação
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-              <ShieldCheck
-                className="mb-5 size-5 text-emerald-200"
-                aria-hidden="true"
-              />
-              <p className="text-2xl font-semibold">100%</p>
-              <p className="mt-1 text-xs text-primary-foreground/70">
-                foco em conformidade
-              </p>
-            </div>
-          </div>
         </div>
 
         <p className="relative z-10 text-xs text-primary-foreground/60">

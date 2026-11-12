@@ -6,8 +6,8 @@ import type { ChemicalProductInput } from '@/modules/chemical-products/models/ch
 function CreateChemicalProductPage() {
   const navigate = useNavigate();
 
-  function handleSubmit(input: ChemicalProductInput) {
-    createProduct(input);
+  async function handleSubmit(input: ChemicalProductInput) {
+    await createProduct(input);
     navigate('/produtos');
   }
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import ChemicalProductForm from '@/modules/chemical-products/components/ChemicalProductForm';
 import { getChemicalProduct } from '@/modules/chemical-products/use-cases/getChemicalProduct';
@@ -10,18 +11,55 @@ import { Button } from '@/shared/components/ui/button';
 
 function EditChemicalProductPage() {
   const { id } = useParams();
-  const productId = Number(id);
-  const navigate = useNavigate();
-  const product: ChemicalProduct | null = Number.isInteger(productId)
-    ? (getChemicalProduct(productId) ?? null)
-    : null;
+  return <EditChemicalProduct key={id} productId={Number(id)} />;
+}
 
-  function handleSubmit(input: ChemicalProductInput) {
-    const updated = updateProduct(productId, input);
-    if (updated) {
-      navigate('/produtos');
-    }
+function EditChemicalProduct({ productId }: { productId: number }) {
+  const navigate = useNavigate();
+  const [product, setProduct] = useState<ChemicalProduct | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    if (!Number.isInteger(productId) || productId <= 0) return;
+    getChemicalProduct(productId)
+      .then((data) => {
+        if (active) setProduct(data);
+      })
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [productId, attempt]);
+
+  async function handleSubmit(input: ChemicalProductInput) {
+    await updateProduct(productId, input);
+    navigate('/produtos');
   }
+
+  if (Number.isInteger(productId) && productId > 0 && loading)
+    return <p role="status">Carregando produto...</p>;
+  if (error)
+    return (
+      <div role="alert">
+        <p>Não foi possível carregar o produto.</p>
+        <Button
+          onClick={() => {
+            setError(false);
+            setLoading(true);
+            setAttempt((value) => value + 1);
+          }}
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    );
 
   if (!product) {
     return (
@@ -49,6 +87,7 @@ function EditChemicalProductPage() {
         </p>
       </div>
       <ChemicalProductForm
+        key={product.id}
         title="Dados do produto"
         initialValue={{
           nome: product.nome,

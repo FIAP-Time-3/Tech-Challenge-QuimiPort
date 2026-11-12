@@ -10,6 +10,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 
 interface ChemicalProductsTableProps {
+  deleting: boolean;
   products: ChemicalProduct[];
   totalProducts: number;
   search: string;
@@ -21,6 +22,7 @@ interface ChemicalProductsTableProps {
 }
 
 function ChemicalProductsTable({
+  deleting,
   products,
   totalProducts,
   search,
@@ -134,7 +136,8 @@ function ChemicalProductsTable({
         open={productToDelete !== null}
         title="Excluir produto químico?"
         description={`O produto ${productToDelete?.nome ?? ''} será removido da lista. Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir produto"
+        pending={deleting}
+        confirmLabel={deleting ? 'Excluindo...' : 'Excluir produto'}
         onOpenChange={(open) => {
           if (!open) onDeleteCancel();
         }}

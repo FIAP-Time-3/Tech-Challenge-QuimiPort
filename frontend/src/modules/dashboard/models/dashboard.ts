@@ -12,7 +12,7 @@ export interface DashboardLoad {
   category: string;
   origin: string;
   quantity: string;
-  status: 'Em trânsito' | 'Em análise' | 'Liberada';
+  status: string;
   updated: string;
 }
 
