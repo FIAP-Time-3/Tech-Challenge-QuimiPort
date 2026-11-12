@@ -36,6 +36,9 @@
   "eslint.workingDirectories": [
     {
       "directory": "./backend"
+    },
+    {
+      "directory": "./frontend"
     }
   ],
   "[prisma]": {
