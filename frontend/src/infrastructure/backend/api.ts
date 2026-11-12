@@ -5,7 +5,7 @@ import {
   getRefreshToken,
   saveTokens,
   saveUser,
-} from '@/modules/auth/services/tokenStorage';
+} from '@/modules/auth/services/token.storage';
 import type { UserResponseDto } from './dtos/user.dtos';
 import type { LoginResponseDto } from './dtos/login.dtos';
 

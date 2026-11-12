@@ -5,22 +5,22 @@ import DataTable, {
   type DataTableColumn,
 } from '@/shared/components/data-display/DataTable';
 import { Input } from '@/shared/components/ui/Input';
-import type { DashboardLoad } from '@/modules/dashboard/models/dashboard';
+import type { CargaQuimicaResumo } from '@/modules/dashboard/models/cargaQuimica';
 
-interface RecentLoadsTableProps {
-  loads: DashboardLoad[];
+interface TabelaCargasRecentesProps {
+  loads: CargaQuimicaResumo[];
   totalLoads: number;
   search: string;
   onSearchChange: (value: string) => void;
 }
 
-const statusStyles: Record<DashboardLoad['status'], string> = {
+const statusStyles: Record<CargaQuimicaResumo['status'], string> = {
   'Em movimentação': 'border-sky-200 bg-sky-50 text-sky-700',
   'Em inspeção': 'border-amber-200 bg-amber-50 text-amber-700',
   Liberada: 'border-emerald-200 bg-emerald-50 text-emerald-700',
 };
 
-function LoadStatus({ status }: { status: DashboardLoad['status'] }) {
+function LoadStatus({ status }: { status: CargaQuimicaResumo['status'] }) {
   return (
     <Badge variant="outline" className={statusStyles[status]}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
@@ -29,13 +29,13 @@ function LoadStatus({ status }: { status: DashboardLoad['status'] }) {
   );
 }
 
-function RecentLoadsTable({
+function TabelaCargasRecentes({
   loads,
   totalLoads,
   search,
   onSearchChange,
-}: RecentLoadsTableProps) {
-  const columns: DataTableColumn<DashboardLoad>[] = [
+}: TabelaCargasRecentesProps) {
+  const columns: DataTableColumn<CargaQuimicaResumo>[] = [
     {
       key: 'code',
       header: 'Carga',
@@ -132,4 +132,4 @@ function RecentLoadsTable({
   );
 }
 
-export default RecentLoadsTable;
+export default TabelaCargasRecentes;

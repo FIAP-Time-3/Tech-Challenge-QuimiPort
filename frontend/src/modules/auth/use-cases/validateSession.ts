@@ -2,7 +2,7 @@ import { validateAccessToken } from '@/modules/auth/services/login.service';
 import {
   clearTokens,
   getAccessToken,
-} from '@/modules/auth/services/tokenStorage';
+} from '@/modules/auth/services/token.storage';
 
 export async function validateSession(): Promise<boolean> {
   const accessToken = getAccessToken();

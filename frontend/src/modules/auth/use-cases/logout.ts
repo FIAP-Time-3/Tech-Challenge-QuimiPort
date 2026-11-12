@@ -1,4 +1,4 @@
-import { clearTokens } from '@/modules/auth/services/tokenStorage';
+import { clearTokens } from '@/modules/auth/services/token.storage';
 
 export function logout(): void {
   clearTokens();

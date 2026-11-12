@@ -3,7 +3,7 @@ import { Title } from '@/shared/components/layout/Title';
 import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { excluirProduto } from '@/modules/produtoQuimico/use-cases/excluirProdutoQuimico';
+import { excluirProdutoQuimico } from '@/modules/produtoQuimico/use-cases/excluirProdutoQuimico';
 import { listarProdutosQuimicos } from '@/modules/produtoQuimico/use-cases/listarProdutosQuimicos';
 import type { ProdutoQuimico } from '@/modules/produtoQuimico/models/produtoQuimico';
 import ProdutoQuimicoTable from '@/modules/produtoQuimico/components/ProdutoQuimicoTable';
@@ -66,7 +66,7 @@ function ListarProdutosQuimicosPage() {
     setError('');
     setSuccess('');
     try {
-      await excluirProduto(productToDelete.id);
+      await excluirProdutoQuimico(productToDelete.id);
       setProducts((current) =>
         current.filter((product) => product.id !== productToDelete.id),
       );

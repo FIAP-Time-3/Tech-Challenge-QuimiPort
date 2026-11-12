@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { loginApiRoutes } from '@/infrastructure/backend/routes/login.routes';
 import { meApiRoutes } from '@/infrastructure/backend/routes/me.routes';
-import { getStoredUser, saveUser } from './tokenStorage';
+import { getStoredUser, saveUser } from '@/modules/auth/services/token.storage';
 import type { AuthSession } from '@/modules/auth/models/auth';
 
 export async function authenticate(

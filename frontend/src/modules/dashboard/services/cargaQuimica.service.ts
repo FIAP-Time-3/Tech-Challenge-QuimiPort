@@ -3,9 +3,9 @@ import type {
   CargaQuimicaResponseDto,
   StatusCarga,
 } from '@/infrastructure/backend/dtos/cargaQuimica.dtos';
-import type { DashboardLoad } from '@/modules/dashboard/models/dashboard';
+import type { CargaQuimicaResumo } from '@/modules/dashboard/models/cargaQuimica';
 
-export const statusLabels: Record<StatusCarga, string> = {
+export const rotulosStatusCarga: Record<StatusCarga, string> = {
   CADASTRADA: 'Cadastrada',
   EM_PREPARACAO: 'Em preparação',
   EM_INSPECAO: 'Em inspeção',
@@ -16,27 +16,31 @@ export const statusLabels: Record<StatusCarga, string> = {
   CANCELADA: 'Cancelada',
 };
 
-export function toDashboardLoad(load: CargaQuimicaResponseDto): DashboardLoad {
+export function paraCargaQuimicaResumo(
+  load: CargaQuimicaResponseDto,
+): CargaQuimicaResumo {
   return {
     code: load.codigo,
     product: load.produtoQuimico.nome,
     category: `Classe ${load.classeRiscoONU}`,
     origin: load.origem,
     quantity: `${load.quantidade.toLocaleString('pt-BR')} ${load.unidadeMedida}`,
-    status: statusLabels[load.statusCarga],
+    status: rotulosStatusCarga[load.statusCarga],
     updated: new Date(load.updatedAt).toLocaleString('pt-BR'),
   };
 }
 
-export async function listarCargas(): Promise<DashboardLoad[]> {
+export async function listarCargasQuimicas(): Promise<CargaQuimicaResumo[]> {
   const { data } = await cargaQuimicaApiRoutes.findAll();
   return data
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map(toDashboardLoad);
+    .map(paraCargaQuimicaResumo);
 }
 
-export async function buscarCarga(
+export async function buscarCargaQuimica(
   codigo: string,
-): Promise<DashboardLoad | null> {
-  return (await listarCargas()).find((load) => load.code === codigo) ?? null;
+): Promise<CargaQuimicaResumo | null> {
+  return (
+    (await listarCargasQuimicas()).find((load) => load.code === codigo) ?? null
+  );
 }

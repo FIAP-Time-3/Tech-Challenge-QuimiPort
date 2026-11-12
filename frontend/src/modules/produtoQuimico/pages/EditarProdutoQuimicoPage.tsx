@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/ui/Button';
 import ProdutoQuimicoForm from '@/modules/produtoQuimico/components/ProdutoQuimicoForm';
 import { ProdutoQuimicoLoadState } from '@/modules/produtoQuimico/components/ProdutoQuimicoLoadState';
 import { useProdutoQuimico } from '@/modules/produtoQuimico/hooks/useProdutoQuimico';
-import { atualizarProduto } from '@/modules/produtoQuimico/use-cases/salvarProdutoQuimico';
+import { atualizarProdutoQuimico } from '@/modules/produtoQuimico/use-cases/atualizarProdutoQuimico';
 import type { ProdutoQuimicoInput } from '@/modules/produtoQuimico/models/produtoQuimico';
 
 function EditarProdutoQuimicoPage() {
@@ -17,7 +17,7 @@ function EditarProdutoQuimico({ productId }: { productId: number }) {
   const navigate = useNavigate();
   const { state, retry } = useProdutoQuimico(productId);
   async function handleSubmit(input: ProdutoQuimicoInput) {
-    await atualizarProduto(productId, input);
+    await atualizarProdutoQuimico(productId, input);
     navigate('/produtos', {
       state: { productMessage: 'Produto atualizado com sucesso.' },
     });

@@ -3,14 +3,14 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Link, useNavigate } from 'react-router';
 import ProdutoQuimicoForm from '@/modules/produtoQuimico/components/ProdutoQuimicoForm';
-import { criarProduto } from '@/modules/produtoQuimico/use-cases/salvarProdutoQuimico';
+import { criarProdutoQuimico } from '@/modules/produtoQuimico/use-cases/criarProdutoQuimico';
 import type { ProdutoQuimicoInput } from '@/modules/produtoQuimico/models/produtoQuimico';
 
 function CriarProdutoQuimicoPage() {
   const navigate = useNavigate();
 
   async function handleSubmit(input: ProdutoQuimicoInput) {
-    await criarProduto(input);
+    await criarProdutoQuimico(input);
     navigate('/produtos', {
       state: { productMessage: 'Produto cadastrado com sucesso.' },
     });

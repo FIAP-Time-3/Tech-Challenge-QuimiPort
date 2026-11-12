@@ -13,7 +13,7 @@ import {
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import { ProdutoQuimicoLoadState } from '@/modules/produtoQuimico/components/ProdutoQuimicoLoadState';
 import { useProdutoQuimico } from '@/modules/produtoQuimico/hooks/useProdutoQuimico';
-import { inativarProduto } from '@/modules/produtoQuimico/use-cases/salvarProdutoQuimico';
+import { inativarProdutoQuimico } from '@/modules/produtoQuimico/use-cases/inativarProdutoQuimico';
 import { mensagemErroProdutoQuimico } from '@/modules/produtoQuimico/services/produtoQuimico.errors';
 
 export default function DetalhesProdutoQuimicoPage() {
@@ -33,7 +33,7 @@ function DetalhesProdutoQuimico({ id }: { id: number }) {
     setError('');
     setSuccess('');
     try {
-      await inativarProduto(id);
+      await inativarProdutoQuimico(id);
       setSuccess('Produto inativado com sucesso.');
       retry();
     } catch (error) {

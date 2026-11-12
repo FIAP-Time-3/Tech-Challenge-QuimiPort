@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { getStoredUser, getStoredUserJson } from './tokenStorage';
+import {
+  getStoredUser,
+  getStoredUserJson,
+} from '@/modules/auth/services/token.storage';
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener('storage', onChange);

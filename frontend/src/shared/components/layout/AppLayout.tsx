@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { useCurrentUser } from '@/modules/auth/services/currentUser';
+import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { logout } from '@/modules/auth/use-cases/logout';
 import SideNavigation from './SideNavigation';
 import PageHeader from './PageHeader';

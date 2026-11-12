@@ -2,13 +2,13 @@ import { Title } from '@/shared/components/layout/Title';
 import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useCurrentUser } from '@/modules/auth/services/currentUser';
+import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargaQuimica.routes';
 import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtoQuimico.routes';
 import type { CargaQuimicaResponseDto } from '@/infrastructure/backend/dtos/cargaQuimica.dtos';
 import {
-  statusLabels,
-  toDashboardLoad,
+  rotulosStatusCarga,
+  paraCargaQuimicaResumo,
 } from '@/modules/dashboard/services/cargaQuimica.service';
 import ActivityChartCard from '@/shared/components/data-display/ActivityChartCard';
 import MetricGrid, {
@@ -21,7 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/Card';
-import RecentLoadsTable from '@/modules/dashboard/components/RecentLoadsTable';
+import TabelaCargasRecentes from '@/modules/dashboard/components/TabelaCargasRecentes';
 
 function DashboardPage() {
   const [search, setSearch] = useState('');
@@ -104,7 +104,7 @@ function DashboardPage() {
   ];
   const recentLoads = [...loads]
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map(toDashboardLoad);
+    .map(paraCargaQuimicaResumo);
   const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');
   const filteredLoads = recentLoads.filter((load) =>
     `${load.code} ${load.product} ${load.origin} ${load.status}`
@@ -167,7 +167,7 @@ function DashboardPage() {
                 <CardTitle>Cargas por status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {Object.entries(statusLabels).map(([status, label]) => (
+                {Object.entries(rotulosStatusCarga).map(([status, label]) => (
                   <div
                     key={status}
                     className="flex justify-between gap-3 text-sm"
@@ -184,7 +184,7 @@ function DashboardPage() {
               </CardContent>
             </Card>
           </section>
-          <RecentLoadsTable
+          <TabelaCargasRecentes
             loads={filteredLoads}
             totalLoads={recentLoads.length}
             search={search}
