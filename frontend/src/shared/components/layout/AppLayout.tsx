@@ -1,10 +1,4 @@
-import {
-  Activity,
-  FlaskConical,
-  LayoutDashboard,
-  Package,
-  Ship,
-} from 'lucide-react';
+import { FlaskConical } from 'lucide-react';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
@@ -12,33 +6,15 @@ import { logout } from '@/modules/auth/use-cases/logout';
 import SideNavigation from './SideNavigation';
 import PageHeader from './PageHeader';
 import { MainContent } from './MainContent';
+import { getMenuItems } from '@/shared/navigation/menuItems';
 
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = useCurrentUser();
   const [menuOpen, setMenuOpen] = useState(false);
-  const items = [
-    {
-      label: 'Visão geral',
-      href: '/',
-      icon: LayoutDashboard,
-      active: location.pathname === '/' && !location.hash,
-    },
-    {
-      label: 'Cargas',
-      href: '/#loads',
-      icon: Ship,
-      active: location.pathname === '/' && location.hash === '#loads',
-    },
-    {
-      label: 'Produtos químicos',
-      href: '/produtos',
-      icon: Package,
-      active: location.pathname.startsWith('/produtos'),
-    },
-    { label: 'Status do sistema', href: '/health', icon: Activity },
-  ];
+
+  const items = getMenuItems(location);
   const current = items.find((item) => item.active)?.label ?? 'Plataforma';
 
   function handleLogout() {
