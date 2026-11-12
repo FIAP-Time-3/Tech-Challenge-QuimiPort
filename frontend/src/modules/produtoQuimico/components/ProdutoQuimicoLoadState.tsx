@@ -1,6 +1,7 @@
+import { Feedback, LoadingState } from '@/shared/components/feedback/Feedback';
 import { Link } from 'react-router';
-import { Button } from '@/shared/components/ui/Button';
-import { Card, CardContent } from '@/shared/components/ui/Card';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent } from '@/shared/components/ui/card';
 
 export function ProdutoQuimicoLoadState({
   kind,
@@ -14,16 +15,15 @@ export function ProdutoQuimicoLoadState({
   return (
     <Card>
       <CardContent className="space-y-4 py-6">
-        <p
-          role={kind === 'error' ? 'alert' : 'status'}
-          className="text-sm text-muted-foreground"
-        >
-          {kind === 'loading'
-            ? 'Carregando produto...'
-            : kind === 'not-found'
-              ? 'Produto não encontrado. Verifique o endereço ou retorne à lista.'
-              : message}
-        </p>
+        {kind === 'loading' ? (
+          <LoadingState>Carregando produto...</LoadingState>
+        ) : kind === 'error' ? (
+          <Feedback>{message}</Feedback>
+        ) : (
+          <p role="status" className="text-sm text-muted-foreground">
+            Produto não encontrado. Verifique o endereço ou retorne à lista.
+          </p>
+        )}
         {kind === 'error' && (
           <Button variant="outline" onClick={onRetry}>
             Tentar novamente

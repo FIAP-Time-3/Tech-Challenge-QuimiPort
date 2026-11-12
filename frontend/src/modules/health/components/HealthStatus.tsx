@@ -1,13 +1,14 @@
+import { statusStyles } from '@/shared/components/feedback/statusStyles';
 import { Activity, Clock3, Database, Server } from 'lucide-react';
 import type { Health } from '@/modules/health/models/health';
-import { Badge } from '@/shared/components/ui/Badge';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
+} from '@/shared/components/ui/card';
 
 export function HealthStatus({ data }: { data: Health }) {
   const healthy = data.status === 'ok';
@@ -19,13 +20,13 @@ export function HealthStatus({ data }: { data: Health }) {
         className={
           healthy
             ? 'border border-primary/20 bg-secondary/40'
-            : 'border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20'
+            : `border ${statusStyles.warning}`
         }
       >
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div className="flex items-center gap-4">
             <span
-              className={`flex size-12 items-center justify-center rounded-xl ${healthy ? 'bg-primary text-primary-foreground' : 'bg-amber-100 text-amber-800'}`}
+              className={`flex size-12 items-center justify-center rounded-xl ${healthy ? 'bg-primary text-primary-foreground' : statusStyles.warning}`}
             >
               <Activity className="size-5" aria-hidden="true" />
             </span>

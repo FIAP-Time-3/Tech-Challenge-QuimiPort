@@ -1,15 +1,20 @@
+import { Feedback } from '@/shared/components/feedback/Feedback';
 import { mensagemErroProdutoQuimico } from '@/modules/produtoQuimico/services/produtoQuimico.errors';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import type { ProdutoQuimicoInput } from '@/modules/produtoQuimico/models/produtoQuimico';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
-import { Input } from '@/shared/components/ui/Input';
+} from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { NativeSelect } from '@/shared/components/ui/native-select';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 
 interface ProdutoQuimicoFormProps {
   title: string;
@@ -68,9 +73,9 @@ function ProdutoQuimicoForm({
           <fieldset disabled={saving} className="space-y-6">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="nome" className="text-sm font-medium">
+                <Label htmlFor="nome" className="text-sm font-medium">
                   Nome do produto
-                </label>
+                </Label>
                 <Input
                   id="nome"
                   name="nome"
@@ -80,15 +85,15 @@ function ProdutoQuimicoForm({
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="classeRisco" className="text-sm font-medium">
+                <Label htmlFor="classeRisco" className="text-sm font-medium">
                   Classe de risco ONU
-                </label>
-                <select
+                </Label>
+                <NativeSelect
                   id="classeRisco"
                   name="classeRisco"
                   required
                   defaultValue={initialValue?.classeRisco ?? ''}
-                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="w-full"
                 >
                   <option value="" disabled>
                     Selecione uma classe
@@ -100,36 +105,32 @@ function ProdutoQuimicoForm({
                       </option>
                     ),
                   )}
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <label htmlFor="descricao" className="text-sm font-medium">
+                <Label htmlFor="descricao" className="text-sm font-medium">
                   Descrição
-                </label>
-                <textarea
+                </Label>
+                <Textarea
                   id="descricao"
                   name="descricao"
                   rows={4}
                   defaultValue={initialValue?.descricao}
                   placeholder="Descrição ou observações sobre o produto"
-                  className="w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="resize-y bg-background"
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <Checkbox
+                  id="status"
+                  disabled={saving}
                   name="status"
                   defaultChecked={initialValue?.status ?? true}
-                  className="size-4 rounded border-input accent-primary"
                 />
-                Produto ativo
-              </label>
+                <Label htmlFor="status">Produto ativo</Label>
+              </div>
             </div>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
+            {error && <Feedback>{error}</Feedback>}
             <div className="flex justify-end gap-2 border-t border-border pt-5">
               <Button asChild variant="outline">
                 <Link to="/produtos">Cancelar</Link>

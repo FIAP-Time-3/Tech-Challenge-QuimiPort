@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent } from '@/shared/components/ui/Card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 
 export interface MetricItem {
   label: string;

@@ -5,7 +5,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
+} from '@/shared/components/ui/card';
+
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/shared/components/ui/table';
 
 export interface DataTableColumn<Row> {
   key: string;
@@ -49,48 +58,48 @@ function DataTable<Row>({
         {toolbar}
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm" style={{ minWidth }}>
-            <thead>
-              <tr className="bg-muted/40 text-xs text-muted-foreground">
+        <div>
+          <Table className="w-full text-left text-sm" style={{ minWidth }}>
+            <TableHeader>
+              <TableRow className="bg-muted/40 text-xs text-muted-foreground">
                 {columns.map((column) => (
-                  <th
+                  <TableHead
                     key={column.key}
                     className={`px-4 py-3.5 font-medium first:pl-5 last:pr-5 ${column.className ?? ''}`}
                   >
                     {column.header}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border">
               {rows.map((row) => (
-                <tr
+                <TableRow
                   key={getRowKey(row)}
                   className="transition-colors hover:bg-muted/30"
                 >
                   {columns.map((column) => (
-                    <td
+                    <TableCell
                       key={column.key}
                       className={`px-4 py-4 first:pl-5 last:pr-5 ${column.className ?? ''}`}
                     >
                       {column.render(row)}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
               {rows.length === 0 && (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={columns.length}
                     className="px-5 py-10 text-center text-muted-foreground"
                   >
                     {emptyMessage}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
         {footer && (
           <div className="flex items-center justify-between border-t border-border px-5 py-3.5 text-xs text-muted-foreground">

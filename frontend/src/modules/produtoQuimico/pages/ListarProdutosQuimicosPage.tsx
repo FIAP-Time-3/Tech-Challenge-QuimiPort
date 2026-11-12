@@ -1,3 +1,4 @@
+import { Feedback, LoadingState } from '@/shared/components/feedback/Feedback';
 import { mensagemErroProdutoQuimico } from '@/modules/produtoQuimico/services/produtoQuimico.errors';
 import { Title } from '@/shared/components/layout/Title';
 import { Plus } from 'lucide-react';
@@ -7,7 +8,7 @@ import { excluirProdutoQuimico } from '@/modules/produtoQuimico/use-cases/exclui
 import { listarProdutosQuimicos } from '@/modules/produtoQuimico/use-cases/listarProdutosQuimicos';
 import type { ProdutoQuimico } from '@/modules/produtoQuimico/models/produtoQuimico';
 import ProdutoQuimicoTable from '@/modules/produtoQuimico/components/ProdutoQuimicoTable';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
 
 function ListarProdutosQuimicosPage() {
   const location = useLocation();
@@ -102,23 +103,9 @@ function ListarProdutosQuimicosPage() {
         Produtos químicos
       </Title>
 
-      {success && (
-        <p
-          role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
-        >
-          {success}
-        </p>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-      {loading && <p role="status">Carregando produtos...</p>}
+      {success && <Feedback variant="success">{success}</Feedback>}
+      {error && <Feedback variant="error">{error}</Feedback>}
+      {loading && <LoadingState>Carregando produtos...</LoadingState>}
       {loadError && (
         <div
           role="alert"

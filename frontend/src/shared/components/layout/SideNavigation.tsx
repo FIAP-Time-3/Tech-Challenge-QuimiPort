@@ -1,8 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { X } from 'lucide-react';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from '@/shared/components/ui/sheet';
 
 export interface SideNavigationItem {
   label: string;
@@ -30,19 +31,6 @@ function SideNavigation({
   mobileOpen = false,
   onMobileClose,
 }: SideNavigationProps) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (mobileOpen && !dialog.current?.open) dialog.current?.showModal();
-    else if (!mobileOpen && dialog.current?.open) dialog.current.close();
-  }, [mobileOpen]);
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileOpen]);
   useEffect(() => {
     const query = window.matchMedia('(min-width: 1024px)');
     const closeOnDesktop = () => {
@@ -105,33 +93,35 @@ function SideNavigation({
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         {content}
       </aside>
-      <dialog
-        ref={dialog}
-        id="mobile-navigation"
-        aria-label="Menu de navegação"
-        onCancel={(event) => {
-          event.preventDefault();
-          onMobileClose?.();
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={(open) => {
+          if (!open) onMobileClose?.();
         }}
-        onClick={(event) => {
-          if (event.target === dialog.current) onMobileClose?.();
-        }}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[85vw] border-0 border-r border-sidebar-border bg-sidebar p-0 text-sidebar-foreground backdrop:bg-black/50"
       >
-        <div className="flex h-full flex-col">
-          <div className="flex justify-end px-3 pt-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Fechar menu"
-              onClick={onMobileClose}
-            >
-              <X aria-hidden="true" />
-            </Button>
+        <SheetContent
+          id="mobile-navigation"
+          side="left"
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="w-72 max-w-[85vw] gap-0 bg-sidebar text-sidebar-foreground"
+        >
+          <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+          <div className="flex h-full flex-col">
+            <div className="flex justify-end px-3 pt-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Fechar menu"
+                onClick={onMobileClose}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </div>
+            {content}
           </div>
-          {content}
-        </div>
-      </dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

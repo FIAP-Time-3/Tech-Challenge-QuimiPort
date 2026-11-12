@@ -1,10 +1,11 @@
+import { statusStyles } from '@/shared/components/feedback/statusStyles';
 import { ArrowRight, Search } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/Badge';
-import { Button } from '@/shared/components/ui/Button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 import DataTable, {
   type DataTableColumn,
 } from '@/shared/components/data-display/DataTable';
-import { Input } from '@/shared/components/ui/Input';
+import { Input } from '@/shared/components/ui/input';
 import type { CargaQuimicaResumo } from '@/modules/dashboard/models/cargaQuimica';
 
 interface TabelaCargasRecentesProps {
@@ -14,15 +15,15 @@ interface TabelaCargasRecentesProps {
   onSearchChange: (value: string) => void;
 }
 
-const statusStyles: Record<CargaQuimicaResumo['status'], string> = {
-  'Em movimentação': 'border-sky-200 bg-sky-50 text-sky-700',
-  'Em inspeção': 'border-amber-200 bg-amber-50 text-amber-700',
-  Liberada: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+const loadStatusStyles: Record<CargaQuimicaResumo['status'], string> = {
+  'Em movimentação': statusStyles.info,
+  'Em inspeção': statusStyles.warning,
+  Liberada: statusStyles.success,
 };
 
 function LoadStatus({ status }: { status: CargaQuimicaResumo['status'] }) {
   return (
-    <Badge variant="outline" className={statusStyles[status]}>
+    <Badge variant="outline" className={loadStatusStyles[status]}>
       <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
       {status}
     </Badge>

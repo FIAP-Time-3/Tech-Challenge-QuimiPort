@@ -1,3 +1,4 @@
+import { statusStyles } from '@/shared/components/feedback/statusStyles';
 import { Link } from 'react-router';
 import { Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import type { ProdutoQuimico } from '@/modules/produtoQuimico/models/produtoQuimico';
@@ -5,9 +6,10 @@ import DataTable, {
   type DataTableColumn,
 } from '@/shared/components/data-display/DataTable';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
-import { Badge } from '@/shared/components/ui/Badge';
-import { Button } from '@/shared/components/ui/Button';
-import { Input } from '@/shared/components/ui/Input';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { NativeSelect } from '@/shared/components/ui/native-select';
 
 interface ProdutoQuimicoTableProps {
   statusFilter: string;
@@ -68,9 +70,7 @@ function ProdutoQuimicoTable({
         <Badge
           variant="outline"
           className={
-            product.status
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-border bg-muted text-muted-foreground'
+            product.status ? statusStyles.success : statusStyles.neutral
           }
         >
           <span
@@ -149,16 +149,16 @@ function ProdutoQuimicoTable({
                 className="h-9 bg-background pl-9"
               />
             </div>
-            <select
+            <NativeSelect
               aria-label="Filtrar por status"
               value={statusFilter}
               onChange={(event) => onStatusFilterChange(event.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+              className="bg-background"
             >
               <option value="all">Todos os status</option>
               <option value="active">Ativos</option>
               <option value="inactive">Inativos</option>
-            </select>
+            </NativeSelect>
           </div>
         }
         footer={

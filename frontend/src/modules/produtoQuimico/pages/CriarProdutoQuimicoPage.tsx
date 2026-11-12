@@ -1,6 +1,6 @@
 import { Title } from '@/shared/components/layout/Title';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
 import { Link, useNavigate } from 'react-router';
 import ProdutoQuimicoForm from '@/modules/produtoQuimico/components/ProdutoQuimicoForm';
 import { criarProdutoQuimico } from '@/modules/produtoQuimico/use-cases/criarProdutoQuimico';

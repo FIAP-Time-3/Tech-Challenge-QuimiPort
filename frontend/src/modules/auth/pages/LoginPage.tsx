@@ -1,3 +1,4 @@
+import { Feedback, LoadingState } from '@/shared/components/feedback/Feedback';
 import axios from 'axios';
 import { loginApiRoutes } from '@/infrastructure/backend/routes/login.routes';
 import { userApiRoutes } from '@/infrastructure/backend/routes/user.routes';
@@ -11,16 +12,17 @@ import {
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { login } from '@/modules/auth/use-cases/login';
-import { Badge } from '@/shared/components/ui/Badge';
-import { Button } from '@/shared/components/ui/Button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
-import { Input } from '@/shared/components/ui/Input';
+} from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -204,14 +206,12 @@ function LoginPage() {
 
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
             {setup === 'loading' ? (
-              <p role="status" className="text-sm text-muted-foreground">
-                Verificando configuração inicial...
-              </p>
+              <LoadingState>Verificando configuração inicial...</LoadingState>
             ) : setup === 'error' ? (
               <div className="space-y-4">
-                <p role="alert" className="text-sm text-destructive">
+                <Feedback>
                   Não foi possível verificar a configuração do sistema.
-                </p>
+                </Feedback>
                 <Button
                   onClick={() => {
                     setSetup('loading');
@@ -225,9 +225,9 @@ function LoginPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {setup === 'required' && (
                   <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
+                    <Label htmlFor="name" className="text-sm font-medium">
                       Nome
-                    </label>
+                    </Label>
                     <Input
                       id="name"
                       name="name"
@@ -239,9 +239,9 @@ function LoginPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <label htmlFor="username" className="text-sm font-medium">
+                  <Label htmlFor="username" className="text-sm font-medium">
                     Usuário
-                  </label>
+                  </Label>
                   <Input
                     id="username"
                     name="username"
@@ -257,13 +257,14 @@ function LoginPage() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="password" className="text-sm font-medium">
+                    <Label htmlFor="password" className="text-sm font-medium">
                       Senha
-                    </label>
+                    </Label>
                     {setup === 'ready' && (
-                      <button
+                      <Button
                         type="button"
-                        className="text-xs font-medium text-primary hover:underline"
+                        variant="link"
+                        className="h-auto p-0 text-xs font-medium"
                         onClick={() =>
                           setErrorMessage(
                             'Entre em contato com o administrador para recuperar seu acesso.',
@@ -271,7 +272,7 @@ function LoginPage() {
                         }
                       >
                         Esqueceu a senha?
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <div className="relative">
@@ -290,32 +291,33 @@ function LoginPage() {
                       required
                       className="h-10 bg-background pr-11"
                     />
-                    <button
+                    <Button
                       type="button"
                       aria-label={
                         showPassword ? 'Ocultar senha' : 'Mostrar senha'
                       }
                       aria-pressed={showPassword}
                       onClick={() => setShowPassword((visible) => !visible)}
-                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      variant="ghost"
+                      className="absolute inset-y-0 right-0 h-full w-10 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? (
                         <EyeOff className="size-4" aria-hidden="true" />
                       ) : (
                         <Eye className="size-4" aria-hidden="true" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
                 {setup === 'required' && (
                   <div className="space-y-2">
-                    <label
+                    <Label
                       htmlFor="confirmation"
                       className="text-sm font-medium"
                     >
                       Confirmar senha
-                    </label>
+                    </Label>
                     <Input
                       id="confirmation"
                       name="confirmation"
@@ -328,18 +330,9 @@ function LoginPage() {
                   </div>
                 )}
                 {successMessage && (
-                  <p role="status" className="rounded-lg bg-muted p-3 text-sm">
-                    {successMessage}
-                  </p>
+                  <Feedback variant="success">{successMessage}</Feedback>
                 )}
-                {errorMessage && (
-                  <p
-                    role="alert"
-                    className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
-                  >
-                    {errorMessage}
-                  </p>
-                )}
+                {errorMessage && <Feedback>{errorMessage}</Feedback>}
 
                 <Button
                   type="submit"

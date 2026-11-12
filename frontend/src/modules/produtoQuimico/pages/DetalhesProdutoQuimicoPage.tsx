@@ -1,15 +1,16 @@
+import { Feedback } from '@/shared/components/feedback/Feedback';
 import { ArrowLeft, Pencil, PowerOff } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Title } from '@/shared/components/layout/Title';
-import { Button } from '@/shared/components/ui/Button';
-import { Badge } from '@/shared/components/ui/Badge';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
+} from '@/shared/components/ui/card';
 import ConfirmDialog from '@/shared/components/feedback/ConfirmDialog';
 import { ProdutoQuimicoLoadState } from '@/modules/produtoQuimico/components/ProdutoQuimicoLoadState';
 import { useProdutoQuimico } from '@/modules/produtoQuimico/hooks/useProdutoQuimico';
@@ -74,22 +75,8 @@ function DetalhesProdutoQuimico({ id }: { id: number }) {
       >
         {state.kind === 'loaded' ? state.product.nome : 'Detalhes do produto'}
       </Title>
-      {error && (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-      {success && (
-        <p
-          role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
-        >
-          {success}
-        </p>
-      )}
+      {error && <Feedback variant="error">{error}</Feedback>}
+      {success && <Feedback variant="success">{success}</Feedback>}
       {state.kind !== 'loaded' ? (
         <ProdutoQuimicoLoadState
           kind={state.kind}

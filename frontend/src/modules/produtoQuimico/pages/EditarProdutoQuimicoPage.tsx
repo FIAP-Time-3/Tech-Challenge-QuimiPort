@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Title } from '@/shared/components/layout/Title';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
 import ProdutoQuimicoForm from '@/modules/produtoQuimico/components/ProdutoQuimicoForm';
 import { ProdutoQuimicoLoadState } from '@/modules/produtoQuimico/components/ProdutoQuimicoLoadState';
 import { useProdutoQuimico } from '@/modules/produtoQuimico/hooks/useProdutoQuimico';

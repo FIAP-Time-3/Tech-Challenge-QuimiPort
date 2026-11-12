@@ -1,18 +1,12 @@
+import { Feedback, LoadingState } from '@/shared/components/feedback/Feedback';
 import { Activity, FlaskConical, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { Health } from '@/modules/health/models/health';
 import { HealthStatus } from '@/modules/health/components/HealthStatus';
 import { getHealth } from '@/modules/health/use-cases/getHealth';
-import { Badge } from '@/shared/components/ui/Badge';
-import { Button } from '@/shared/components/ui/Button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/Card';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 
 type HealthState =
   { kind: 'loading' } | { kind: 'error' } | { kind: 'loaded'; data: Health };
@@ -90,23 +84,13 @@ function HealthPage() {
 
         <div aria-live="polite">
           {state.kind === 'loading' && (
-            <Card>
-              <CardContent className="py-6 text-muted-foreground">
-                Consultando os serviços...
-              </CardContent>
-            </Card>
+            <LoadingState>Consultando os serviços...</LoadingState>
           )}
           {state.kind === 'error' && (
-            <Card className="border border-destructive/20 bg-destructive/5">
-              <CardHeader>
-                <CardTitle className="text-lg text-destructive">
-                  Não foi possível consultar a API
-                </CardTitle>
-                <CardDescription>
-                  Verifique a conexão e tente atualizar novamente.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Feedback>
+              Não foi possível consultar a API. Verifique a conexão e tente
+              atualizar novamente.
+            </Feedback>
           )}
           {data && <HealthStatus data={data} />}
         </div>

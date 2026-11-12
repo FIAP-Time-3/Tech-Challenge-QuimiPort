@@ -1,3 +1,4 @@
+import { Feedback, LoadingState } from '@/shared/components/feedback/Feedback';
 import { Title } from '@/shared/components/layout/Title';
 import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -14,13 +15,13 @@ import ActivityChartCard from '@/shared/components/data-display/ActivityChartCar
 import MetricGrid, {
   type MetricItem,
 } from '@/shared/components/data-display/MetricGrid';
-import { Button } from '@/shared/components/ui/Button';
+import { Button } from '@/shared/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/Card';
+} from '@/shared/components/ui/card';
 import TabelaCargasRecentes from '@/modules/dashboard/components/TabelaCargasRecentes';
 
 function DashboardPage() {
@@ -138,8 +139,8 @@ function DashboardPage() {
         Olá, {user.name}
       </Title>
       {hasLoadError ? (
-        <div role="alert" className="space-y-3">
-          <p>Não foi possível carregar os dados do painel.</p>
+        <div className="space-y-3">
+          <Feedback>Não foi possível carregar os dados do painel.</Feedback>
           <Button
             onClick={() => {
               setHasLoadError(false);
@@ -151,7 +152,7 @@ function DashboardPage() {
           </Button>
         </div>
       ) : !data ? (
-        <p role="status">Carregando operações...</p>
+        <LoadingState>Carregando operações...</LoadingState>
       ) : (
         <>
           <MetricGrid items={metrics} label="Indicadores operacionais" />
