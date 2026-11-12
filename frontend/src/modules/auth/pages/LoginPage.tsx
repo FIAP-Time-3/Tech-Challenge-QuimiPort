@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { demoCredentials } from '@/infrastructure/mocks/auth';
 import { login } from '@/modules/auth/use-cases/login';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -24,7 +23,7 @@ import { Input } from '@/shared/components/ui/input';
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,23 +36,22 @@ function LoginPage() {
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const session = await login(email, password);
-    setIsSubmitting(false);
-
-    if (!session) {
+    try {
+      const session = await login(username, password);
+      if (!session) {
+        setErrorMessage(
+          'Usuário ou senha inválidos. Confira os dados e tente novamente.',
+        );
+        return;
+      }
+      navigate('/', { replace: true });
+    } catch {
       setErrorMessage(
-        'E-mail ou senha inválidos. Confira os dados e tente novamente.',
+        'Não foi possível acessar o sistema. Tente novamente em instantes.',
       );
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate('/', { replace: true });
-  }
-
-  function fillDemoCredentials() {
-    setEmail(demoCredentials.email);
-    setPassword(demoCredentials.password);
-    setErrorMessage('');
   }
 
   return (
@@ -160,17 +158,17 @@ function LoginPage() {
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  E-mail
+                <label htmlFor="username" className="text-sm font-medium">
+                  Usuário
                 </label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   autoComplete="username"
-                  placeholder="voce@empresa.com.br"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Digite seu usuário"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
                   required
                   className="h-10 bg-background"
                 />
@@ -186,7 +184,7 @@ function LoginPage() {
                     className="text-xs font-medium text-primary hover:underline"
                     onClick={() =>
                       setErrorMessage(
-                        'Para esta demonstração, use as credenciais de acesso demo.',
+                        'Entre em contato com o administrador para recuperar seu acesso.',
                       )
                     }
                   >
@@ -223,14 +221,6 @@ function LoginPage() {
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  className="size-4 rounded border-input accent-primary"
-                />
-                Manter conectado
-              </label>
-
               {errorMessage && (
                 <p
                   role="alert"
@@ -248,50 +238,9 @@ function LoginPage() {
                 {isSubmitting ? 'Verificando acesso...' : 'Entrar'}
                 {!isSubmitting && <ArrowRight aria-hidden="true" />}
               </Button>
-
-              <div className="relative py-1">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-card px-3 text-xs text-muted-foreground">
-                    acesso de demonstração
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-border bg-muted/40 p-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-xs leading-relaxed">
-                    <p className="font-medium text-foreground">
-                      Conta de operador
-                    </p>
-                    <p className="mt-1 text-muted-foreground">
-                      marina@quimiport.com.br
-                    </p>
-                    <p className="text-muted-foreground">
-                      Senha: quimiport2026
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 bg-background"
-                    onClick={fillDemoCredentials}
-                  >
-                    Preencher
-                  </Button>
-                </div>
-              </div>
             </form>
           </CardContent>
         </Card>
-
-        <p className="mt-6 max-w-md text-center text-xs leading-relaxed text-muted-foreground">
-          Demonstração de interface. Este login não autentica usuários reais nem
-          deve ser usado em produção.
-        </p>
       </section>
     </main>
   );

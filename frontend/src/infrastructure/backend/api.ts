@@ -51,6 +51,15 @@ async function refreshTokens(): Promise<void> {
   saveTokens(data);
 }
 
+export function refreshSession(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = refreshTokens().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 api.interceptors.request.use((config) => {
   const accessToken = getAccessToken();
   if (accessToken) {
@@ -82,12 +91,7 @@ api.interceptors.response.use(
         !currentToken ||
         config.headers.Authorization === `Bearer ${currentToken}`
       ) {
-        if (!refreshPromise) {
-          refreshPromise = refreshTokens().finally(() => {
-            refreshPromise = null;
-          });
-        }
-        await refreshPromise;
+        await refreshSession();
       }
     } catch (refreshError) {
       endSession();
