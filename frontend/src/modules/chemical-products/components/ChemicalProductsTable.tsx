@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Pencil, Search, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Search, Trash2 } from 'lucide-react';
 import type { ChemicalProduct } from '@/modules/chemical-products/models/chemicalProduct';
 import DataTable, {
   type DataTableColumn,
@@ -10,6 +10,8 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 
 interface ChemicalProductsTableProps {
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
   deleting: boolean;
   products: ChemicalProduct[];
   totalProducts: number;
@@ -23,6 +25,8 @@ interface ChemicalProductsTableProps {
 
 function ChemicalProductsTable({
   deleting,
+  statusFilter,
+  onStatusFilterChange,
   products,
   totalProducts,
   search,
@@ -38,7 +42,12 @@ function ChemicalProductsTable({
       header: 'Produto',
       render: (product) => (
         <div>
-          <span className="block font-medium">{product.nome}</span>
+          <Link
+            to={`/produtos/${product.id}`}
+            className="block font-medium text-primary hover:underline"
+          >
+            {product.nome}
+          </Link>
           {product.descricao && (
             <span className="mt-0.5 block text-xs text-muted-foreground">
               {product.descricao}
@@ -82,6 +91,16 @@ function ChemicalProductsTable({
             asChild
             variant="ghost"
             size="icon-sm"
+            aria-label={`Visualizar ${product.nome}`}
+          >
+            <Link to={`/produtos/${product.id}`}>
+              <Eye aria-hidden="true" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon-sm"
             aria-label={`Editar ${product.nome}`}
           >
             <Link to={`/produtos/${product.id}/editar`}>
@@ -110,20 +129,36 @@ function ChemicalProductsTable({
         columns={columns}
         getRowKey={(product) => product.id}
         minWidth="680px"
-        emptyMessage={`Nenhum produto encontrado para “${search}”.`}
+        emptyMessage={
+          totalProducts === 0
+            ? 'Nenhum produto cadastrado. Use “Novo produto” para começar.'
+            : 'Nenhum produto corresponde aos filtros selecionados.'
+        }
         toolbar={
-          <div className="relative sm:w-72">
-            <Search
-              className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              aria-label="Buscar produtos"
-              placeholder="Buscar por nome ou classe..."
-              value={search}
-              onChange={(event) => onSearchChange(event.target.value)}
-              className="h-9 bg-background pl-9"
-            />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative sm:w-72">
+              <Search
+                className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                aria-label="Buscar produtos"
+                placeholder="Buscar por nome ou classe..."
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                className="h-9 bg-background pl-9"
+              />
+            </div>
+            <select
+              aria-label="Filtrar por status"
+              value={statusFilter}
+              onChange={(event) => onStatusFilterChange(event.target.value)}
+              className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            >
+              <option value="all">Todos os status</option>
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
+            </select>
           </div>
         }
         footer={

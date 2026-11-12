@@ -1,3 +1,5 @@
+import { AppLayout } from '@/shared/components/layout/AppLayout';
+import ProtectedRoute from '@/modules/auth/components/ProtectedRoute';
 import { BrowserRouter, useRoutes } from 'react-router';
 import { authRoutes } from '@/modules/auth/routes';
 import { dashboardRoutes } from '@/modules/dashboard/routes';
@@ -8,8 +10,14 @@ function AppRoutes() {
   return useRoutes([
     ...authRoutes,
     ...healthRoutes,
-    ...dashboardRoutes,
-    ...chemicalProductRoutes,
+    {
+      element: (
+        <ProtectedRoute>
+          <AppLayout />
+        </ProtectedRoute>
+      ),
+      children: [...dashboardRoutes, ...chemicalProductRoutes],
+    },
   ]);
 }
 

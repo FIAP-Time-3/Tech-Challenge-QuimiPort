@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import ChemicalProductForm from '@/modules/chemical-products/components/ChemicalProductForm';
-import { getChemicalProduct } from '@/modules/chemical-products/use-cases/getChemicalProduct';
-import { updateProduct } from '@/modules/chemical-products/use-cases/saveChemicalProduct';
-import type {
-  ChemicalProduct,
-  ChemicalProductInput,
-} from '@/modules/chemical-products/models/chemicalProduct';
+import { ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { Title } from '@/shared/components/layout/Title';
 import { Button } from '@/shared/components/ui/button';
+import ChemicalProductForm from '@/modules/chemical-products/components/ChemicalProductForm';
+import { ProductLoadState } from '@/modules/chemical-products/components/ProductLoadState';
+import { useChemicalProduct } from '@/modules/chemical-products/hooks/useChemicalProduct';
+import { updateProduct } from '@/modules/chemical-products/use-cases/saveChemicalProduct';
+import type { ChemicalProductInput } from '@/modules/chemical-products/models/chemicalProduct';
 
 function EditChemicalProductPage() {
   const { id } = useParams();
@@ -16,89 +15,52 @@ function EditChemicalProductPage() {
 
 function EditChemicalProduct({ productId }: { productId: number }) {
   const navigate = useNavigate();
-  const [product, setProduct] = useState<ChemicalProduct | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let active = true;
-    if (!Number.isInteger(productId) || productId <= 0) return;
-    getChemicalProduct(productId)
-      .then((data) => {
-        if (active) setProduct(data);
-      })
-      .catch(() => {
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [productId, attempt]);
-
+  const { state, retry } = useChemicalProduct(productId);
   async function handleSubmit(input: ChemicalProductInput) {
     await updateProduct(productId, input);
-    navigate('/produtos');
+    navigate('/produtos', {
+      state: { productMessage: 'Produto atualizado com sucesso.' },
+    });
   }
-
-  if (Number.isInteger(productId) && productId > 0 && loading)
-    return <p role="status">Carregando produto...</p>;
-  if (error)
-    return (
-      <div role="alert">
-        <p>Não foi possível carregar o produto.</p>
-        <Button
-          onClick={() => {
-            setError(false);
-            setLoading(true);
-            setAttempt((value) => value + 1);
-          }}
-        >
-          Tentar novamente
-        </Button>
-      </div>
-    );
-
-  if (!product) {
-    return (
-      <section className="rounded-xl border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold">Produto não encontrado</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          O produto pode ter sido removido ou o endereço está incorreto.
-        </p>
-        <Button className="mt-4" onClick={() => navigate('/produtos')}>
-          Voltar para produtos
-        </Button>
-      </section>
-    );
-  }
-
   return (
-    <section className="space-y-5">
-      <div>
-        <p className="text-sm text-muted-foreground">Produtos químicos</p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-          Editar produto
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Atualize as informações de {product.nome}.
-        </p>
-      </div>
-      <ChemicalProductForm
-        key={product.id}
-        title="Dados do produto"
-        initialValue={{
-          nome: product.nome,
-          descricao: product.descricao,
-          classeRisco: product.classeRisco,
-          status: product.status,
-        }}
-        onSubmit={handleSubmit}
-      />
-    </section>
+    <>
+      <Title
+        eyebrow="Produtos químicos"
+        description={
+          state.kind === 'loaded'
+            ? `Atualize as informações de ${state.product.nome}.`
+            : 'Atualize as informações do produto.'
+        }
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/produtos">
+              <ArrowLeft aria-hidden="true" />
+              Voltar
+            </Link>
+          </Button>
+        }
+      >
+        Editar produto
+      </Title>
+      {state.kind === 'loaded' ? (
+        <ChemicalProductForm
+          title="Dados do produto"
+          initialValue={{
+            nome: state.product.nome,
+            descricao: state.product.descricao,
+            classeRisco: state.product.classeRisco,
+            status: state.product.status,
+          }}
+          onSubmit={handleSubmit}
+        />
+      ) : (
+        <ProductLoadState
+          kind={state.kind}
+          message={state.kind === 'error' ? state.message : undefined}
+          onRetry={retry}
+        />
+      )}
+    </>
   );
 }
-
 export default EditChemicalProductPage;

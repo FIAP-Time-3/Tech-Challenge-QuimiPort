@@ -1,14 +1,7 @@
-import {
-  Boxes,
-  FlaskConical,
-  LayoutDashboard,
-  Ship,
-  CircleAlert,
-} from 'lucide-react';
+import { Title } from '@/shared/components/layout/Title';
+import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
 import axios from 'axios';
-import { logout } from '@/modules/auth/use-cases/logout';
 import { useCurrentUser } from '@/modules/auth/services/currentUser';
 import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargasQuimicas';
 import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtosQuimicos';
@@ -21,9 +14,6 @@ import ActivityChartCard from '@/shared/components/data-display/ActivityChartCar
 import MetricGrid, {
   type MetricItem,
 } from '@/shared/components/data-display/MetricGrid';
-import PageHeader from '@/shared/components/layout/PageHeader';
-import PageWelcome from '@/shared/components/layout/PageWelcome';
-import SideNavigation from '@/shared/components/layout/SideNavigation';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -41,7 +31,6 @@ function DashboardPage() {
   } | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const navigate = useNavigate();
   const user = useCurrentUser();
   useEffect(() => {
     let active = true;
@@ -140,111 +129,70 @@ function DashboardPage() {
     };
   });
 
-  function handleLogout() {
-    logout();
-    navigate('/login', { replace: true });
-  }
-
   return (
-    <div className="min-h-svh bg-muted/50">
-      <SideNavigation
-        brand="QuimiPort"
-        description="gestão portuária"
-        brandHref="/"
-        brandIcon={FlaskConical}
-        items={[
-          {
-            label: 'Visão geral',
-            href: '#overview',
-            icon: LayoutDashboard,
-            active: true,
-          },
-          {
-            label: 'Cargas',
-            href: '#loads',
-            icon: Ship,
-            badge: data ? String(loads.length) : undefined,
-          },
-          { label: 'Produtos', href: '/produtos', icon: FlaskConical },
-        ]}
-      />
-      <div className="lg:pl-64">
-        <PageHeader
-          breadcrumb="QuimiPort / Operações"
-          title="Visão geral"
-          user={user}
-          onLogout={handleLogout}
-        />
-        <main
-          id="overview"
-          className="mx-auto max-w-[1440px] space-y-6 p-4 sm:p-8"
-        >
-          <PageWelcome
-            date={new Date().toLocaleDateString('pt-BR', { dateStyle: 'full' })}
-            greeting={`Olá, ${user.name}`}
-            description="Aqui está o resumo das operações do seu terminal."
+    <>
+      <Title
+        eyebrow={new Date().toLocaleDateString('pt-BR', { dateStyle: 'full' })}
+        description="Aqui está o resumo das operações do seu terminal."
+      >
+        Olá, {user.name}
+      </Title>
+      {error ? (
+        <div role="alert" className="space-y-3">
+          <p>Não foi possível carregar os dados do painel.</p>
+          <Button
+            onClick={() => {
+              setError(false);
+              setData(null);
+              setAttempt((value) => value + 1);
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      ) : !data ? (
+        <p role="status">Carregando operações...</p>
+      ) : (
+        <>
+          <MetricGrid items={metrics} label="Indicadores operacionais" />
+          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
+            <ActivityChartCard
+              title="Cargas cadastradas"
+              description="Quantidade de cargas criadas por dia"
+              periodLabel="Últimos 7 dias"
+              data={days}
+            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Cargas por status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Object.entries(statusLabels).map(([status, label]) => (
+                  <div
+                    key={status}
+                    className="flex justify-between gap-3 text-sm"
+                  >
+                    <span>{label}</span>
+                    <strong>
+                      {
+                        loads.filter((load) => load.statusCarga === status)
+                          .length
+                      }
+                    </strong>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
+          <RecentLoadsTable
+            loads={filteredLoads}
+            totalLoads={recentLoads.length}
+            search={search}
+            onSearchChange={setSearch}
           />
-          {error ? (
-            <div role="alert" className="space-y-3">
-              <p>Não foi possível carregar os dados do painel.</p>
-              <Button
-                onClick={() => {
-                  setError(false);
-                  setData(null);
-                  setAttempt((value) => value + 1);
-                }}
-              >
-                Tentar novamente
-              </Button>
-            </div>
-          ) : !data ? (
-            <p role="status">Carregando operações...</p>
-          ) : (
-            <>
-              <MetricGrid items={metrics} label="Indicadores operacionais" />
-              <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
-                <ActivityChartCard
-                  title="Cargas cadastradas"
-                  description="Quantidade de cargas criadas por dia"
-                  periodLabel="Últimos 7 dias"
-                  data={days}
-                />
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Cargas por status</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {Object.entries(statusLabels).map(([status, label]) => (
-                      <div
-                        key={status}
-                        className="flex justify-between gap-3 text-sm"
-                      >
-                        <span>{label}</span>
-                        <strong>
-                          {
-                            loads.filter((load) => load.statusCarga === status)
-                              .length
-                          }
-                        </strong>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </section>
-              <RecentLoadsTable
-                loads={filteredLoads}
-                totalLoads={recentLoads.length}
-                search={search}
-                onSearchChange={setSearch}
-              />
-            </>
-          )}
-          <footer className="pb-2 text-xs text-muted-foreground">
-            QuimiPort · Gestão segura de operações químicas
-          </footer>
-        </main>
-      </div>
-    </div>
+        </>
+      )}
+    </>
   );
 }
 export default DashboardPage;

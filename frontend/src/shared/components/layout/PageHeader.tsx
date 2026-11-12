@@ -1,7 +1,9 @@
-import { Bell, LogOut } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 
 interface PageHeaderProps {
+  onMenuOpen: () => void;
+  menuOpen: boolean;
   breadcrumb: string;
   title: string;
   user: {
@@ -12,24 +14,36 @@ interface PageHeaderProps {
   onLogout: () => void;
 }
 
-function PageHeader({ breadcrumb, title, user, onLogout }: PageHeaderProps) {
+function PageHeader({
+  breadcrumb,
+  title,
+  user,
+  onLogout,
+  onMenuOpen,
+  menuOpen,
+}: PageHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex h-[76px] items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-8">
-      <div>
-        <p className="text-xs text-muted-foreground">{breadcrumb}</p>
-        <h1 className="mt-0.5 text-lg font-semibold tracking-tight">{title}</h1>
-      </div>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
-          aria-label="Notificações"
+          className="shrink-0 lg:hidden"
+          aria-label="Abrir menu"
+          aria-controls="mobile-navigation"
+          aria-expanded={menuOpen}
+          onClick={onMenuOpen}
         >
-          <Bell aria-hidden="true" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-background bg-amber-500" />
+          <Menu aria-hidden="true" />
         </Button>
-        <span className="hidden h-8 w-px bg-border sm:block" />
+        <div className="min-w-0">
+          <p className="truncate text-xs text-muted-foreground">{breadcrumb}</p>
+          <p className="mt-0.5 truncate text-lg font-semibold tracking-tight">
+            {title}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-2.5">
           <div className="flex size-9 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
             {user.initials}

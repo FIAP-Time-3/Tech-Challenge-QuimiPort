@@ -4,6 +4,11 @@ export interface ChemicalProduct {
   descricao: string;
   classeRisco: number;
   status: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type ChemicalProductInput = Omit<ChemicalProduct, 'id'>;
+export type ChemicalProductInput = Pick<
+  ChemicalProduct,
+  'nome' | 'descricao' | 'classeRisco' | 'status'
+>;

@@ -13,6 +13,8 @@ function toProduct(data: ProdutoQuimicoResponseDto): ChemicalProduct {
     descricao: data.descricao ?? '',
     classeRisco: data.classeRisco,
     status: data.status,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
   };
 }
 
@@ -51,4 +53,11 @@ export async function updateChemicalProduct(
 
 export async function deleteChemicalProduct(id: number): Promise<void> {
   await produtoQuimicoApiRoutes.remove(id);
+}
+
+export async function deactivateChemicalProduct(
+  id: number,
+): Promise<ChemicalProduct> {
+  const { data } = await produtoQuimicoApiRoutes.inativar(id);
+  return toProduct(data);
 }
