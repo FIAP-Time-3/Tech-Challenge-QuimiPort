@@ -21,6 +21,9 @@ describe('LoginService', () => {
   let comparePassword: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('JWT_ACCESS_TOKEN_MINUTES', '60');
+    vi.stubEnv('JWT_REFRESH_TOKEN_MINUTES', '4320');
     vi.restoreAllMocks();
     vi.resetAllMocks();
     comparePassword = vi
@@ -37,6 +40,8 @@ describe('LoginService', () => {
 
     service = module.get<LoginService>(LoginService);
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   describe('login', () => {
     it('procura username sem diferenciar maiúsculas e emite tokens', async () => {
@@ -69,15 +74,20 @@ describe('LoginService', () => {
         hash: 'hash',
         password: 'senha',
       });
-      expect(jwtMock.signAsync).toHaveBeenNthCalledWith(1, {
-        id: 8,
-        username: 'Bruno',
-        roles: ['OPERADOR'],
-      });
+      expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+        1,
+        {
+          id: 8,
+          username: 'Bruno',
+          roles: ['OPERADOR'],
+          token_use: 'access',
+        },
+        { expiresIn: 3600, jwtid: expect.any(String) },
+      );
       expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
         2,
-        { id: 8 },
-        { expiresIn: '7d' },
+        { id: 8, token_use: 'refresh' },
+        { expiresIn: 259200, jwtid: expect.any(String) },
       );
     });
 
@@ -126,7 +136,7 @@ describe('LoginService', () => {
 
   describe('refresh', () => {
     it('valida refresh token, procura usuário e emite novos tokens', async () => {
-      jwtMock.verifyAsync.mockResolvedValue({ id: 8 });
+      jwtMock.verifyAsync.mockResolvedValue({ id: 8, token_use: 'refresh' });
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
         username: 'Bruno',
@@ -147,15 +157,20 @@ describe('LoginService', () => {
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { id: 8 },
       });
-      expect(jwtMock.signAsync).toHaveBeenNthCalledWith(1, {
-        id: 8,
-        username: 'Bruno',
-        roles: ['OPERADOR'],
-      });
+      expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+        1,
+        {
+          id: 8,
+          username: 'Bruno',
+          roles: ['OPERADOR'],
+          token_use: 'access',
+        },
+        { expiresIn: 3600, jwtid: expect.any(String) },
+      );
       expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
         2,
-        { id: 8 },
-        { expiresIn: '7d' },
+        { id: 8, token_use: 'refresh' },
+        { expiresIn: 259200, jwtid: expect.any(String) },
       );
     });
 
@@ -168,20 +183,25 @@ describe('LoginService', () => {
       expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
     });
 
-    it.each([null, {}, { id: 0 }])(
-      'recusa payload sem id válido: %s',
-      async (decoded) => {
-        jwtMock.verifyAsync.mockResolvedValue(decoded);
+    it.each([
+      null,
+      {},
+      { id: 0 },
+      { id: 8 },
+      { id: 8, token_use: 'access' },
+      { id: -1, token_use: 'refresh' },
+      { id: '8', token_use: 'refresh' },
+    ])('recusa payload sem id válido: %s', async (decoded) => {
+      jwtMock.verifyAsync.mockResolvedValue(decoded);
 
-        await expect(
-          service.refresh({ refresh_token: 'invalid' }),
-        ).rejects.toThrow(UnauthorizedException);
-        expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
-      },
-    );
+      await expect(
+        service.refresh({ refresh_token: 'invalid' }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    });
 
     it('recusa refresh token de usuário inexistente', async () => {
-      jwtMock.verifyAsync.mockResolvedValue({ id: 99 });
+      jwtMock.verifyAsync.mockResolvedValue({ id: 99, token_use: 'refresh' });
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -191,7 +211,7 @@ describe('LoginService', () => {
     });
 
     it('recusa refresh token de usuário inativo', async () => {
-      jwtMock.verifyAsync.mockResolvedValue({ id: 8 });
+      jwtMock.verifyAsync.mockResolvedValue({ id: 8, token_use: 'refresh' });
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
         username: 'Bruno',

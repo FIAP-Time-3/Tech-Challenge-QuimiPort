@@ -98,7 +98,12 @@ describe('AuthGuard', () => {
     async (user) => {
       const { guard, request, jwtMock, prismaMock } = setup();
       request.headers.authorization = 'Bearer valid';
-      jwtMock.verifyAsync.mockResolvedValue({ id: 7, iat: 10, exp: 20 });
+      jwtMock.verifyAsync.mockResolvedValue({
+        id: 7,
+        iat: 10,
+        exp: 20,
+        token_use: 'access',
+      });
       prismaMock.user.findFirst.mockResolvedValue(user);
 
       await expect(guard.canActivate(createContext(request))).rejects.toThrow(
@@ -107,10 +112,32 @@ describe('AuthGuard', () => {
     },
   );
 
+  it.each([
+    { id: 7, token_use: 'refresh' },
+    { id: 7 },
+    { token_use: 'access' },
+  ])(
+    'recusa token sem finalidade de acesso ou id válido: %s',
+    async (payload) => {
+      const { guard, request, jwtMock, prismaMock } = setup();
+      request.headers.authorization = 'Bearer token';
+      jwtMock.verifyAsync.mockResolvedValue(payload);
+      await expect(guard.canActivate(createContext(request))).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prismaMock.user.findFirst).not.toHaveBeenCalled();
+    },
+  );
+
   it('anexa dados atuais do usuário à requisição autenticada', async () => {
     const { guard, request, jwtMock, prismaMock } = setup();
     request.headers.authorization = 'Bearer valid';
-    jwtMock.verifyAsync.mockResolvedValue({ id: 7, iat: 10, exp: 20 });
+    jwtMock.verifyAsync.mockResolvedValue({
+      id: 7,
+      iat: 10,
+      exp: 20,
+      token_use: 'access',
+    });
     prismaMock.user.findFirst.mockResolvedValue({
       id: 7,
       username: 'bruno',

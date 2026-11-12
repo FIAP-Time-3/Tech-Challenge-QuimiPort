@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import configurations from '../../../configurations/configurations.js';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { JwtService } from '@nestjs/jwt';
@@ -39,27 +41,7 @@ export class LoginService {
       throw new UnauthorizedException('Login ou Senha incorreta');
     }
 
-    const { id, roles } = user;
-
-    const access_token = await this.jwt.signAsync({
-      id,
-      username: user.username,
-      roles,
-    });
-
-    const refresh_token = await this.jwt.signAsync(
-      {
-        id,
-      },
-      {
-        expiresIn: '7d',
-      },
-    );
-
-    return plainToInstance(LoginResponseDto, {
-      access_token,
-      refresh_token,
-    });
+    return await this.issueTokens(user);
   }
 
   async refresh(body: RefreshRequestDto) {
@@ -73,7 +55,13 @@ export class LoginService {
       throw new UnauthorizedException('Token Invalido');
     }
 
-    if (!decodedToken || typeof decodedToken !== 'object' || !decodedToken.id) {
+    if (
+      !decodedToken ||
+      typeof decodedToken !== 'object' ||
+      decodedToken.token_use !== 'refresh' ||
+      !Number.isSafeInteger(decodedToken.id) ||
+      decodedToken.id <= 0
+    ) {
       throw new UnauthorizedException('Token Invalido');
     }
 
@@ -87,26 +75,29 @@ export class LoginService {
       throw new UnauthorizedException('Token Invalido');
     }
 
-    const { id, username, roles } = user;
+    return await this.issueTokens(user);
+  }
 
-    const access_token = await this.jwt.signAsync({
-      id,
-      username,
-      roles,
-    });
-
-    const new_refresh_token = await this.jwt.signAsync(
+  private async issueTokens(user: {
+    id: number;
+    username: string;
+    roles: string[];
+  }) {
+    const { accessTokenMinutes, refreshTokenMinutes } = configurations().jwt;
+    const access_token = await this.jwt.signAsync(
       {
-        id,
+        id: user.id,
+        username: user.username,
+        roles: user.roles,
+        token_use: 'access',
       },
-      {
-        expiresIn: '7d',
-      },
+      { expiresIn: accessTokenMinutes * 60, jwtid: randomUUID() },
+    );
+    const refresh_token = await this.jwt.signAsync(
+      { id: user.id, token_use: 'refresh' },
+      { expiresIn: refreshTokenMinutes * 60, jwtid: randomUUID() },
     );
 
-    return plainToInstance(LoginResponseDto, {
-      access_token,
-      refresh_token: new_refresh_token,
-    });
+    return plainToInstance(LoginResponseDto, { access_token, refresh_token });
   }
 }

@@ -50,6 +50,15 @@ export class AuthGuard implements CanActivate {
     try {
       const data = await this.jwtService.verifyAsync(token);
 
+      if (
+        !data ||
+        data.token_use !== 'access' ||
+        !Number.isSafeInteger(data.id) ||
+        data.id <= 0
+      ) {
+        throw new UnauthorizedException('Token inválido');
+      }
+
       const user = await this.prisma.user.findFirst({ where: { id: data.id } });
       if (!user || !user.status) {
         throw new UnauthorizedException('Token inválido');
