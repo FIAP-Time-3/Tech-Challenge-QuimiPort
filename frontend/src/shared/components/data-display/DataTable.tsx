@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
+} from '@/shared/components/ui/Card';
 
 export interface DataTableColumn<Row> {
   key: string;

@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { X } from 'lucide-react';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@/shared/components/ui/Button';
 
 export interface SideNavigationItem {
   label: string;

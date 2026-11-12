@@ -6,8 +6,8 @@ import {
   saveTokens,
   saveUser,
 } from '@/modules/auth/services/tokenStorage';
-import type { UserResponseDto } from './dtos/users';
-import type { LoginResponseDto } from './dtos/login';
+import type { UserResponseDto } from './dtos/user.dtos';
+import type { LoginResponseDto } from './dtos/login.dtos';
 
 const options = {
   baseURL: import.meta.env.VITE_API_URL || '/api',

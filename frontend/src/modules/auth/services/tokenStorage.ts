@@ -1,4 +1,4 @@
-import type { UserResponseDto } from '@/infrastructure/backend/dtos/users';
+import type { UserResponseDto } from '@/infrastructure/backend/dtos/user.dtos';
 const accessTokenStorageKey = 'quimiport.access-token';
 
 export function getAccessToken(): string | null {

@@ -3,24 +3,24 @@ import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useCurrentUser } from '@/modules/auth/services/currentUser';
-import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargasQuimicas';
-import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtosQuimicos';
-import type { CargaQuimicaResponseDto } from '@/infrastructure/backend/dtos/cargasQuimicas';
+import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargaQuimica.routes';
+import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtoQuimico.routes';
+import type { CargaQuimicaResponseDto } from '@/infrastructure/backend/dtos/cargaQuimica.dtos';
 import {
   statusLabels,
   toDashboardLoad,
-} from '@/modules/dashboard/services/cargas';
+} from '@/modules/dashboard/services/cargaQuimica.service';
 import ActivityChartCard from '@/shared/components/data-display/ActivityChartCard';
 import MetricGrid, {
   type MetricItem,
 } from '@/shared/components/data-display/MetricGrid';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@/shared/components/ui/Button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
+} from '@/shared/components/ui/Card';
 import RecentLoadsTable from '@/modules/dashboard/components/RecentLoadsTable';
 
 function DashboardPage() {

@@ -1,13 +1,13 @@
 import { Activity, Clock3, Database, Server } from 'lucide-react';
 import type { Health } from '@/modules/health/models/health';
-import { Badge } from '@/shared/components/ui/badge';
+import { Badge } from '@/shared/components/ui/Badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
+} from '@/shared/components/ui/Card';
 
 export function HealthStatus({ data }: { data: Health }) {
   const healthy = data.status === 'ok';

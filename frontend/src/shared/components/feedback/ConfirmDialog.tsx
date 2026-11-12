@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@/shared/components/ui/Button';
 
 interface ConfirmDialogProps {
   open: boolean;

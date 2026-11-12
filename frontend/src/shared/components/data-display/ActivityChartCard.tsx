@@ -1,12 +1,12 @@
 import { ArrowUpRight } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/badge';
+import { Badge } from '@/shared/components/ui/Badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
+} from '@/shared/components/ui/Card';
 
 interface ActivityChartCardProps {
   title: string;

@@ -1,5 +1,5 @@
 import { Menu, LogOut } from 'lucide-react';
-import { Button } from '@/shared/components/ui/button';
+import { Button } from '@/shared/components/ui/Button';
 
 interface PageHeaderProps {
   onMenuOpen: () => void;

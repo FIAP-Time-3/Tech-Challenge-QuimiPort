@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { loginApiRoutes } from '@/infrastructure/backend/routes/login';
-import { userApiRoutes } from '@/infrastructure/backend/routes/users';
+import { loginApiRoutes } from '@/infrastructure/backend/routes/login.routes';
+import { userApiRoutes } from '@/infrastructure/backend/routes/user.routes';
 import {
   ArrowRight,
   Eye,
@@ -11,16 +11,16 @@ import {
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { login } from '@/modules/auth/use-cases/login';
-import { Badge } from '@/shared/components/ui/badge';
-import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/Badge';
+import { Button } from '@/shared/components/ui/Button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
-import { Input } from '@/shared/components/ui/input';
+} from '@/shared/components/ui/Card';
+import { Input } from '@/shared/components/ui/Input';
 
 function LoginPage() {
   const navigate = useNavigate();

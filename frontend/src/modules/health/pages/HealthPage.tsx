@@ -4,15 +4,15 @@ import { Link } from 'react-router';
 import type { Health } from '@/modules/health/models/health';
 import { HealthStatus } from '@/modules/health/components/HealthStatus';
 import { getHealth } from '@/modules/health/use-cases/getHealth';
-import { Badge } from '@/shared/components/ui/badge';
-import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/Badge';
+import { Button } from '@/shared/components/ui/Button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/shared/components/ui/card';
+} from '@/shared/components/ui/Card';
 
 type HealthState =
   { kind: 'loading' } | { kind: 'error' } | { kind: 'loaded'; data: Health };

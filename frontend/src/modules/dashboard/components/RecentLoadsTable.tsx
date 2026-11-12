@@ -1,10 +1,10 @@
 import { ArrowRight, Search } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/badge';
-import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/Badge';
+import { Button } from '@/shared/components/ui/Button';
 import DataTable, {
   type DataTableColumn,
 } from '@/shared/components/data-display/DataTable';
-import { Input } from '@/shared/components/ui/input';
+import { Input } from '@/shared/components/ui/Input';
 import type { DashboardLoad } from '@/modules/dashboard/models/dashboard';
 
 interface RecentLoadsTableProps {

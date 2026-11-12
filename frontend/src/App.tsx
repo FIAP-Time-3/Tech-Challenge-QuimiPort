@@ -3,7 +3,7 @@ import ProtectedRoute from '@/modules/auth/components/ProtectedRoute';
 import { BrowserRouter, useRoutes } from 'react-router';
 import { authRoutes } from '@/modules/auth/routes';
 import { dashboardRoutes } from '@/modules/dashboard/routes';
-import { chemicalProductRoutes } from '@/modules/chemical-products/routes';
+import { produtoQuimicoRoutes } from '@/modules/produtoQuimico/routes';
 import { healthRoutes } from '@/modules/health/routes';
 
 function AppRoutes() {
@@ -16,7 +16,7 @@ function AppRoutes() {
           <AppLayout />
         </ProtectedRoute>
       ),
-      children: [...dashboardRoutes, ...chemicalProductRoutes],
+      children: [...dashboardRoutes, ...produtoQuimicoRoutes],
     },
   ]);
 }

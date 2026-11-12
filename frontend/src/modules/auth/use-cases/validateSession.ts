@@ -1,4 +1,4 @@
-import { validateAccessToken } from '@/modules/auth/services/authService';
+import { validateAccessToken } from '@/modules/auth/services/login.service';
 import {
   clearTokens,
   getAccessToken,
