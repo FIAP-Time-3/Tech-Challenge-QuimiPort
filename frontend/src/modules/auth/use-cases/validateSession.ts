@@ -1,6 +1,6 @@
 import { validateAccessToken } from '@/modules/auth/services/authService';
 import {
-  clearAccessToken,
+  clearTokens,
   getAccessToken,
 } from '@/modules/auth/services/tokenStorage';
 
@@ -9,7 +9,7 @@ export async function validateSession(): Promise<boolean> {
   const isValid = accessToken ? await validateAccessToken(accessToken) : false;
 
   if (!isValid) {
-    clearAccessToken();
+    clearTokens();
   }
 
   return isValid;

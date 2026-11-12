@@ -93,6 +93,29 @@ describe('AuthGuard', () => {
     expect(prismaMock.user.findFirst).not.toHaveBeenCalled();
   });
 
+  it('diferencia token expirado de assinatura inválida', async () => {
+    const { guard, request, jwtMock } = setup();
+    request.headers.authorization = 'Bearer expired';
+    const expired = new Error('jwt expired');
+    expired.name = 'TokenExpiredError';
+    jwtMock.verifyAsync.mockRejectedValue(expired);
+    const error = await guard
+      .canActivate(createContext(request))
+      .catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(UnauthorizedException);
+    expect((error as UnauthorizedException).getResponse()).toMatchObject({
+      statusCode: 401,
+      code: 'ACCESS_TOKEN_EXPIRED',
+    });
+    jwtMock.verifyAsync.mockRejectedValue(new Error('invalid signature'));
+    const invalid = await guard
+      .canActivate(createContext(request))
+      .catch((error: unknown) => error);
+    expect((invalid as UnauthorizedException).getResponse()).not.toHaveProperty(
+      'code',
+    );
+  });
+
   it.each([null, { id: 7, status: false }])(
     'recusa token associado a %s',
     async (user) => {
