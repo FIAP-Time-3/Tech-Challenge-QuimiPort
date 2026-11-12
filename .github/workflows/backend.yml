@@ -1,17 +1,29 @@
-name: CI
+name: Backend CI
 
 on:
   push:
     branches:
       - "bruno"
-      - "fase2/dev"
-      - "fase2/main"
+      - "planning_bruno"
+      - "fase3/dev"
+      - "fase3/main"
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - "docker-compose-db-only.yml"
+      - ".github/workflows/backend.yml"
 
   pull_request:
     branches:
       - "bruno"
-      - "fase2/dev"
-      - "fase2/main"
+      - "planning_bruno"
+      - "fase3/dev"
+      - "fase3/main"
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - "docker-compose-db-only.yml"
+      - ".github/workflows/backend.yml"
 
 jobs:
   pipeline:
