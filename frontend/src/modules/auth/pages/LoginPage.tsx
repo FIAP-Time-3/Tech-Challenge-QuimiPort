@@ -1,3 +1,6 @@
+import axios from 'axios';
+import { loginApiRoutes } from '@/infrastructure/backend/routes/login';
+import { userApiRoutes } from '@/infrastructure/backend/routes/users';
 import {
   ArrowRight,
   Eye,
@@ -7,7 +10,7 @@ import {
   ShieldCheck,
   Ship,
 } from 'lucide-react';
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { login } from '@/modules/auth/use-cases/login';
 import { Badge } from '@/shared/components/ui/badge';
@@ -23,20 +26,64 @@ import { Input } from '@/shared/components/ui/input';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [setup, setSetup] = useState<
+    'loading' | 'required' | 'ready' | 'error'
+  >('loading');
+  const [setupAttempt, setSetupAttempt] = useState(0);
+  const [name, setName] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  useEffect(() => {
+    const controller = new AbortController();
+    loginApiRoutes
+      .getSetup(controller.signal)
+      .then(({ data }) => {
+        if (!controller.signal.aborted)
+          setSetup(data.requiresSetup ? 'required' : 'ready');
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setSetup('error');
+      });
+    return () => controller.abort();
+  }, [setupAttempt]);
+
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement, SubmitEvent>,
   ) {
     event.preventDefault();
+    if (isSubmitting || (setup !== 'required' && setup !== 'ready')) return;
     setErrorMessage('');
+    setSuccessMessage('');
+    if (setup === 'required' && password !== confirmation) {
+      setErrorMessage('As senhas não conferem.');
+      return;
+    }
+    if (!username.trim() || (setup === 'required' && !name.trim())) {
+      setErrorMessage('Preencha os campos obrigatórios.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
+      if (setup === 'required') {
+        await userApiRoutes.createFirstAdmin({
+          name: name.trim(),
+          username: username.trim(),
+          password,
+        });
+        setUsername(username.trim());
+        setPassword('');
+        setConfirmation('');
+        setSetup('ready');
+        setSuccessMessage('Administrador criado. Entre para continuar.');
+        return;
+      }
       const session = await login(username, password);
       if (!session) {
         setErrorMessage(
@@ -45,7 +92,28 @@ function LoginPage() {
         return;
       }
       navigate('/', { replace: true });
-    } catch {
+    } catch (error) {
+      if (setup === 'required' && axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          setSetup('ready');
+          setPassword('');
+          setConfirmation('');
+          setErrorMessage(
+            'A configuração inicial já foi concluída. Entre com suas credenciais.',
+          );
+          return;
+        }
+        if (error.response?.status === 409) {
+          setErrorMessage(
+            'Esse usuário já está em uso. Escolha outro nome de usuário.',
+          );
+          return;
+        }
+        if (error.response?.status === 400) {
+          setErrorMessage('Confira os dados informados e tente novamente.');
+          return;
+        }
+      }
       setErrorMessage(
         'Não foi possível acessar o sistema. Tente novamente em instantes.',
       );
@@ -148,97 +216,170 @@ function LoginPage() {
               Acesso seguro
             </Badge>
             <CardTitle className="text-2xl tracking-tight">
-              Acesse sua conta
+              {setup === 'required'
+                ? 'Crie o primeiro administrador'
+                : 'Acesse sua conta'}
             </CardTitle>
             <CardDescription>
-              Entre com suas credenciais para continuar no QuimiPort.
+              {setup === 'required'
+                ? 'Configure o acesso inicial ao QuimiPort.'
+                : 'Entre com suas credenciais para continuar no QuimiPort.'}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium">
-                  Usuário
-                </label>
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  placeholder="Digite seu usuário"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  required
-                  className="h-10 bg-background"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium">
-                    Senha
-                  </label>
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-primary hover:underline"
-                    onClick={() =>
-                      setErrorMessage(
-                        'Entre em contato com o administrador para recuperar seu acesso.',
-                      )
-                    }
-                  >
-                    Esqueceu a senha?
-                  </button>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder="Digite sua senha"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    className="h-10 bg-background pr-11"
-                  />
-                  <button
-                    type="button"
-                    aria-label={
-                      showPassword ? 'Ocultar senha' : 'Mostrar senha'
-                    }
-                    aria-pressed={showPassword}
-                    onClick={() => setShowPassword((visible) => !visible)}
-                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="size-4" aria-hidden="true" />
-                    ) : (
-                      <Eye className="size-4" aria-hidden="true" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {errorMessage && (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
-                >
-                  {errorMessage}
+            {setup === 'loading' ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                Verificando configuração inicial...
+              </p>
+            ) : setup === 'error' ? (
+              <div className="space-y-4">
+                <p role="alert" className="text-sm text-destructive">
+                  Não foi possível verificar a configuração do sistema.
                 </p>
-              )}
+                <Button
+                  onClick={() => {
+                    setSetup('loading');
+                    setSetupAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {setup === 'required' && (
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium">
+                      Nome
+                    </label>
+                    <Input
+                      id="name"
+                      name="name"
+                      autoComplete="name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label htmlFor="username" className="text-sm font-medium">
+                    Usuário
+                  </label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="Digite seu usuário"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    required
+                    className="h-10 bg-background"
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="h-10 w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Verificando acesso...' : 'Entrar'}
-                {!isSubmitting && <ArrowRight aria-hidden="true" />}
-              </Button>
-            </form>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Senha
+                    </label>
+                    {setup === 'ready' && (
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary hover:underline"
+                        onClick={() =>
+                          setErrorMessage(
+                            'Entre em contato com o administrador para recuperar seu acesso.',
+                          )
+                        }
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete={
+                        setup === 'required'
+                          ? 'new-password'
+                          : 'current-password'
+                      }
+                      placeholder="Digite sua senha"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      className="h-10 bg-background pr-11"
+                    />
+                    <button
+                      type="button"
+                      aria-label={
+                        showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                      }
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((visible) => !visible)}
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="size-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="size-4" aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {setup === 'required' && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="confirmation"
+                      className="text-sm font-medium"
+                    >
+                      Confirmar senha
+                    </label>
+                    <Input
+                      id="confirmation"
+                      name="confirmation"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={confirmation}
+                      onChange={(event) => setConfirmation(event.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+                {successMessage && (
+                  <p role="status" className="rounded-lg bg-muted p-3 text-sm">
+                    {successMessage}
+                  </p>
+                )}
+                {errorMessage && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
+                  >
+                    {errorMessage}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  className="h-10 w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting
+                    ? 'Aguarde...'
+                    : setup === 'required'
+                      ? 'Criar administrador'
+                      : 'Entrar'}
+                  {!isSubmitting && <ArrowRight aria-hidden="true" />}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </section>

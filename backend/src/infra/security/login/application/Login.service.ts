@@ -9,6 +9,8 @@ import {
 } from '../infrastructure/dtos/login.request.dtos.js';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from '../infrastructure/dtos/login.response.dtos.js';
+import { RolesEnum } from '../../enums/roles.enum.js';
+import { SetupResponseDto } from '../infrastructure/dtos/login.response.dtos.js';
 import { PasswordService } from '../../password/password.service.js';
 
 @Injectable()
@@ -17,6 +19,13 @@ export class LoginService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
   ) {}
+
+  async getSetup(): Promise<SetupResponseDto> {
+    const count = await this.prisma.user.count({
+      where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+    });
+    return { requiresSetup: count === 0 };
+  }
 
   async login(body: LoginRequestDto) {
     const { password, username } = body;

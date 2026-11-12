@@ -14,6 +14,8 @@ describe('UserService', () => {
   let service: UserService;
 
   const prismaMock = {
+    $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
     user: {
       count: vi.fn(),
       create: vi.fn(),
@@ -35,6 +37,9 @@ describe('UserService', () => {
   beforeEach(async () => {
     vi.restoreAllMocks();
     vi.resetAllMocks();
+    prismaMock.$transaction.mockImplementation(async (callback) =>
+      callback(prismaMock),
+    );
     hashPassword = vi
       .spyOn(PasswordService, 'hash')
       .mockResolvedValue('hashed');
@@ -62,6 +67,7 @@ describe('UserService', () => {
         body: { username: 'admin', name: 'Admin', password: 'secret' },
       });
 
+      expect(prismaMock.$executeRaw).toHaveBeenCalledOnce();
       expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
           username: 'admin',

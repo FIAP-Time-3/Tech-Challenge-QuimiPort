@@ -5,6 +5,7 @@ import { LoginController } from './login.controller.js';
 describe('LoginController', () => {
   let controller: LoginController;
   const serviceMock = {
+    getSetup: vi.fn(),
     login: vi.fn(),
     refresh: vi.fn(),
   };
@@ -17,6 +18,13 @@ describe('LoginController', () => {
     }).compile();
 
     controller = module.get(LoginController);
+  });
+
+  it('consulta a configuração inicial', async () => {
+    serviceMock.getSetup.mockResolvedValue({ requiresSetup: true });
+    await expect(controller.getSetup()).resolves.toEqual({
+      requiresSetup: true,
+    });
   });
 
   it('encaminha credenciais ao serviço de login', async () => {

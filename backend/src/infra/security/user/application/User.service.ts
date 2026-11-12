@@ -24,33 +24,40 @@ export class UserService {
   }: {
     body: CreateFirstUserDto;
   }): Promise<UserResponseDto> {
-    const countAdmin = await this.prisma.user.count({
-      where: {
-        roles: { has: RolesEnum.ADMINISTRADOR },
-        status: true,
-      },
-    });
-
-    if (countAdmin > 0) {
-      throw new ForbiddenException();
-    }
-
-    return await this.create({
-      body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+    return await this.prisma.$transaction(async (transaction) => {
+      // Serializa o primeiro cadastro entre requisições e instâncias da API.
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
+      const countAdmin = await transaction.user.count({
+        where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+      });
+      if (countAdmin > 0) {
+        throw new ForbiddenException(
+          'O administrador inicial já foi criado. Faça login.',
+        );
+      }
+      return await this.create(
+        {
+          body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+        },
+        transaction,
+      );
     });
   }
 
-  async create({
-    body,
-  }: {
-    body: CreateOrUpdateUserDto;
-  }): Promise<UserResponseDto> {
-    await this.checkDuplicated({ body });
+  async create(
+    {
+      body,
+    }: {
+      body: CreateOrUpdateUserDto;
+    },
+    database: Pick<PrismaService, 'user'> = this.prisma,
+  ): Promise<UserResponseDto> {
+    await this.checkDuplicated({ body }, database);
     const hashedPassword = await PasswordService.hash({
       password: body.password,
     });
 
-    const user = await this.prisma.user.create({
+    const user = await database.user.create({
       data: {
         username: body.username,
         name: body.name,
@@ -130,14 +137,17 @@ export class UserService {
     return { id };
   }
 
-  private async checkDuplicated({
-    id,
-    body,
-  }: {
-    id?: number;
-    body: CreateOrUpdateUserDto;
-  }) {
-    const duplicated = await this.prisma.user.count({
+  private async checkDuplicated(
+    {
+      id,
+      body,
+    }: {
+      id?: number;
+      body: CreateOrUpdateUserDto;
+    },
+    database: Pick<PrismaService, 'user'> = this.prisma,
+  ) {
+    const duplicated = await database.user.count({
       where: {
         username: { equals: body.username, mode: 'insensitive' },
         NOT: { id: id ?? undefined },

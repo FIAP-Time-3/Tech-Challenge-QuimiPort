@@ -10,6 +10,7 @@ describe('LoginService', () => {
 
   const prismaMock = {
     user: {
+      count: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
     },
@@ -42,6 +43,20 @@ describe('LoginService', () => {
   });
 
   afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    [0, true],
+    [1, false],
+  ])(
+    'consulta configuração inicial com %s administradores',
+    async (count, requiresSetup) => {
+      prismaMock.user.count.mockResolvedValue(count);
+      await expect(service.getSetup()).resolves.toEqual({ requiresSetup });
+      expect(prismaMock.user.count).toHaveBeenCalledWith({
+        where: { roles: { has: 'ADMINISTRADOR' }, status: true },
+      });
+    },
+  );
 
   describe('login', () => {
     it('procura username sem diferenciar maiúsculas e emite tokens', async () => {
