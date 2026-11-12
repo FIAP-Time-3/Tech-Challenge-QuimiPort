@@ -9,7 +9,7 @@ export function getHealth() {
 
   async function request(): Promise<Health> {
     try {
-      const response = await api.get('health')
+      const response = await api.get<Health>('health')
       return response.data
     } finally {
       clearTimeout(timeout);
