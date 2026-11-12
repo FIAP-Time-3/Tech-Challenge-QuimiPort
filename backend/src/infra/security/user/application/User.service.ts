@@ -60,7 +60,7 @@ export class UserService {
     const user = await database.user.create({
       data: {
         username: body.username,
-        name: body.name,
+        name: this.normalizeName(body.name),
         password: hashedPassword,
         roles: body.roles ?? [],
         status: body.status,
@@ -114,7 +114,7 @@ export class UserService {
       where: { id },
       data: {
         username: body.username,
-        name: body.name,
+        name: this.normalizeName(body.name),
         password: hashedPassword,
         roles: body.roles ?? [],
         status: body.status,
@@ -170,6 +170,18 @@ export class UserService {
     if (countAdmin === 0) {
       throw new BadRequestException('Nenhum ADMINISTRADOR no sistema');
     }
+  }
+
+  private normalizeName(name: string): string {
+    return name
+      .trim()
+      .replace(/\s+/gu, ' ')
+      .toLocaleLowerCase('pt-BR')
+      .replace(
+        /(^|[\s’'-])(\p{L})/gu,
+        (_, separator: string, letter: string) =>
+          separator + letter.toLocaleUpperCase('pt-BR'),
+      );
   }
 
   private toResponse<T extends { password: string }>(user: T): UserResponseDto {

@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { logout } from '@/modules/auth/use-cases/logout';
-import { getCurrentUser } from '@/modules/auth/services/currentUser';
+import { useCurrentUser } from '@/modules/auth/services/currentUser';
 import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargasQuimicas';
 import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtosQuimicos';
 import type { CargaQuimicaResponseDto } from '@/infrastructure/backend/dtos/cargasQuimicas';
@@ -42,7 +42,7 @@ function DashboardPage() {
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const navigate = useNavigate();
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   useEffect(() => {
     let active = true;
     Promise.all([

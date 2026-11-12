@@ -4,7 +4,9 @@ import {
   getAccessToken,
   getRefreshToken,
   saveTokens,
+  saveUser,
 } from '@/modules/auth/services/tokenStorage';
+import type { UserResponseDto } from './dtos/users';
 import type { LoginResponseDto } from './dtos/login';
 
 const options = {
@@ -38,17 +40,44 @@ async function refreshTokens(): Promise<void> {
   const { data } = await authApi.post<LoginResponseDto>('login/refresh', {
     refresh_token: refreshToken,
   });
+  await establishSession(data, refreshToken);
+}
+
+export async function establishSession(
+  tokens: LoginResponseDto,
+  expectedRefreshToken?: string,
+): Promise<UserResponseDto> {
   if (
-    typeof data?.access_token !== 'string' ||
-    !data.access_token ||
-    typeof data?.refresh_token !== 'string' ||
-    !data.refresh_token
+    !tokens?.access_token ||
+    !tokens.refresh_token ||
+    typeof tokens.access_token !== 'string' ||
+    typeof tokens.refresh_token !== 'string'
   ) {
-    throw new Error('Resposta de refresh inválida');
+    throw new Error('Resposta de autenticação inválida');
   }
-  // Não restaura uma sessão encerrada enquanto o refresh estava em andamento.
-  if (getRefreshToken() !== refreshToken) throw new Error('Sessão alterada');
-  saveTokens(data);
+  // Usa o novo access token sem passar pelo interceptor, evitando ciclos de refresh.
+  const { data: user } = await authApi.get<UserResponseDto>('me', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  });
+  if (
+    !user ||
+    !Number.isSafeInteger(user.id) ||
+    typeof user.name !== 'string' ||
+    typeof user.username !== 'string' ||
+    !Array.isArray(user.roles) ||
+    user.status !== true
+  ) {
+    throw new Error('Resposta de usuário inválida');
+  }
+  if (
+    expectedRefreshToken !== undefined &&
+    getRefreshToken() !== expectedRefreshToken
+  ) {
+    throw new Error('Sessão alterada');
+  }
+  saveTokens(tokens);
+  saveUser(user);
+  return user;
 }
 
 export function refreshSession(): Promise<void> {

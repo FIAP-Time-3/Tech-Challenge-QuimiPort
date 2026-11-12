@@ -54,6 +54,44 @@ describe('UserService', () => {
     service = module.get<UserService>(UserService);
   });
 
+  it.each([
+    ['  bRUNO   dIAS  ', 'Bruno Dias'],
+    ['JOÃO GONÇALVES', 'João Gonçalves'],
+    ["ana-mARIA d'ÁVILA", "Ana-Maria D'Ávila"],
+  ])(
+    'normaliza o nome ao criar, atualizar e cadastrar o administrador: %s',
+    async (name, expected) => {
+      const body = { ...userBody, name, username: 'LoginOriginal' };
+      prismaMock.user.count.mockResolvedValue(0);
+      prismaMock.user.create.mockResolvedValue({ ...body, password: 'hashed' });
+      prismaMock.user.findUnique.mockResolvedValue({ ...body, id: 8 });
+      prismaMock.user.update.mockResolvedValue({ ...body, id: 8 });
+      await service.create({ body });
+      expect(prismaMock.user.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({
+          name: expected,
+          username: 'LoginOriginal',
+        }),
+      });
+      await service.createFirst({ body });
+      expect(prismaMock.user.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({
+          name: expected,
+          username: 'LoginOriginal',
+        }),
+      });
+      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      await service.update({ id: 8, body });
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 8 },
+        data: expect.objectContaining({
+          name: expected,
+          username: 'LoginOriginal',
+        }),
+      });
+    },
+  );
+
   describe('createFirst', () => {
     it('cria o primeiro usuário como administrador ativo', async () => {
       prismaMock.user.count.mockResolvedValue(0);

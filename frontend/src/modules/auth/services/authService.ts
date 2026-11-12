@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { loginApiRoutes } from '@/infrastructure/backend/routes/login';
-import { refreshSession } from '@/infrastructure/backend/api';
+import { meApiRoutes } from '@/infrastructure/backend/routes/me';
+import { getStoredUser, saveUser } from './tokenStorage';
 import type { AuthSession } from '@/modules/auth/models/auth';
 
 export async function authenticate(
@@ -12,7 +13,13 @@ export async function authenticate(
       username: username.trim(),
       password,
     });
-    return { accessToken: data.access_token, refreshToken: data.refresh_token };
+    const user = getStoredUser();
+    if (!user) throw new Error('Não foi possível carregar o usuário');
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      user,
+    };
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 401)
       return null;
@@ -24,17 +31,9 @@ export async function validateAccessToken(
   accessToken: string,
 ): Promise<boolean> {
   try {
-    // A checagem local controla a navegação; a API valida assinatura e permissões.
-    const payload = accessToken.split('.')[1];
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(atob(normalized)) as {
-      token_use?: string;
-      exp?: number;
-    };
-    if (claims.token_use !== 'access' || typeof claims.exp !== 'number')
-      return false;
-    if (claims.exp * 1000 > Date.now()) return true;
-    await refreshSession();
+    if (!accessToken) return false;
+    const { data } = await meApiRoutes.getMe();
+    saveUser(data);
     return true;
   } catch {
     return false;

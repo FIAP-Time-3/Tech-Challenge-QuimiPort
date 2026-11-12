@@ -1,3 +1,4 @@
+import type { UserResponseDto } from '@/infrastructure/backend/dtos/users';
 const accessTokenStorageKey = 'quimiport.access-token';
 
 export function getAccessToken(): string | null {
@@ -29,4 +30,26 @@ export function saveTokens(tokens: {
 export function clearTokens(): void {
   clearAccessToken();
   localStorage.removeItem(refreshTokenStorageKey);
+  localStorage.removeItem(userStorageKey);
+  window.dispatchEvent(new Event('quimiport.session-changed'));
+}
+
+const userStorageKey = 'quimiport.user';
+
+export function getStoredUserJson(): string | null {
+  return localStorage.getItem(userStorageKey);
+}
+
+export function getStoredUser(): UserResponseDto | null {
+  try {
+    const stored = getStoredUserJson();
+    return stored ? (JSON.parse(stored) as UserResponseDto) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUser(user: UserResponseDto): void {
+  localStorage.setItem(userStorageKey, JSON.stringify(user));
+  window.dispatchEvent(new Event('quimiport.session-changed'));
 }

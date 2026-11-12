@@ -1,5 +1,4 @@
-import { authApi } from '../api';
-import { saveTokens } from '@/modules/auth/services/tokenStorage';
+import { authApi, establishSession } from '../api';
 import type {
   LoginRequestDto,
   LoginResponseDto,
@@ -14,12 +13,19 @@ export const loginApiRoutes = {
     return authApi.get<SetupResponseDto>(`${baseUrl}/setup`, { signal });
   },
   login: (data: LoginRequestDto) => {
-    return authApi.post<LoginResponseDto>(baseUrl, data).then((response) => {
-      saveTokens(response.data);
-      return response;
-    });
+    return authApi
+      .post<LoginResponseDto>(baseUrl, data)
+      .then(async (response) => {
+        await establishSession(response.data);
+        return response;
+      });
   },
   refresh: (data: RefreshRequestDto) => {
-    return authApi.post<LoginResponseDto>(`${baseUrl}/refresh`, data);
+    return authApi
+      .post<LoginResponseDto>(`${baseUrl}/refresh`, data)
+      .then(async (response) => {
+        await establishSession(response.data, data.refresh_token);
+        return response;
+      });
   },
 };

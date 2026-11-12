@@ -1,3 +1,4 @@
+import { MeController } from './user/infrastructure/controller/Me.controller.js';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth.guard.js';
@@ -20,7 +21,7 @@ import { UserService } from './user/application/User.service.js';
     }),
   ],
   exports: [JwtModule],
-  controllers: [LoginController, UserController],
+  controllers: [LoginController, UserController, MeController],
   providers: [
     UserService,
     PrismaService,

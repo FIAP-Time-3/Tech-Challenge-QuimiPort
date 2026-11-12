@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/modules/auth/services/currentUser';
+import { useCurrentUser } from '@/modules/auth/services/currentUser';
 import { FlaskConical, LayoutDashboard, Package } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { logout } from '@/modules/auth/use-cases/logout';
@@ -6,6 +6,7 @@ import PageHeader from '@/shared/components/layout/PageHeader';
 import SideNavigation from '@/shared/components/layout/SideNavigation';
 
 function ChemicalProductsLayout() {
+  const user = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
   const isProductsPage = location.pathname.startsWith('/produtos');
@@ -49,7 +50,7 @@ function ChemicalProductsLayout() {
                   : 'Edição de produto'
               : 'Produtos químicos'
           }
-          user={getCurrentUser()}
+          user={user}
           onLogout={handleLogout}
         />
         <main className="mx-auto max-w-[1440px] space-y-6 p-4 sm:p-8">
