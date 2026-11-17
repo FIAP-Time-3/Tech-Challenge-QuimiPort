@@ -7,6 +7,7 @@ import {
   IsString,
   Max,
   Min,
+  IsNumberString,
 } from 'class-validator';
 
 export class CreateOrUpdateProdutoQuimicoDto {
@@ -19,6 +20,12 @@ export class CreateOrUpdateProdutoQuimicoDto {
   @IsString()
   @IsOptional()
   descricao: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNumberString()
+  @IsOptional()
+  numeroONU: string;
 
   @ApiProperty()
   @IsInt()

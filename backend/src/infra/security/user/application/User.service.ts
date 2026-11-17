@@ -8,7 +8,8 @@ import {
 import { plainToInstance } from 'class-transformer';
 import {
   CreateFirstUserDto,
-  CreateOrUpdateUserDto,
+  CreateUserDto,
+  UpdateUserDto,
 } from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
@@ -24,36 +25,43 @@ export class UserService {
   }: {
     body: CreateFirstUserDto;
   }): Promise<UserResponseDto> {
-    const countAdmin = await this.prisma.user.count({
-      where: {
-        roles: { has: RolesEnum.ADMINISTRADOR },
-        status: true,
-      },
-    });
-
-    if (countAdmin > 0) {
-      throw new ForbiddenException();
-    }
-
-    return await this.create({
-      body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+    return await this.prisma.$transaction(async (transaction) => {
+      // Serializa o primeiro cadastro entre requisições e instâncias da API.
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
+      const countAdmin = await transaction.user.count({
+        where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+      });
+      if (countAdmin > 0) {
+        throw new ForbiddenException(
+          'O administrador inicial já foi criado. Faça login.',
+        );
+      }
+      return await this.create(
+        {
+          body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+        },
+        transaction,
+      );
     });
   }
 
-  async create({
-    body,
-  }: {
-    body: CreateOrUpdateUserDto;
-  }): Promise<UserResponseDto> {
-    await this.checkDuplicated({ body });
+  async create(
+    {
+      body,
+    }: {
+      body: CreateUserDto;
+    },
+    database: Pick<PrismaService, 'user'> = this.prisma,
+  ): Promise<UserResponseDto> {
+    await this.checkDuplicated({ body }, database);
     const hashedPassword = await PasswordService.hash({
       password: body.password,
     });
 
-    const user = await this.prisma.user.create({
+    const user = await database.user.create({
       data: {
-        username: body.username,
-        name: body.name,
+        email: body.email,
+        name: this.normalizeName(body.name),
         password: hashedPassword,
         roles: body.roles ?? [],
         status: body.status,
@@ -86,7 +94,7 @@ export class UserService {
     body,
   }: {
     id: number;
-    body: CreateOrUpdateUserDto;
+    body: UpdateUserDto;
   }): Promise<UserResponseDto> {
     await this.validateUniqueAdmin({ id });
 
@@ -99,16 +107,11 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const hashedPassword = await PasswordService.hash({
-      password: body.password,
-    });
-
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
-        username: body.username,
-        name: body.name,
-        password: hashedPassword,
+        email: body.email,
+        name: this.normalizeName(body.name),
         roles: body.roles ?? [],
         status: body.status,
       },
@@ -130,21 +133,24 @@ export class UserService {
     return { id };
   }
 
-  private async checkDuplicated({
-    id,
-    body,
-  }: {
-    id?: number;
-    body: CreateOrUpdateUserDto;
-  }) {
-    const duplicated = await this.prisma.user.count({
+  private async checkDuplicated(
+    {
+      id,
+      body,
+    }: {
+      id?: number;
+      body: CreateUserDto | UpdateUserDto;
+    },
+    database: Pick<PrismaService, 'user'> = this.prisma,
+  ) {
+    const duplicated = await database.user.count({
       where: {
-        username: { equals: body.username, mode: 'insensitive' },
+        email: { equals: body.email, mode: 'insensitive' },
         NOT: { id: id ?? undefined },
       },
     });
     if (duplicated > 0) {
-      throw new ConflictException('O username ja esta em uso');
+      throw new ConflictException('O email já está em uso');
     }
   }
 
@@ -160,6 +166,18 @@ export class UserService {
     if (countAdmin === 0) {
       throw new BadRequestException('Nenhum ADMINISTRADOR no sistema');
     }
+  }
+
+  private normalizeName(name: string): string {
+    return name
+      .trim()
+      .replace(/\s+/gu, ' ')
+      .toLocaleLowerCase('pt-BR')
+      .replace(
+        /(^|[\s’'-])(\p{L})/gu,
+        (_, separator: string, letter: string) =>
+          separator + letter.toLocaleUpperCase('pt-BR'),
+      );
   }
 
   private toResponse<T extends { password: string }>(user: T): UserResponseDto {

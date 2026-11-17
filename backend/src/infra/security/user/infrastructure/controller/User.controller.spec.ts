@@ -14,7 +14,7 @@ describe('UserController', () => {
     remove: vi.fn(),
   };
   const userBody = {
-    username: 'bruno',
+    email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
     roles: [RolesEnum.OPERADOR],
@@ -33,7 +33,7 @@ describe('UserController', () => {
 
   it('encaminha criação do administrador inicial', async () => {
     const firstUser = {
-      username: 'admin',
+      email: 'admin@email.com',
       name: 'Admin',
       password: 'secret',
     };

@@ -963,3 +963,50 @@ Padrões já adotados no código, que devem ser mantidos:
 | `403` ao criar ou alterar uma carga | O perfil do usuário não está entre os permitidos para a rota ou para a etapa |
 | `400` ao enviar um campo que parece correto | A API rejeita campos desconhecidos. Confira os nomes no Swagger |
 | Comportamento estranho do banco ao alternar entre as opções | Execute `docker compose down -v` e suba novamente (apaga os dados do banco) |
+
+## Testes de integração com PostgreSQL real
+
+A suíte `test:integration` usa as variáveis `TEST_DATABASE_*`, separadas das
+variáveis `DATABASE_*` da aplicação. Ela gera o Prisma Client, **reseta o banco
+exclusivo de testes e reaplica todas as migrations antes de executar os casos**.
+Não há mocks de PostgreSQL, Prisma, bcrypt ou JWT nessa suíte.
+
+```bash
+cp .env.test.example .env.test.local
+docker compose -f compose.test.yml up -d --wait
+npm run test:integration
+```
+
+O exemplo usa `quimiport_test` em `localhost:55432`. O container possui dados
+voláteis, sem volume persistente. Para encerrá-lo:
+
+```bash
+docker compose -f compose.test.yml down
+```
+
+Também é possível usar um PostgreSQL de testes já existente, configurando em
+`.env.test.local` ou no ambiente:
+
+| Variável | Exemplo |
+| --- | --- |
+| `TEST_DATABASE_HOSTNAME` | `localhost` |
+| `TEST_DATABASE_PORT` | `55432` |
+| `TEST_DATABASE_NAME` | `quimiport_test` |
+| `TEST_DATABASE_USERNAME` | `quimiport_test` |
+| `TEST_DATABASE_PASSWORD` | `quimiport_test` |
+
+O nome deve terminar em `_test` e diferir do banco da aplicação. A configuração
+não utiliza credenciais da aplicação como fallback; o usuário de testes precisa
+poder executar migrations, recriar o schema e habilitar `citext`. Não execute
+duas instâncias da suíte contra o mesmo banco ao mesmo tempo.
+
+Os casos cobrem a ausência de `username`, tipo/obrigatoriedade de `email`,
+unicidade case insensitive em criação, atualização e inserções simultâneas,
+preservação da escrita original, hash de senha, login, refresh, inativos, troca de
+email e concorrência no cadastro do primeiro administrador.
+
+`npm test` continua executando os testes unitários sem resetar nenhum banco.
+`npm run test:e2e` mantém sua suíte HTTP com mocks separada. A suíte
+`test:integration` cobre serviços e contratos HTTP de usuários com PostgreSQL real,
+incluindo validação dos DTOs, rejeição de username legado, respostas sem senha,
+conflitos de email (409), /me e inativação com bloqueio de login/acesso/refresh.

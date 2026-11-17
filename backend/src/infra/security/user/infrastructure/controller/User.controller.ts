@@ -12,7 +12,8 @@ import { ApiParam } from '@nestjs/swagger';
 import { UserService } from '../../application/User.service.js';
 import {
   CreateFirstUserDto,
-  CreateOrUpdateUserDto,
+  CreateUserDto,
+  UpdateUserDto,
 } from '../dtos/User.request.dtos.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
@@ -35,7 +36,7 @@ export class UserController {
 
   @Post()
   @AllowedRoles([RolesEnum.ADMINISTRADOR])
-  async create(@Body() body: CreateOrUpdateUserDto): Promise<UserResponseDto> {
+  async create(@Body() body: CreateUserDto): Promise<UserResponseDto> {
     return await this.service.create({ body });
   }
 
@@ -60,7 +61,7 @@ export class UserController {
   @ApiParam({ name: 'id', example: 1, type: Number })
   async update(
     @Param('id', new ParseIntPipe()) id: number,
-    @Body() body: CreateOrUpdateUserDto,
+    @Body() body: UpdateUserDto,
   ): Promise<UserResponseDto> {
     return await this.service.update({ id, body });
   }

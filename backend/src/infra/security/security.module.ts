@@ -1,3 +1,4 @@
+import { MeController } from './user/infrastructure/controller/Me.controller.js';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth.guard.js';
@@ -15,12 +16,12 @@ import { UserService } from './user/application/User.service.js';
     JwtModule.register({
       secret: configurations().jwt.secret,
       signOptions: {
-        expiresIn: '1h',
+        expiresIn: configurations().jwt.accessTokenMinutes * 60,
       },
     }),
   ],
   exports: [JwtModule],
-  controllers: [LoginController, UserController],
+  controllers: [LoginController, UserController, MeController],
   providers: [
     UserService,
     PrismaService,

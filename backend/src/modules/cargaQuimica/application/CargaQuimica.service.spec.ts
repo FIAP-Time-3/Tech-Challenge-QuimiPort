@@ -207,7 +207,7 @@ describe('CargaQuimicaService', () => {
             },
           },
           responsavelTecnico: {
-            select: { id: true, name: true, username: true },
+            select: { id: true, name: true, email: true },
           },
         },
         orderBy: { id: 'asc' },

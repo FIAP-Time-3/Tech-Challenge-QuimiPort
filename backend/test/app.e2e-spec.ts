@@ -28,7 +28,7 @@ describe('API HTTP (e2e)', () => {
     prismaMock.user.count.mockResolvedValue(1);
     prismaMock.user.findFirst.mockResolvedValue({
       id: 1,
-      username: 'admin',
+      email: 'admin@email.com',
       roles: ['ADMINISTRADOR'],
       status: true,
     });
@@ -85,7 +85,7 @@ describe('API HTTP (e2e)', () => {
     const token = await jwt.signAsync({ id: 1 });
     prismaMock.user.findFirst.mockResolvedValueOnce({
       id: 1,
-      username: 'tecnico',
+      email: 'tecnico@email.com',
       roles: ['QUALIDADE'],
       status: true,
     });
@@ -107,7 +107,7 @@ describe('API HTTP (e2e)', () => {
     prismaMock.user.findMany.mockResolvedValue([
       {
         id: 1,
-        username: 'admin',
+        email: 'admin@email.com',
         name: 'Administrador',
         password: 'stored-password-hash',
         roles: ['ADMINISTRADOR'],
@@ -128,7 +128,7 @@ describe('API HTTP (e2e)', () => {
   it('aplica validação global ao DTO de login', async () => {
     await request(app.getHttpServer())
       .post('/api/login')
-      .send({ username: 42, password: '' })
+      .send({ email: 42, password: '' })
       .expect(400);
   });
 });

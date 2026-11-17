@@ -1,0 +1,16 @@
+import { validateAccessToken } from '@/modules/auth/services/login.service';
+import {
+  clearTokens,
+  getAccessToken,
+} from '@/modules/auth/services/token.storage';
+
+export async function validateSession(): Promise<boolean> {
+  const accessToken = getAccessToken();
+  const isValid = accessToken ? await validateAccessToken(accessToken) : false;
+
+  if (!isValid) {
+    clearTokens();
+  }
+
+  return isValid;
+}

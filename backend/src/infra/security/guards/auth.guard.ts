@@ -47,8 +47,29 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Token inválido');
     }
 
+    let data;
     try {
-      const data = await this.jwtService.verifyAsync(token);
+      data = await this.jwtService.verifyAsync(token);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException({
+          statusCode: 401,
+          code: 'ACCESS_TOKEN_EXPIRED',
+          message: 'Token de acesso expirado',
+        });
+      }
+      throw new UnauthorizedException('Token inválido');
+    }
+
+    try {
+      if (
+        !data ||
+        data.token_use !== 'access' ||
+        !Number.isSafeInteger(data.id) ||
+        data.id <= 0
+      ) {
+        throw new UnauthorizedException('Token inválido');
+      }
 
       const user = await this.prisma.user.findFirst({ where: { id: data.id } });
       if (!user || !user.status) {
@@ -56,7 +77,7 @@ export class AuthGuard implements CanActivate {
       }
       req.user = {
         id: user.id,
-        username: user.username,
+        email: user.email,
         roles: user.roles,
         iat: data.iat,
         exp: data.exp,

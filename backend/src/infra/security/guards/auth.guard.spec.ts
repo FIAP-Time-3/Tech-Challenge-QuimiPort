@@ -93,12 +93,40 @@ describe('AuthGuard', () => {
     expect(prismaMock.user.findFirst).not.toHaveBeenCalled();
   });
 
+  it('diferencia token expirado de assinatura inválida', async () => {
+    const { guard, request, jwtMock } = setup();
+    request.headers.authorization = 'Bearer expired';
+    const expired = new Error('jwt expired');
+    expired.name = 'TokenExpiredError';
+    jwtMock.verifyAsync.mockRejectedValue(expired);
+    const error = await guard
+      .canActivate(createContext(request))
+      .catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(UnauthorizedException);
+    expect((error as UnauthorizedException).getResponse()).toMatchObject({
+      statusCode: 401,
+      code: 'ACCESS_TOKEN_EXPIRED',
+    });
+    jwtMock.verifyAsync.mockRejectedValue(new Error('invalid signature'));
+    const invalid = await guard
+      .canActivate(createContext(request))
+      .catch((error: unknown) => error);
+    expect((invalid as UnauthorizedException).getResponse()).not.toHaveProperty(
+      'code',
+    );
+  });
+
   it.each([null, { id: 7, status: false }])(
     'recusa token associado a %s',
     async (user) => {
       const { guard, request, jwtMock, prismaMock } = setup();
       request.headers.authorization = 'Bearer valid';
-      jwtMock.verifyAsync.mockResolvedValue({ id: 7, iat: 10, exp: 20 });
+      jwtMock.verifyAsync.mockResolvedValue({
+        id: 7,
+        iat: 10,
+        exp: 20,
+        token_use: 'access',
+      });
       prismaMock.user.findFirst.mockResolvedValue(user);
 
       await expect(guard.canActivate(createContext(request))).rejects.toThrow(
@@ -107,13 +135,35 @@ describe('AuthGuard', () => {
     },
   );
 
+  it.each([
+    { id: 7, token_use: 'refresh' },
+    { id: 7 },
+    { token_use: 'access' },
+  ])(
+    'recusa token sem finalidade de acesso ou id válido: %s',
+    async (payload) => {
+      const { guard, request, jwtMock, prismaMock } = setup();
+      request.headers.authorization = 'Bearer token';
+      jwtMock.verifyAsync.mockResolvedValue(payload);
+      await expect(guard.canActivate(createContext(request))).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prismaMock.user.findFirst).not.toHaveBeenCalled();
+    },
+  );
+
   it('anexa dados atuais do usuário à requisição autenticada', async () => {
     const { guard, request, jwtMock, prismaMock } = setup();
     request.headers.authorization = 'Bearer valid';
-    jwtMock.verifyAsync.mockResolvedValue({ id: 7, iat: 10, exp: 20 });
+    jwtMock.verifyAsync.mockResolvedValue({
+      id: 7,
+      iat: 10,
+      exp: 20,
+      token_use: 'access',
+    });
     prismaMock.user.findFirst.mockResolvedValue({
       id: 7,
-      username: 'bruno',
+      email: 'bruno@email.com',
       roles: ['OPERADOR'],
       status: true,
     });
@@ -121,7 +171,7 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
     expect(request.user).toEqual({
       id: 7,
-      username: 'bruno',
+      email: 'bruno@email.com',
       roles: ['OPERADOR'],
       iat: 10,
       exp: 20,
