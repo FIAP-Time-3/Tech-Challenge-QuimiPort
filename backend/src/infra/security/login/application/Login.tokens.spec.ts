@@ -35,7 +35,7 @@ describe('JWTs de acesso e renovação', () => {
     const jwt = new JwtService({ secret: 'test-only-secret' });
     const user = {
       id: 1,
-      username: 'admin',
+      email: 'admin@email.com',
       roles: ['ADMINISTRADOR'],
       status: true,
       password: 'hash',
@@ -50,7 +50,7 @@ describe('JWTs de acesso e renovação', () => {
     vi.spyOn(PasswordService, 'compare').mockResolvedValue(true);
     const service = new LoginService(prisma, jwt);
     const initial = await service.login({
-      username: 'admin',
+      email: 'admin@email.com',
       password: 'password',
     });
     const renewed = await service.refresh({

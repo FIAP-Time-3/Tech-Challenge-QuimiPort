@@ -163,7 +163,7 @@ describe('AuthGuard', () => {
     });
     prismaMock.user.findFirst.mockResolvedValue({
       id: 7,
-      username: 'bruno',
+      email: 'bruno@email.com',
       roles: ['OPERADOR'],
       status: true,
     });
@@ -171,7 +171,7 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(createContext(request))).resolves.toBe(true);
     expect(request.user).toEqual({
       id: 7,
-      username: 'bruno',
+      email: 'bruno@email.com',
       roles: ['OPERADOR'],
       iat: 10,
       exp: 20,

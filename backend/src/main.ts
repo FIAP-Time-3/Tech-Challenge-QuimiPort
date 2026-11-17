@@ -63,7 +63,7 @@ async function bootstrap() {
   logger.log(
     `\n\nCaso seja o primeiro acesso\nrealizar criação do usuário admin inicial em:\nPOST> http://localhost:${configuration().application.port}/api/users/first_access\n
     {
-      username: string;
+      email: string;
       name: string;
       password: string;
     }

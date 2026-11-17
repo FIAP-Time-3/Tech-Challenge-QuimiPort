@@ -59,7 +59,7 @@ export class UserService {
 
     const user = await database.user.create({
       data: {
-        username: body.username,
+        email: body.email,
         name: this.normalizeName(body.name),
         password: hashedPassword,
         roles: body.roles ?? [],
@@ -113,7 +113,7 @@ export class UserService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
-        username: body.username,
+        email: body.email,
         name: this.normalizeName(body.name),
         password: hashedPassword,
         roles: body.roles ?? [],
@@ -149,12 +149,12 @@ export class UserService {
   ) {
     const duplicated = await database.user.count({
       where: {
-        username: { equals: body.username, mode: 'insensitive' },
+        email: { equals: body.email, mode: 'insensitive' },
         NOT: { id: id ?? undefined },
       },
     });
     if (duplicated > 0) {
-      throw new ConflictException('O username ja esta em uso');
+      throw new ConflictException('O email já está em uso');
     }
   }
 

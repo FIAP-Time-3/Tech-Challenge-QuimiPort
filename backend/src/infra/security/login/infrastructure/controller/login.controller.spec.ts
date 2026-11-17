@@ -28,7 +28,7 @@ describe('LoginController', () => {
   });
 
   it('encaminha credenciais ao serviço de login', async () => {
-    const body = { username: 'bruno', password: 'secret' };
+    const body = { email: 'bruno@email.com', password: 'secret' };
     const tokens = { access_token: 'access', refresh_token: 'refresh' };
     serviceMock.login.mockResolvedValue(tokens);
 

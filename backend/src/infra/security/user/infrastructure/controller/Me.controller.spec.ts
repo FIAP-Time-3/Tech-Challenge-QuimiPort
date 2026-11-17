@@ -6,7 +6,7 @@ it('consulta o usuário pelo id autenticado, sem depender de perfil administrado
   const user = {
     id: 8,
     name: 'Maria Souza',
-    username: 'maria',
+    email: 'maria@email.com',
     roles: ['OPERADOR'],
     status: true,
   };

@@ -27,7 +27,7 @@ export class MovimentacaoResponseDto {
 export class ResponsavelTecnicoDto {
   @Expose() id: number;
   @Expose() name: string;
-  @Expose() username: string;
+  @Expose() email: string;
 }
 
 export class CargaQuimicaResponseDto {

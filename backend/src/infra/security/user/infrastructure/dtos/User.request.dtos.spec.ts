@@ -18,18 +18,18 @@ describe('validação dos DTOs de usuário', () => {
   it('aceita dados válidos do primeiro administrador', async () => {
     await expect(
       invalidFields(CreateFirstUserDto, {
-        username: 'admin',
+        email: 'admin@email.com',
         name: 'Administrador',
         password: 'secret',
       }),
     ).resolves.toEqual([]);
   });
 
-  it.each(['username', 'name', 'password'])(
+  it.each(['email', 'name', 'password'])(
     'recusa criação inicial sem %s',
     async (field) => {
       const body: Record<string, unknown> = {
-        username: 'admin',
+        email: 'admin@email.com',
         name: 'Administrador',
         password: 'secret',
       };
@@ -44,7 +44,7 @@ describe('validação dos DTOs de usuário', () => {
   it('aceita usuário com perfil válido e status booleano', async () => {
     await expect(
       invalidFields(CreateOrUpdateUserDto, {
-        username: 'bruno',
+        email: 'bruno@email.com',
         name: 'Bruno',
         password: 'secret',
         roles: [RolesEnum.OPERADOR, RolesEnum.TECNICO],
@@ -55,7 +55,7 @@ describe('validação dos DTOs de usuário', () => {
 
   it('aplica defaults para roles e status opcionais', () => {
     const user = plainToInstance(CreateOrUpdateUserDto, {
-      username: 'bruno',
+      email: 'bruno@email.com',
       name: 'Bruno',
       password: 'secret',
     });
@@ -67,7 +67,7 @@ describe('validação dos DTOs de usuário', () => {
   it('recusa perfil desconhecido e status não booleano', async () => {
     await expect(
       invalidFields(CreateOrUpdateUserDto, {
-        username: 'bruno',
+        email: 'bruno@email.com',
         name: 'Bruno',
         password: 'secret',
         roles: ['ROOT'],

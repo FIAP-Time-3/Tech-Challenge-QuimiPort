@@ -9,10 +9,10 @@ export class UserResponseDto {
   status: boolean;
 
   @Expose()
-  username: string;
+  name: string;
 
   @Expose()
-  name: string;
+  email: string;
 
   @Exclude()
   password: string;

@@ -59,10 +59,10 @@ describe('LoginService', () => {
   );
 
   describe('login', () => {
-    it('procura username sem diferenciar maiúsculas e emite tokens', async () => {
+    it('procura email sem diferenciar maiúsculas e emite tokens', async () => {
       const user = {
         id: 8,
-        username: 'Bruno',
+        email: 'Bruno@email.com',
         password: 'hash',
         roles: ['OPERADOR'],
         status: true,
@@ -74,7 +74,7 @@ describe('LoginService', () => {
         .mockResolvedValueOnce('refresh-token');
 
       await expect(
-        service.login({ username: 'BRUNO', password: 'senha' }),
+        service.login({ email: 'BRUNO@email.COM', password: 'senha' }),
       ).resolves.toEqual({
         access_token: 'access-token',
         refresh_token: 'refresh-token',
@@ -82,7 +82,7 @@ describe('LoginService', () => {
 
       expect(prismaMock.user.findFirst).toHaveBeenCalledWith({
         where: {
-          username: { equals: 'BRUNO', mode: 'insensitive' },
+          email: { equals: 'BRUNO@email.COM', mode: 'insensitive' },
         },
       });
       expect(PasswordService.compare).toHaveBeenCalledWith({
@@ -93,7 +93,7 @@ describe('LoginService', () => {
         1,
         {
           id: 8,
-          username: 'Bruno',
+          email: 'Bruno@email.com',
           roles: ['OPERADOR'],
           token_use: 'access',
         },
@@ -106,11 +106,11 @@ describe('LoginService', () => {
       );
     });
 
-    it('recusa username inexistente sem comparar senha', async () => {
+    it('recusa email inexistente sem comparar senha', async () => {
       prismaMock.user.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.login({ username: 'ausente', password: 'senha' }),
+        service.login({ email: 'ausente@email.com', password: 'senha' }),
       ).rejects.toThrow(UnauthorizedException);
 
       expect(comparePassword).not.toHaveBeenCalled();
@@ -120,14 +120,14 @@ describe('LoginService', () => {
     it('recusa senha incorreta', async () => {
       prismaMock.user.findFirst.mockResolvedValue({
         id: 8,
-        username: 'Bruno',
+        email: 'Bruno@email.com',
         password: 'hash',
         roles: ['OPERADOR'],
         status: true,
       });
 
       await expect(
-        service.login({ username: 'Bruno', password: 'errada' }),
+        service.login({ email: 'Bruno@email.com', password: 'errada' }),
       ).rejects.toThrow(UnauthorizedException);
       expect(jwtMock.signAsync).not.toHaveBeenCalled();
     });
@@ -135,14 +135,17 @@ describe('LoginService', () => {
     it('recusa usuário inativo sem comparar senha ou emitir tokens', async () => {
       prismaMock.user.findFirst.mockResolvedValue({
         id: 8,
-        username: 'Bruno',
+        email: 'Bruno@email.com',
         password: 'hash',
         roles: ['OPERADOR'],
         status: false,
       });
 
       await expect(
-        service.login({ username: 'Bruno', password: 'correct-password' }),
+        service.login({
+          email: 'Bruno@email.com',
+          password: 'correct-password',
+        }),
       ).rejects.toThrow(UnauthorizedException);
       expect(comparePassword).not.toHaveBeenCalled();
       expect(jwtMock.signAsync).not.toHaveBeenCalled();
@@ -154,7 +157,7 @@ describe('LoginService', () => {
       jwtMock.verifyAsync.mockResolvedValue({ id: 8, token_use: 'refresh' });
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
-        username: 'Bruno',
+        email: 'Bruno@email.com',
         roles: ['OPERADOR'],
         status: true,
       });
@@ -176,7 +179,7 @@ describe('LoginService', () => {
         1,
         {
           id: 8,
-          username: 'Bruno',
+          email: 'Bruno@email.com',
           roles: ['OPERADOR'],
           token_use: 'access',
         },
@@ -229,7 +232,7 @@ describe('LoginService', () => {
       jwtMock.verifyAsync.mockResolvedValue({ id: 8, token_use: 'refresh' });
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
-        username: 'Bruno',
+        email: 'Bruno@email.com',
         roles: ['OPERADOR'],
         status: false,
       });

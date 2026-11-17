@@ -24,7 +24,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name ",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:prepare": "prisma generate && prisma migrate deploy"
+    "prisma:prepare": "prisma generate && prisma migrate deploy",
+    "test:integration": "prisma generate --config prisma.test.config.ts && vitest run --config vitest.config.integration.ts"
   },
   "dependencies": {
     "@nestjs/common": "12.0.1",

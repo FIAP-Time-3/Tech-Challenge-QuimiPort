@@ -26,7 +26,7 @@ describe('UserService', () => {
   };
 
   const userBody = {
-    username: 'bruno',
+    email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
     roles: [RolesEnum.OPERADOR],
@@ -61,7 +61,7 @@ describe('UserService', () => {
   ])(
     'normaliza o nome ao criar, atualizar e cadastrar o administrador: %s',
     async (name, expected) => {
-      const body = { ...userBody, name, username: 'LoginOriginal' };
+      const body = { ...userBody, name, email: 'LoginOriginal@email.com' };
       prismaMock.user.count.mockResolvedValue(0);
       prismaMock.user.create.mockResolvedValue({ ...body, password: 'hashed' });
       prismaMock.user.findUnique.mockResolvedValue({ ...body, id: 8 });
@@ -70,14 +70,14 @@ describe('UserService', () => {
       expect(prismaMock.user.create).toHaveBeenLastCalledWith({
         data: expect.objectContaining({
           name: expected,
-          username: 'LoginOriginal',
+          email: 'LoginOriginal@email.com',
         }),
       });
       await service.createFirst({ body });
       expect(prismaMock.user.create).toHaveBeenLastCalledWith({
         data: expect.objectContaining({
           name: expected,
-          username: 'LoginOriginal',
+          email: 'LoginOriginal@email.com',
         }),
       });
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
@@ -86,7 +86,7 @@ describe('UserService', () => {
         where: { id: 8 },
         data: expect.objectContaining({
           name: expected,
-          username: 'LoginOriginal',
+          email: 'LoginOriginal@email.com',
         }),
       });
     },
@@ -102,13 +102,13 @@ describe('UserService', () => {
       });
 
       await service.createFirst({
-        body: { username: 'admin', name: 'Admin', password: 'secret' },
+        body: { email: 'admin@email.com', name: 'Admin', password: 'secret' },
       });
 
       expect(prismaMock.$executeRaw).toHaveBeenCalledOnce();
       expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
-          username: 'admin',
+          email: 'admin@email.com',
           name: 'Admin',
           password: 'hashed',
           roles: [RolesEnum.ADMINISTRADOR],
@@ -122,7 +122,11 @@ describe('UserService', () => {
 
       await expect(
         service.createFirst({
-          body: { username: 'admin2', name: 'Admin 2', password: 'secret' },
+          body: {
+            email: 'admin2@email.com',
+            name: 'Admin 2',
+            password: 'secret',
+          },
         }),
       ).rejects.toThrow(ForbiddenException);
       expect(prismaMock.user.create).not.toHaveBeenCalled();
@@ -130,7 +134,7 @@ describe('UserService', () => {
   });
 
   describe('create', () => {
-    it('verifica username, armazena hash e aplica os valores do usuário', async () => {
+    it('verifica email, armazena hash e aplica os valores do usuário', async () => {
       prismaMock.user.count.mockResolvedValue(0);
       vi.spyOn(PasswordService, 'hash').mockResolvedValue('hashed');
       prismaMock.user.create.mockResolvedValue({
@@ -142,7 +146,7 @@ describe('UserService', () => {
 
       expect(prismaMock.user.count).toHaveBeenCalledWith({
         where: {
-          username: { equals: 'bruno', mode: 'insensitive' },
+          email: { equals: 'bruno@email.com', mode: 'insensitive' },
           NOT: { id: undefined },
         },
       });
@@ -151,7 +155,7 @@ describe('UserService', () => {
       });
       expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
-          username: 'bruno',
+          email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'hashed',
           roles: [RolesEnum.OPERADOR],
@@ -176,7 +180,7 @@ describe('UserService', () => {
       });
     });
 
-    it('recusa username duplicado sem gerar hash', async () => {
+    it('recusa email duplicado sem gerar hash', async () => {
       prismaMock.user.count.mockResolvedValue(1);
 
       await expect(service.create({ body: userBody })).rejects.toThrow(
@@ -192,7 +196,7 @@ describe('UserService', () => {
       prismaMock.user.findMany.mockResolvedValue([
         {
           id: 20,
-          username: 'bruno',
+          email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'stored-hash',
           roles: [RolesEnum.OPERADOR],
@@ -229,7 +233,7 @@ describe('UserService', () => {
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 20 },
         data: {
-          username: 'bruno',
+          email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'updated-hash',
           roles: [RolesEnum.OPERADOR],

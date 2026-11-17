@@ -18,6 +18,10 @@ export class ProdutoQuimicoResponseDto {
   @Expose()
   classeRisco: number;
 
+  @ApiProperty()
+  @Expose()
+  numeroONU: string;
+
   @ApiProperty({ example: true, description: 'true = ativo, false = inativo' })
   @Expose()
   status: boolean;

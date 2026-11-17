@@ -37,7 +37,7 @@ const INCLUDE_CARGA = {
   documentoCargases: {
     select: { id: true, tipoDocumento: true, validado: true, createdAt: true },
   },
-  responsavelTecnico: { select: { id: true, name: true, username: true } },
+  responsavelTecnico: { select: { id: true, name: true, email: true } },
 } as const;
 
 function caminhoDocumento(idCarga: number, docId: number): string {

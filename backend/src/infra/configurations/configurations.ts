@@ -10,6 +10,14 @@ function tokenMinutes(name: string, fallback: number): number {
   return value;
 }
 
+function databaseEnv(field: string) {
+  const prefix =
+    process.env.NODE_ENV === 'test' && process.env.TEST_DATABASE_NAME
+      ? 'TEST_DATABASE_'
+      : 'DATABASE_';
+  return process.env[`${prefix}${field}`];
+}
+
 export default () => ({
   application: {
     port: Number(process.env.APP_PORT ?? 3000),
@@ -26,11 +34,11 @@ export default () => ({
     version: process.env.SWAGGER_VERSION ?? '',
   },
   database: {
-    hostname: process.env.DATABASE_HOSTNAME,
-    username: process.env.DATABASE_USERNAME,
-    password: process.env.DATABASE_PASSWORD,
-    port: process.env.DATABASE_PORT,
-    name: process.env.DATABASE_NAME,
-    url: `postgresql://${process.env.DATABASE_USERNAME}:${process.env.DATABASE_PASSWORD}@${process.env.DATABASE_HOSTNAME}:${process.env.DATABASE_PORT}/${process.env.DATABASE_NAME}?schema=public`,
+    hostname: databaseEnv('HOSTNAME'),
+    username: databaseEnv('USERNAME'),
+    password: databaseEnv('PASSWORD'),
+    port: databaseEnv('PORT'),
+    name: databaseEnv('NAME'),
+    url: `postgresql://${encodeURIComponent(databaseEnv('USERNAME') ?? '')}:${encodeURIComponent(databaseEnv('PASSWORD') ?? '')}@${databaseEnv('HOSTNAME')}:${databaseEnv('PORT')}/${databaseEnv('NAME')}?schema=public`,
   },
 });

@@ -28,12 +28,12 @@ export class LoginService {
   }
 
   async login(body: LoginRequestDto) {
-    const { password, username } = body;
+    const { password, email } = body;
 
     const user = await this.prisma.user.findFirst({
       where: {
-        username: {
-          equals: username,
+        email: {
+          equals: email,
           mode: 'insensitive',
         },
       },
@@ -89,14 +89,14 @@ export class LoginService {
 
   private async issueTokens(user: {
     id: number;
-    username: string;
+    email: string;
     roles: string[];
   }) {
     const { accessTokenMinutes, refreshTokenMinutes } = configurations().jwt;
     const access_token = await this.jwt.signAsync(
       {
         id: user.id,
-        username: user.username,
+        email: user.email,
         roles: user.roles,
         token_use: 'access',
       },
