@@ -3,6 +3,7 @@ import { Expose, Type } from 'class-transformer';
 export class ProdutoResumoDto {
   @Expose() id: number;
   @Expose() nome: string;
+  @Expose() numeroONU: string;
   @Expose() classeRisco: number;
   @Expose() status: boolean;
 }

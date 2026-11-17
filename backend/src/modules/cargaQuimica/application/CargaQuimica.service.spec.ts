@@ -190,7 +190,17 @@ describe('CargaQuimicaService', () => {
   describe('consultas', () => {
     it('lista cargas em ordem crescente com documentos e código público', async () => {
       prismaMock.cargaQuimicas.findMany.mockResolvedValue([
-        { ...carga(S.CADASTRADA), documentoCargases: [] },
+        {
+          ...carga(S.CADASTRADA),
+          documentoCargases: [],
+          produtoQuimico: {
+            id: 1,
+            nome: 'Acetona',
+            numeroONU: '1090',
+            classeRisco: 3,
+            status: true,
+          },
+        },
       ]);
 
       const result = await service.findAll();
@@ -213,6 +223,7 @@ describe('CargaQuimicaService', () => {
         orderBy: { id: 'asc' },
       });
       expect(result[0].codigo).toBe('CQ-000010');
+      expect(result[0].produtoQuimico.numeroONU).toBe('1090');
     });
 
     it('devolve 404 ao consultar carga inexistente', async () => {

@@ -7,7 +7,8 @@ import {
   IsString,
   Max,
   Min,
-  IsNumberString,
+  Length,
+  Matches,
 } from 'class-validator';
 
 export class CreateOrUpdateProdutoQuimicoDto {
@@ -21,10 +22,20 @@ export class CreateOrUpdateProdutoQuimicoDto {
   @IsOptional()
   descricao: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: '1090',
+    minLength: 4,
+    maxLength: 4,
+    pattern: '^[0-9]{4}$',
+  })
   @IsString()
-  @IsNumberString()
-  @IsOptional()
+  @Length(4, 4, {
+    message: 'O número ONU deve conter exatamente quatro algarismos.',
+  })
+  @Matches(/^(?!0000)[0-9]{4}$/u, {
+    message:
+      'O número ONU deve conter quatro algarismos, sem prefixo, e ser diferente de 0000.',
+  })
   numeroONU: string;
 
   @ApiProperty()

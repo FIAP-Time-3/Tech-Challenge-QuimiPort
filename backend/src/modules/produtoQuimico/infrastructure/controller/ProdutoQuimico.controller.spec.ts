@@ -13,6 +13,7 @@ describe('ProdutoQuimicoController', () => {
   };
   const body = {
     nome: 'Acetona',
+    numeroONU: '1090',
     descricao: 'Solvente',
     classeRisco: 3,
     status: true,

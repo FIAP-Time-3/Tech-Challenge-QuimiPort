@@ -2,8 +2,8 @@
 
 Revisão: 17/11/2026. Base: releitura dos três PDFs e do backend atual.
 Este arquivo é planejamento; não altera a aplicação. Última validação após ajuste
-às novas DTOs: `npm run test:all` passou com 278 testes unitários, 5 HTTP com mocks
-e 30 com PostgreSQL real, incluindo reset e migrations. Build e lint aprovados.
+às novas DTOs: `npm run test:all` passou com 298 testes unitários, 5 HTTP com mocks
+e 50 com PostgreSQL real, incluindo reset e migrations. Build e lint aprovados.
 As páginas são a posição no PDF. Este é o checklist revisado específico de backend;
 nos pontos de divergência, substitui as descrições anteriores de backend no planejamento.
 
@@ -63,6 +63,11 @@ Referências: fase 2, páginas 3–4; fase 3, páginas 10–11.
 - [x] Incluir numeroONU em ProdutoResumoDto na resposta da carga, com @Expose
       para disponibilizar o campo nos detalhes.
 
+Validação atual de numeroONU: formato obrigatório de quatro dígitos, diferente de
+0000, armazenado como texto e sem unicidade por produto. Essa validação não consulta
+a relação oficial de códigos atribuídos nem verifica a correspondência entre
+código, substância e classe de risco.
+
 ## Módulo de usuários
 
 ### Dados e contratos — pode avançar
@@ -111,8 +116,8 @@ Referência: fase 3, páginas 6–11. Preservar roles e primeiro acesso atuais.
 
 ### Evidências e pendências da revisão de usuários
 
-- **Validação atual:** 278 testes unitários, 5 HTTP com mocks e 30 com PostgreSQL
-  real passaram (14 de serviço/banco e 16 HTTP). Reset, migrations, build e lint
+- **Validação atual:** 298 testes unitários, 5 HTTP com mocks e 30 com PostgreSQL
+  real passaram (14 de usuários/serviço, 16 de usuários/HTTP e 20 de produtos/ONU). Reset, migrations, build e lint
   aprovados. O comando `npm run test:all` executa as três suítes em sequência.
   A CI está configurada para esse comando; a execução remota depende do próximo push.
 - **Concluído:** DTOs distintos, update sem gravação de senha e teste da preservação
@@ -289,7 +294,11 @@ e CargaQuimica.permissoes.ts.
 
 - [x] Atualizar testes de usuários para email, CreateUserDto/UpdateUserDto,
       status omitido/explícito, roles omitido e rejeição de password no PUT.
-- [ ] Complementar os testes dos campos alterados de produtos/cargas, incluindo numeroONU.
+- [x] Complementar testes de numeroONU: quatro algarismos, zeros à esquerda,
+      rejeição de formatos inválidos/0000, persistência e edição, códigos repetidos
+      entre produtos e retorno no resumo da carga, com mocks e PostgreSQL real.
+- [x] Garantir formato do numeroONU no banco por CHECK, validando também escritas
+      diretas inválidas e reaplicação da migration em banco limpo.
 - [x] Validar migrations de email/remoção de username em banco de testes limpo,
       mantendo roles e primeiro acesso atuais. Neste projeto os bancos são recriados
       do zero; conversão de dados de usuários legados não é necessária.
@@ -313,8 +322,8 @@ e CargaQuimica.permissoes.ts.
       e emitir tokens com token_use: 'access', mantendo os perfis atuais nos cenários.
 - [x] Usar npm run test:all na CI existente do GitHub Actions, cobrindo unitários,
       HTTP com mocks e integração real, com serviço PostgreSQL exclusivo de testes.
-- [x] Executar lint, build e todas as suítes do backend atual: 278 unitários,
-      5 HTTP com mocks e 30 com PostgreSQL real aprovados.
+- [x] Executar lint, build e todas as suítes do backend atual: 298 unitários,
+      5 HTTP com mocks e 50 com PostgreSQL real aprovados.
 - [x] Executar a regressão automatizada existente de documentos, motivos, terminais,
       executor, hash, inativos e login/refresh.
 - [ ] Revalidar os testes após implementar as mudanças pendentes de transições
