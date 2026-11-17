@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { RolesEnum } from '../../../enums/roles.enum.js';
 
-export class CreateOrUpdateUserDto {
+export class BaseUserDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -22,11 +22,6 @@ export class CreateOrUpdateUserDto {
   email: string;
 
   @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  password: string;
-
-  @ApiProperty()
   @IsOptional()
   @IsEnum(RolesEnum, { each: true })
   roles?: RolesEnum[];
@@ -36,6 +31,15 @@ export class CreateOrUpdateUserDto {
   @IsOptional()
   status: boolean = true;
 }
+
+export class CreateUserDto extends BaseUserDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class UpdateUserDto extends BaseUserDto {}
 
 export class CreateFirstUserDto {
   @ApiProperty()

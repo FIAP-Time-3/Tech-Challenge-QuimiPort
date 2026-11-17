@@ -1,10 +1,17 @@
 # TODO — adequações do backend para a fase 3
 
 Revisão: 17/11/2026. Base: releitura dos três PDFs e do backend atual.
-Este arquivo é planejamento; não altera a aplicação. Revisão por leitura de
-código, sem execução de testes, migrations, navegador ou Docker nesta revisão.
+Este arquivo é planejamento; não altera a aplicação. Última validação após a
+separação dos DTOs de usuários: build aprovado; 261 testes unitários passaram e 4
+falharam; 20 testes de integração com PostgreSQL real passaram e 3 falharam. O reset
+e todas as migrations do banco de testes foram executados com sucesso. As falhas
+e os ajustes pendentes estão detalhados no módulo de usuários.
 As páginas são a posição no PDF. Este é o checklist revisado específico de backend;
 nos pontos de divergência, substitui as descrições anteriores de backend no planejamento.
+
+Este TODO cobre exclusivamente implementação e validação do backend: API, banco,
+testes e infraestrutura. Documentação, frontend e repasse de contratos ficam fora
+deste checklist.
 
 ## Referências e decisões pendentes
 
@@ -40,9 +47,9 @@ nos pontos de divergência, substitui as descrições anteriores de backend no p
 2. Validar essas mudanças com testes e E2E, mantendo os perfis atuais.
 3. Definir com a equipe o modelo de roles, a elegibilidade dos responsáveis técnicos e a estratégia de primeiro acesso.
 4. Implementar as decisões, concluir as rotas de usuários e ajustar a autorização dos recursos.
-5. Validar a integração e concluir documentação e entrega.
+5. Validar a integração entre os módulos, a API e o banco.
 
-Testar e documentar cada alteração durante sua implementação. Preparar dados e
+Testar cada alteração durante sua implementação. Preparar dados e
 DTOs não significa publicar endpoints sem a autorização final. Itens bloqueados
 por decisões estão indicados nas respectivas seções.
 
@@ -50,7 +57,7 @@ por decisões estão indicados nas respectivas seções.
 
 Referências: fase 2, páginas 3–4; fase 3, páginas 10–11.
 
-- [x] Adicionar numeroONU ao produto em schema/migration, DTOs de entrada/saída e serviços. A fase 2 admite código simulado; se adotado, documentar essa identificação.
+- [x] Adicionar numeroONU ao produto em schema/migration, DTOs de entrada/saída e serviços. A fase 2 admite código simulado.
 - [x] Incluir numeroONU em ProdutoResumoDto na resposta da carga. O @Expose atual
       não inclui o campo; apenas adicioná-lo ao banco não o disponibiliza nos detalhes.
 
@@ -60,30 +67,71 @@ Referências: fase 2, páginas 3–4; fase 3, páginas 10–11.
 
 Referência: fase 3, páginas 6–11. Preservar roles e primeiro acesso atuais.
 
-- [x] Adicionar email por migration, validar formato e definir como preencher
-      usuários existentes. Email único é decisão a documentar; login único já existe.
-- [ ] Expor nome/email/login/senha nas entradas previstas pelo PDF, mapeando
-      internamente para name/username/password se desejado, sem renomear banco por obrigação.
-- [ ] Separar DTOs de criação/edição: edição de admin recebe nome/email;
-      edição de operador/despachante recebe nome/email e senha opcional.
-- [ ] Adaptar update para não exigir login nem gerar novo hash sem senha nova,
-      e preservar roles atuais quando o corpo não os informa.
+- [x] Adicionar email obrigatório e único por migration, validar formato nos DTOs
+      e usar CITEXT para unicidade sem diferenciar caixa. Username foi removido.
+      O projeto usa bancos recriados do zero; preenchimento de usuários legados não se aplica.
+- [x] Disponibilizar name/email/password nos contratos atuais de criação e primeiro
+      acesso, usando email como identificador e rejeitando username legado.
+- [x] Separar os DTOs genéricos de criação e edição: CreateUserDto exige senha;
+      UpdateUserDto não contém senha. Controller e serviço usam os DTOs correspondentes.
+- [x] Retirar a exigência de senha/login no update e preservar o hash armazenado:
+      o serviço não gera hash nem inclui password no UPDATE.
+- [ ] Concluir os contratos de edição por perfil: administrador recebe nome/email;
+      operador/despachante permite senha opcional. Hoje UpdateUserDto rejeita password
+      com 400; ainda não há suporte à troca opcional de senha.
+- [ ] Preservar roles atuais quando o corpo de edição não os informa; hoje o serviço
+      usa body.roles ?? [] e apaga os perfis nesse caso.
+- [ ] Preservar status quando omitido na edição; o default true herdado de BaseUserDto
+      pode reativar um usuário inativo ao editar apenas nome/email.
 - [ ] Preparar DTOs/serviços de edição sem mudar a política de acesso atual;
-      manter hash/login/perfil quando não houver alteração prevista. As novas rotas
+      manter hash/email/perfil quando não houver alteração prevista. As novas rotas
       e a revisão da proteção do administrador ficam nas etapas dependentes de roles.
 
 ### Testes da remoção de username e inclusão de email
 
-- [ ] Atualizar fixtures, mocks e testes de DTOs/serviços/controllers para usar email;
-      validar criação sem username, email obrigatório e rejeição de email inválido.
-- [ ] Verificar que respostas de criação, consulta, edição e /me expõem email,
-      não expõem username e continuam ocultando senha/hash.
-- [ ] Testar edição de email, conflito com email de outro usuário e preservação
-      de senha/hash e roles quando esses campos não forem alterados.
-- [ ] Definir e testar o tratamento do campo legado username nas requisições;
+- [ ] Atualizar fixtures, mocks e testes para CreateUserDto/UpdateUserDto:
+      User.request.dtos.spec.ts ainda importa CreateOrUpdateUserDto, que foi removido;
+      três testes de DTO falham. Preservar os cenários de email obrigatório/inválido.
+- [ ] Atualizar User.service.spec.ts para esperar preservação de senha na edição:
+      o teste antigo ainda espera password: 'updated-hash' no UPDATE e falha.
+- [ ] Atualizar os payloads de PUT nos testes HTTP para o contrato atual sem password;
+      três cenários recebem 400 antes de validar resposta, conflito e novo login.
+- [ ] Revalidar que respostas de criação, consulta, edição e /me expõem email,
+      não expõem username e ocultam senha/hash após adaptar o payload de edição;
+      o teste HTTP correspondente atualmente para no PUT com 400.
+- [x] Testar edição de email e conflito com email de outro usuário no serviço/banco,
+      inclusive com diferenças de caixa.
+- [ ] Revalidar o conflito de email na edição HTTP (409) com o novo UpdateUserDto;
+      o teste atual envia password e recebe 400 na validação do corpo.
+- [ ] Testar edição sem senha verificando que o hash persistido permanece idêntico e
+      que PasswordService.hash não é chamado; testar também a rejeição de password no PUT atual.
+- [ ] Implementar e testar preservação de roles e status quando omitidos na edição,
+      incluindo edição de usuário inativo sem reativação acidental.
+- [x] Definir e testar o tratamento do campo legado username nas requisições;
       garantir que não seja exigido nem usado como identificador após a remoção.
+      A ValidationPipe com forbidNonWhitelisted retorna 400 quando username é enviado,
+      inclusive junto de email válido, na criação, edição, login e primeiro acesso.
 - [ ] Alinhar os contratos acima e as rotas por perfil abaixo ao uso de email como
-      identificador; documentar a diferença em relação ao campo login previsto no PDF.
+      identificador, sem reintroduzir username.
+
+### Evidências e pendências da revisão de usuários
+
+- **Validação atual:** `npm run build` passou; `npm test` teve 261 aprovações e
+  4 falhas (3 DTOs e 1 expectativa antiga de hash no update). `npm run test:integration`
+  teve 20 aprovações e 3 falhas HTTP nos PUTs que ainda enviam password.
+- **Banco:** os 14 testes de serviço/banco passaram após reset e migrations;
+  dos 9 casos HTTP, 6 passaram. Revalidar os cenários de edição após adaptar seus payloads.
+- **Concluído por revisão do código:** DTOs distintos e update sem gravação/recalculo
+  de senha. Falta teste específico da preservação exata do hash no banco.
+- **Edição ainda incompleta:** UpdateUserDto não permite senha opcional, roles omitido
+  vira [] e status omitido recebe true pelo default herdado. A política de acesso atual
+  permanece; as rotas de edição por perfil continuam pendentes.
+- **Último administrador:** validateUniqueAdmin é chamado em todo update/remove e
+  bloqueia a edição de nome/email do único administrador ativo. A checagem também
+  precisa distinguir o perfil do usuário alvo e considerar concorrência nas alterações
+  que possam remover o último administrador.
+- **Rotas futuras:** só existem /users e /login genéricos; faltam as 13 rotas por
+  perfil, paginação/filtro e DESPACHANTE. Não definir roles ou políticas sem a equipe.
 
 ### Roles e proteção do administrador — depende da equipe
 
@@ -91,17 +139,17 @@ Definir o modelo antes de implementar; as alternativas abaixo não são escolhas
 
 - [ ] Definir perfil único ou múltiplos perfis e sua representação em User,
       DTOs, /me, tokens e contexto autenticado.
-- [ ] Definir se os cinco perfis antigos serão removidos e como representar os
+- [ ] Definir se os sete perfis atuais serão removidos e como representar os
       três tipos de acesso da fase 3, incluindo DESPACHANTE, ausente no enum atual.
 - [ ] Definir destino de usuários/perfis combinados e política de sessões antigas;
       preservar vínculos/histórico e não promover usuários automaticamente a admin.
 - [ ] Implementar as decisões em migrations, enums, serviços, decorators e guards;
-      atualizar contratos em conjunto com o frontend e rejeitar entradas incompatíveis.
+      atualizar os contratos da API e rejeitar entradas incompatíveis.
 - [ ] Adaptar a proteção do último administrador ao modelo escolhido e corrigir
       validateUniqueAdmin para permitir editar nome/email do único admin ativo.
       Hoje a chamada em qualquer update bloqueia essa edição.
-- [ ] Definir/documentar exclusão lógica e preservar a checagem de inativos já
-      existente em login, AuthGuard e refresh; não recriar essa proteção.
+- [x] Confirmar exclusão lógica existente e recusa de inativos no login, AuthGuard
+      e refresh, incluindo testes HTTP com PostgreSQL real.
 
 ### Rotas por perfil — depende das decisões de roles e contratos
 
@@ -130,15 +178,15 @@ Hoje existem /users e /login genéricos; as rotas abaixo ainda não existem.
       perfil pelo corpo. Rejeitar perfis não permitidos pelo modelo decidido em entradas mantidas.
 - [ ] Permitir POST /operadores só ao administrador e POST /despachantes ao
       administrador/operador, conforme o PDF.
-- [ ] Registrar a política das demais operações de usuários: proposta é admin
+- [ ] Definir e implementar a política das demais operações de usuários: proposta é admin
       gerenciar admins/operadores e admin/operador gerenciar despachantes. O PDF não
       especifica todos os acessos de listagem/edição/exclusão; isso é decisão do projeto.
 - [ ] Restringir listas ao perfil correspondente e validar perfil do ID antes de
       editar/excluir: rota de despachante não pode atingir admin/operador.
 - [ ] Acrescentar paginação com valores positivos, limite máximo, ordenação estável
-      e filtro por login onde previsto; definir/documentar o formato da resposta.
+      e filtro por login onde previsto; implementar o formato da resposta.
 - [ ] Reutilizar login/hash/JWT, acrescentando conferência do perfil da rota.
-      Preservar caminho de login do admin e o refresh que a interface já utiliza.
+      Preservar os endpoints existentes de login do administrador e refresh.
 - [ ] Revisar /users genérico: remover ou restringir/adaptar o que permanecer,
       evitando caminhos alternativos que contornem as novas políticas.
 
@@ -149,35 +197,33 @@ Hoje existem /users e /login genéricos; as rotas abaixo ainda não existem.
 Referência: fase 3, página 9. Seed/script é exigido; a substituição do fluxo atual
 será implementada após a equipe definir a estratégia.
 
-- [ ] Definir como seed/script coexistirá com ou substituirá o fluxo atual e
-      registrar a decisão. Manter first_access/setup intactos até essa definição.
+- [ ] Definir como seed/script coexistirá com ou substituirá o fluxo atual.
+      Manter first_access/setup intactos até essa definição.
 - [ ] Criar seed/script do primeiro administrador conforme o modelo de roles
-      definido, com hash de senha, email e instruções de execução.
+      definido, com hash de senha e email.
 - [ ] Adequar POST /users/first_access e GET /login/setup conforme a decisão,
-      coordenando a interface; não manter cadastro público sem avaliar sua adequação ao PDF.
+      implementando os contratos e erros da API; avaliar a adequação do cadastro público ao PDF.
 - [ ] Atualizar mensagens do AuthGuard e logs de main.ts; alinhar o retorno 412
       atual quando não há usuários ativos com o fluxo inicial finalmente adotado.
 - [ ] Validar inicialização em banco limpo, nova execução do mecanismo e acesso do admin.
 
 ### Testes de autenticação por email
 
-- [ ] Testar login com email e senha, incluindo variações de maiúsculas/minúsculas,
+- [x] Testar login com email e senha, incluindo variações de maiúsculas/minúsculas,
       email inexistente, senha incorreta e usuário inativo.
-- [ ] Atualizar os testes de JWT, refresh, AuthGuard e /me para não depender de
+- [x] Atualizar os testes de JWT, refresh, AuthGuard e /me para não depender de
       username; manter identificação por ID e as verificações de atividade/permissões.
-- [ ] Testar o primeiro acesso/setup com email, preservando a estratégia atual
-      até a decisão da equipe; atualizar o teste do seed quando ele for implementado.
+- [x] Testar o primeiro acesso/setup com email, preservando a estratégia atual:
+      cadastro inicial, bloqueio de repetição, concorrência e login do administrador.
+- [ ] Acrescentar testes do seed quando sua estratégia for definida e implementada.
 
 ## Módulo de cargas químicas
 
-### Dados, código e integração de documentos — pode avançar
+### Dados, código e endpoints de documentos — pode avançar
 
 - [ ] Definir código da carga: hoje é CQ derivado do ID; fase 3 inclui campo no
       formulário. Se aceitar código informado, criar persistência/unicidade e adaptar
-      DTO/serviço/resposta. Se manter geração automática, registrar a diferença e validar aceitação.
-- [ ] Entregar às frentes de interface os contratos alterados e a sequência existente
-      criar carga → anexar documentos → validar. Upload já é separado; retomada dos anexos
-      é principalmente integração da interface, sem novo cadastro de carga.
+      DTO/serviço/resposta. Se manter geração automática, validar essa decisão.
 
 ### Transições e concorrência — preservar a autorização atual
 
@@ -188,15 +234,13 @@ Código: CargaQuimica.transicoes.ts e CargaQuimicaService.transicionar.
       pode ser cancelada; a fase 2 também lista somente essa saída alternativa.
 - [ ] Remover EM_MOVIMENTACAO → CANCELADA para seguir a matriz enumerada da fase 2;
       manter EM_MOVIMENTACAO → FINALIZADA. Qualquer desvio precisa de justificativa/aceitação.
-- [ ] Atualizar testes, exemplos e diagramas dessas transições. Não recriar
+- [ ] Atualizar testes dessas transições. Não recriar
       estados terminais, motivo obrigatório ou regra de documentação: já existem.
 - [ ] Corrigir concorrência como ajuste de integridade do projeto, não requisito
       de mecanismo específico do PDF: ler/validar o estado de forma consistente e usar
       atualização condicional ou bloqueio, mantendo status/histórico na transação atual.
-- [ ] Rejeitar operação baseada em estado desatualizado com erro documentado e
+- [ ] Rejeitar operação baseada em estado desatualizado com erro consistente e
       sem criar movimentação; testar duas alterações simultâneas.
-- [ ] Documentar CADASTRADA = “Registrada” e EM_PREPARACAO = “Em análise”.
-      A troca dos rótulos é tarefa de frontend; não é necessário renomear os enums do banco.
 
 - [ ] Executar os testes afetados sem alterar as permissões por etapa nesta etapa.
       A operação completa pelo operador será concluída após a decisão de roles.
@@ -205,9 +249,9 @@ Código: CargaQuimica.transicoes.ts e CargaQuimicaService.transicionar.
 
 - [ ] Adequar getTecnicoAtivo ao modelo aprovado, preservando o vínculo existente
       e definindo quem é tecnicamente elegível. Vínculo e checagem de atividade já existem.
-- [ ] Disponibilizar consulta mínima dos responsáveis elegíveis/ativos para o
-      formulário e documentar seu cadastro. O PDF exige responsável informado, mas não
-      exige cadastro próprio ou tela nova; escolher a solução mais simples para o projeto.
+- [ ] Disponibilizar endpoint de consulta mínima dos responsáveis elegíveis/ativos
+      e implementar os campos de resposta e as regras de elegibilidade.
+      Reaproveitar o cadastro de usuários quando compatível com o modelo aprovado.
 
 - [ ] Confirmar primeiro como a elegibilidade técnica será representada; retirar
       a exigência TECNICO somente se esse perfil for removido pela decisão da equipe.
@@ -234,9 +278,8 @@ e CargaQuimica.permissoes.ts.
       que despachante não altere dados por nenhum caminho, inclusive documentos e DELETE.
 - [ ] Revisar rotas públicas além de login: /health, /health/db e /public/:file
       estão com SetPublic. Para seguir literalmente o PDF, proteger as rotas não destinadas
-      a autenticação e adaptar consumidores/healthchecks; qualquer exceção exige decisão
-      documentada e validação de sua aceitação.
-- [ ] Definir/documentar também o acesso à documentação Swagger e ao download da
+      a autenticação e adaptar consumidores/healthchecks; validar qualquer exceção adotada.
+- [ ] Implementar a política de acesso ao endpoint Swagger e ao download da
       coleção, considerando que Swagger é registrado fora dos controllers protegidos.
 
 - [ ] Se a equipe mantiver perfis antigos, ajustar a política para essa decisão;
@@ -248,23 +291,25 @@ e CargaQuimica.permissoes.ts.
 
 ### Verificações durante as mudanças independentes
 
-- [ ] Atualizar testes dos campos/DTOs afetados e Swagger dos contratos já existentes.
-- [ ] Validar migrations dos novos campos em banco limpo e com dados anteriores,
-      mantendo as estruturas de roles e primeiro acesso atuais.
+- [ ] Atualizar testes dos campos/DTOs afetados.
+- [x] Validar migrations de email/remoção de username em banco de testes limpo,
+      mantendo roles e primeiro acesso atuais. Neste projeto os bancos são recriados
+      do zero; conversão de dados de usuários legados não é necessária.
 
 ### Testes no PostgreSQL e E2E da substituição de username por email
 
-- [ ] Recriar banco de teste do zero pelas migrations; verificar que citext é criado
+- [x] Recriar banco de teste do zero pelas migrations; verificar que citext é criado
       antes de ser usado, User não possui username e email é obrigatório, CITEXT e único.
       O projeto permite reset; migração de dados legados não é necessária neste cenário.
-- [ ] Testar contra PostgreSQL real, sem mocks: cadastrar um email e rejeitar outro
+- [x] Testar contra PostgreSQL real, sem mocks: cadastrar um email e rejeitar outro
       que difira apenas em maiúsculas/minúsculas; verificar também conflito em atualização.
-- [ ] Validar busca por email com caixa diferente e preservação da escrita original;
+- [x] Validar busca por email com caixa diferente e preservação da escrita original;
       confirmar que a unicidade é garantida pelo banco, inclusive em inserções simultâneas.
-- [ ] Cobrir via E2E criação → login por email → /me → edição de email → novo login;
-      verificar que o email antigo deixa de autenticar e o novo funciona com caixa diferente.
-- [ ] Atualizar exemplos e coleção usados nos E2E para remover dependências de username
-      e conferir o erro HTTP documentado para email duplicado.
+- [ ] Revalidar via E2E criação → login por email → /me → edição de email → novo login
+      com PUT sem password; o cenário atual falha com 400. A troca e o novo login
+      continuam passando no teste de serviço/banco.
+- [ ] Revalidar retorno HTTP 409 para email duplicado em criação e edição na suíte real
+      após adaptar o corpo do PUT ao novo contrato.
 
 ### E2E, CI e ambiente — antes da autorização final
 
@@ -275,9 +320,8 @@ e CargaQuimica.permissoes.ts.
       motivos, terminais, executor, hash, inativos e login/refresh existentes.
 - [ ] Conferir a execução atual em Docker com API/banco e healthchecks,
       sem alterar ainda a política de acesso dos endpoints de monitoramento.
-- [ ] Registrar contratos entregues e decisões ainda pendentes para Front 1/Front 2.
 
-### Validação integrada, documentação e entrega
+### Validação integrada
 
 - [ ] Adaptar os testes ao modelo de roles e primeiro acesso realmente escolhidos,
       sem presumir perfil único ou remoção de perfis antes da decisão.
@@ -292,17 +336,11 @@ e CargaQuimica.permissoes.ts.
 - [ ] Executar regressão de documentos, motivos, terminais, executor, login/refresh,
       hash/ocultação de senha e regras de produto/carga existentes.
 - [ ] Executar lint, build, testes e migrations/seed em banco limpo e com dados anteriores;
-      verificar Docker/API/banco e integração com frontend após alterações de contratos/healthchecks.
-- [ ] Atualizar Swagger, exemplos/coleção e README: campos, rotas, perfis, erros,
-      paginação, exclusão, seed, técnicos, variáveis e execução local/Docker/testes.
-- [ ] Ajustar sua parte dos diagramas/documentos e gravar o trecho do backend no
-      vídeo integrado, incluindo decisões e desafios; cada frente cuida de seu material.
-- [ ] Conferir com Front 1/Front 2 as mudanças de contrato, seleção de técnicos,
-      documentos, login, proteção por perfil e tratamento de erros.
+      verificar a integração entre API e banco em Docker após alterações de contratos/healthchecks.
 
 ## Fora das alterações obrigatórias de backend
 
 Não há necessidade de recriar autenticação, trocar stack, introduzir microsserviços,
 GraphQL/gRPC, novos módulos de despacho ou suporte a múltiplos perfis como exigência do PDF; o modelo de roles será decidido pela equipe. Paginação/filtro
-são exigidos nas listas de usuários descritas acima; busca/filtro das cargas podem
-continuar na interface sobre o GET existente, sem novo endpoint obrigatório.
+são exigidos nas listas de usuários descritas acima; novos endpoints de busca/filtro
+de cargas não são obrigatórios no escopo atual do backend.

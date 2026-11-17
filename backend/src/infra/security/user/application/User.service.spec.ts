@@ -32,6 +32,12 @@ describe('UserService', () => {
     roles: [RolesEnum.OPERADOR],
     status: true,
   };
+  const updateBody = {
+    email: userBody.email,
+    name: userBody.name,
+    roles: userBody.roles,
+    status: userBody.status,
+  };
   let hashPassword: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
@@ -81,7 +87,8 @@ describe('UserService', () => {
         }),
       });
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
-      await service.update({ id: 8, body });
+      const editBody = { ...updateBody, name: body.name, email: body.email };
+      await service.update({ id: 8, body: editBody });
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 8 },
         data: expect.objectContaining({
@@ -218,38 +225,37 @@ describe('UserService', () => {
       );
     });
 
-    it('atualiza usuário existente com senha protegida', async () => {
+    it('atualiza usuário sem gerar hash nem gravar senha', async () => {
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
-      hashPassword.mockResolvedValue('updated-hash');
       prismaMock.user.update.mockResolvedValue({
         id: 20,
         ...userBody,
-        password: 'updated-hash',
+        password: 'stored-hash',
       });
 
-      await service.update({ id: 20, body: userBody });
+      await service.update({ id: 20, body: updateBody });
 
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 20 },
         data: {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
-          password: 'updated-hash',
           roles: [RolesEnum.OPERADOR],
           status: true,
         },
       });
+      expect(hashPassword).not.toHaveBeenCalled();
     });
 
     it('usa lista vazia quando atualização não informa perfis', async () => {
-      const bodyWithoutRoles = { ...userBody, roles: undefined };
+      const bodyWithoutRoles = { ...updateBody, roles: undefined };
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
       prismaMock.user.update.mockResolvedValue({
         id: 20,
         ...bodyWithoutRoles,
-        password: 'updated-hash',
+        password: 'stored-hash',
       });
 
       await service.update({ id: 20, body: bodyWithoutRoles });
@@ -264,9 +270,9 @@ describe('UserService', () => {
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update({ id: 20, body: userBody })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update({ id: 20, body: updateBody }),
+      ).rejects.toThrow(NotFoundException);
       expect(hashPassword).not.toHaveBeenCalled();
       expect(prismaMock.user.update).not.toHaveBeenCalled();
     });

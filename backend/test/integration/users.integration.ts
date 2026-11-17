@@ -172,7 +172,12 @@ describe('Usuários com PostgreSQL real', () => {
     const user = await users.create({ body });
     await users.update({
       id: user.id,
-      body: { ...body, email: 'novo@example.com' },
+      body: {
+        name: body.name,
+        email: 'novo@example.com',
+        roles: body.roles,
+        status: body.status,
+      },
     });
     await expect(
       login.login({ email: body.email, password: body.password }),

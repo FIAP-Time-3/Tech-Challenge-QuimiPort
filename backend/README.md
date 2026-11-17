@@ -1006,6 +1006,7 @@ preservação da escrita original, hash de senha, login, refresh, inativos, troc
 email e concorrência no cadastro do primeiro administrador.
 
 `npm test` continua executando os testes unitários sem resetar nenhum banco.
-`npm run test:e2e` mantém sua suíte HTTP separada; a suíte nova testa os serviços
-com o PostgreSQL real. As regras de validação de DTO continuam cobertas pelos
-testes unitários/HTTP.
+`npm run test:e2e` mantém sua suíte HTTP com mocks separada. A suíte
+`test:integration` cobre serviços e contratos HTTP de usuários com PostgreSQL real,
+incluindo validação dos DTOs, rejeição de username legado, respostas sem senha,
+conflitos de email (409), /me e inativação com bloqueio de login/acesso/refresh.

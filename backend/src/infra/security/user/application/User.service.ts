@@ -8,7 +8,8 @@ import {
 import { plainToInstance } from 'class-transformer';
 import {
   CreateFirstUserDto,
-  CreateOrUpdateUserDto,
+  CreateUserDto,
+  UpdateUserDto,
 } from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
@@ -48,7 +49,7 @@ export class UserService {
     {
       body,
     }: {
-      body: CreateOrUpdateUserDto;
+      body: CreateUserDto;
     },
     database: Pick<PrismaService, 'user'> = this.prisma,
   ): Promise<UserResponseDto> {
@@ -93,7 +94,7 @@ export class UserService {
     body,
   }: {
     id: number;
-    body: CreateOrUpdateUserDto;
+    body: UpdateUserDto;
   }): Promise<UserResponseDto> {
     await this.validateUniqueAdmin({ id });
 
@@ -106,16 +107,11 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const hashedPassword = await PasswordService.hash({
-      password: body.password,
-    });
-
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
         email: body.email,
         name: this.normalizeName(body.name),
-        password: hashedPassword,
         roles: body.roles ?? [],
         status: body.status,
       },
@@ -143,7 +139,7 @@ export class UserService {
       body,
     }: {
       id?: number;
-      body: CreateOrUpdateUserDto;
+      body: CreateUserDto | UpdateUserDto;
     },
     database: Pick<PrismaService, 'user'> = this.prisma,
   ) {
