@@ -1,4 +1,8 @@
 import {
+  ApiAuthenticated,
+  ApiErrors,
+} from '../../../../infra/swagger/contracts.js';
+import {
   BadRequestException,
   Body,
   Controller,
@@ -17,6 +21,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
+  ApiCreatedResponse,
   ApiBody,
   ApiConflictResponse,
   ApiConsumes,
@@ -74,6 +79,8 @@ const PERFIS_VALIDAR_DOCUMENTO = [
   RolesEnum.INSPETOR,
 ];
 
+@ApiAuthenticated()
+@ApiErrors(403)
 @ApiTags('Cargas químicas')
 @Controller('cargas-quimicas')
 export class CargaQuimicaController {
@@ -115,6 +122,7 @@ export class CargaQuimicaController {
     description: 'Dados inválidos, produto inexistente ou inativo',
   })
   @Post()
+  @ApiCreatedResponse({ type: CargaQuimicaResponseDto })
   async create(
     @Body() body: CreateOrUpdateCargaQuimicaDto,
     @Req() req: RequisicaoAutenticada,
@@ -124,14 +132,17 @@ export class CargaQuimicaController {
 
   @ApiOperation({ summary: 'Listar cargas químicas' })
   @Get()
+  @ApiOkResponse({ type: [CargaQuimicaResponseDto] })
   async findAll(): Promise<CargaQuimicaResponseDto[]> {
     return await this.service.findAll();
   }
 
   @ApiOperation({ summary: 'Buscar carga química por id' })
   @ApiNotFoundResponse({ description: 'Carga não encontrada' })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Get(':id')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async findOne(
     @Param('id', new ParseIntPipe()) id: number,
   ): Promise<CargaQuimicaResponseDto> {
@@ -142,8 +153,10 @@ export class CargaQuimicaController {
     summary: 'Consultar histórico de movimentações',
     description: 'Retorna as movimentações ordenadas por step.',
   })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Get(':id/historico')
+  @ApiOkResponse({ type: [MovimentacaoResponseDto] })
+  @ApiErrors(400, 404)
   async historico(
     @Param('id', new ParseIntPipe()) id: number,
   ): Promise<MovimentacaoResponseDto[]> {
@@ -159,8 +172,10 @@ export class CargaQuimicaController {
   @ApiConflictResponse({
     description: 'Alteração não permitida no status atual',
   })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Put(':id')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async update(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: CreateOrUpdateCargaQuimicaDto,
@@ -178,8 +193,10 @@ export class CargaQuimicaController {
   @ApiConflictResponse({
     description: 'Transição inválida ou documentação pendente',
   })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Patch(':id/status')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async atualizarStatus(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: UpdateStatusDto,
@@ -199,8 +216,10 @@ export class CargaQuimicaController {
   })
   @ApiBadRequestResponse({ description: 'Motivo ausente' })
   @ApiConflictResponse({ description: 'Transição inválida' })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Patch(':id/bloquear')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async bloquear(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: MotivoDto,
@@ -221,8 +240,10 @@ export class CargaQuimicaController {
   @ApiConflictResponse({
     description: 'Transição inválida ou documentação pendente',
   })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Patch(':id/liberar')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async liberar(
     @Param('id', new ParseIntPipe()) id: number,
     @Req() req: RequisicaoAutenticada,
@@ -238,8 +259,10 @@ export class CargaQuimicaController {
   })
   @ApiBadRequestResponse({ description: 'Motivo ausente' })
   @ApiConflictResponse({ description: 'Carga em estado terminal' })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Patch(':id/cancelar')
+  @ApiOkResponse({ type: CargaQuimicaResponseDto })
+  @ApiErrors(400, 404)
   async cancelar(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: MotivoDto,
@@ -253,14 +276,17 @@ export class CargaQuimicaController {
   }
 
   @AllowedRoles(PERFIS_ANEXAR_DOCUMENTO)
-  @ApiOperation({ summary: 'Registrar documento da carga' })
+  @ApiOperation({
+    summary: 'Registrar documento da carga',
+    description: 'Upload multipart: arquivo PDF obrigatório, limite de 10 MiB.',
+  })
   @ApiConflictResponse({
     description: 'Documento já registrado ou carga encerrada',
   })
   @ApiBadRequestResponse({
     description: 'Arquivo ausente ou conteúdo não é um PDF válido',
   })
-  @ApiParam({ name: 'id', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -279,6 +305,8 @@ export class CargaQuimicaController {
   @UseInterceptors(
     FileInterceptor('arquivo', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
+  @ApiCreatedResponse({ type: DocumentoResponseDto })
+  @ApiErrors(404, 413)
   async adicionarDocumento(
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: CreateDocumentoDto,
@@ -305,10 +333,16 @@ export class CargaQuimicaController {
     description: 'Carga ou arquivo do documento não encontrado',
   })
   @ApiProduces('application/pdf')
-  @ApiOkResponse({ description: 'Arquivo PDF do documento' })
-  @ApiParam({ name: 'id', example: 1, type: Number })
-  @ApiParam({ name: 'docId', example: 1, type: Number })
+  @ApiOkResponse({
+    description: 'Arquivo PDF do documento',
+    content: {
+      'application/pdf': { schema: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
+  @ApiParam({ name: 'docId', example: 1, type: 'integer' })
   @Get(':id/documentos/:docId')
+  @ApiErrors(400, 404)
   async obterArquivoDocumento(
     @Param('id', new ParseIntPipe()) id: number,
     @Param('docId', new ParseIntPipe()) docId: number,
@@ -323,9 +357,11 @@ export class CargaQuimicaController {
   @AllowedRoles(PERFIS_VALIDAR_DOCUMENTO)
   @ApiOperation({ summary: 'Validar documento da carga' })
   @ApiNotFoundResponse({ description: 'Carga ou documento não encontrado' })
-  @ApiParam({ name: 'id', example: 1, type: Number })
-  @ApiParam({ name: 'docId', example: 1, type: Number })
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
+  @ApiParam({ name: 'docId', example: 1, type: 'integer' })
   @Patch(':id/documentos/:docId/validar')
+  @ApiOkResponse({ type: DocumentoResponseDto })
+  @ApiErrors(400, 404)
   async validarDocumento(
     @Param('id', new ParseIntPipe()) id: number,
     @Param('docId', new ParseIntPipe()) docId: number,

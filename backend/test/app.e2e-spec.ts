@@ -1,3 +1,7 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { setupSwagger } from '../src/infra/swagger/swagger.js';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
@@ -7,6 +11,7 @@ import { PrismaService } from '../src/infra/database/prisma.service.js';
 
 describe('API HTTP (e2e)', () => {
   let app: INestApplication<App>;
+  let swaggerDir: string;
 
   const prismaMock = {
     user: {
@@ -52,11 +57,36 @@ describe('API HTTP (e2e)', () => {
         forbidNonWhitelisted: true,
       }),
     );
+    swaggerDir = mkdtempSync(join(tmpdir(), 'quimiport-swagger-'));
+    setupSwagger(app, swaggerDir);
     await app.init();
   });
 
   afterEach(async () => {
     await app.close();
+    rmSync(swaggerDir, { recursive: true, force: true });
+  });
+
+  it('serve Swagger UI e OpenAPI JSON público compatível com os arquivos exportados', async () => {
+    await request(app.getHttpServer())
+      .get('/api/api-docs/')
+      .expect(200)
+      .expect('Content-Type', /html/u);
+    const response = await request(app.getHttpServer())
+      .get('/api/api-docs-json')
+      .expect(200);
+    expect(response.body.openapi).toBe('3.0.0');
+    expect(response.body.paths).toHaveProperty('/api/users');
+    expect(response.body.paths['/api/login'].post.security).toEqual([]);
+    expect(
+      response.body.components.schemas.UpdateUserDto.properties,
+    ).not.toHaveProperty('password');
+    expect(
+      JSON.parse(readFileSync(join(swaggerDir, 'openapi.json'), 'utf8')),
+    ).toEqual(response.body);
+    expect(readFileSync(join(swaggerDir, 'collection.json'), 'utf8')).toBe(
+      readFileSync(join(swaggerDir, 'openapi.json'), 'utf8'),
+    );
   });
 
   it('expõe health check público sob prefixo /api', async () => {

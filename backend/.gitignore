@@ -64,3 +64,6 @@ tsconfig.build.tsbuildinfo
 /public/docs/
 
 /bruno
+# OpenAPI gerado na inicialização
+/public/openapi.json
+/public/collection.json

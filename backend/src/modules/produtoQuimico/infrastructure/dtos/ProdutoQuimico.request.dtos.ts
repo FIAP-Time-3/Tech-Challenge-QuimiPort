@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsNotEmpty,
@@ -17,7 +17,7 @@ export class CreateOrUpdateProdutoQuimicoDto {
   @IsNotEmpty()
   nome: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   descricao: string;
@@ -26,7 +26,7 @@ export class CreateOrUpdateProdutoQuimicoDto {
     example: '1090',
     minLength: 4,
     maxLength: 4,
-    pattern: '^[0-9]{4}$',
+    pattern: '^(?!0000)[0-9]{4}$',
   })
   @IsString()
   @Length(4, 4, {
@@ -38,13 +38,15 @@ export class CreateOrUpdateProdutoQuimicoDto {
   })
   numeroONU: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: 'integer', minimum: 1, maximum: 9 })
   @IsInt()
   @Min(1)
   @Max(9)
   classeRisco: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Padrão true no cadastro quando omitido.',
+  })
   @IsBoolean()
   @IsOptional()
   status: boolean;

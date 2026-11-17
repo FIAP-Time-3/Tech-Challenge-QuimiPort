@@ -1,14 +1,17 @@
+import { ApiAuthenticated, ApiErrors } from '../../../../swagger/contracts.js';
 import { Controller, Get, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserService } from '../../application/User.service.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 
+@ApiTags('Usuários')
 @Controller('me')
 export class MeController {
   constructor(private readonly service: UserService) {}
 
   @Get()
-  @ApiBearerAuth()
+  @ApiAuthenticated()
+  @ApiErrors(404)
   @ApiOperation({ summary: 'Consultar os dados do usuário autenticado' })
   @ApiOkResponse({ type: UserResponseDto })
   async getMe(
