@@ -248,6 +248,51 @@ describe('UserService', () => {
       expect(hashPassword).not.toHaveBeenCalled();
     });
 
+    it('não fornece status nem senha ao Prisma quando omitidos na edição', async () => {
+      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.findUnique.mockResolvedValue({ id: 20, status: false });
+      prismaMock.user.update.mockResolvedValue({
+        id: 20,
+        email: userBody.email,
+        status: false,
+        password: 'hash',
+      });
+      await service.update({
+        id: 20,
+        body: { name: userBody.name, email: userBody.email },
+      });
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: 20 },
+        data: {
+          name: userBody.name,
+          email: userBody.email,
+          roles: [],
+          status: undefined,
+        },
+      });
+      expect(hashPassword).not.toHaveBeenCalled();
+    });
+
+    it.each([true, false])(
+      'encaminha status explícito %s sem gerar senha',
+      async (status) => {
+        prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+        prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
+        prismaMock.user.update.mockResolvedValue({
+          id: 20,
+          ...updateBody,
+          status,
+          password: 'hash',
+        });
+        await service.update({ id: 20, body: { ...updateBody, status } });
+        expect(prismaMock.user.update).toHaveBeenCalledWith({
+          where: { id: 20 },
+          data: { ...updateBody, status },
+        });
+        expect(hashPassword).not.toHaveBeenCalled();
+      },
+    );
+
     it('usa lista vazia quando atualização não informa perfis', async () => {
       const bodyWithoutRoles = { ...updateBody, roles: undefined };
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);

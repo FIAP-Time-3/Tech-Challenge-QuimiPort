@@ -217,6 +217,80 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       .expect(201);
   });
 
+  it.each([true, false])(
+    'preserva status %s e hash ao editar somente nome/email; roles omitido vira []',
+    async (status) => {
+      const created = await authorized('post', '/api/users')
+        .send({ ...userBody, status })
+        .expect(201);
+      const id = created.body.id;
+      const before = await prisma.user.findUniqueOrThrow({ where: { id } });
+      const result = await authorized('put', `/api/users/${id}`)
+        .send({ name: 'Nome Alterado', email: 'alterado@example.com' })
+        .expect(200);
+      expect(result.body).toMatchObject({
+        status,
+        roles: [],
+        email: 'alterado@example.com',
+      });
+      const after = await prisma.user.findUniqueOrThrow({ where: { id } });
+      expect(after).toMatchObject({
+        status,
+        roles: [],
+        name: 'Nome Alterado',
+        email: 'alterado@example.com',
+      });
+      expect(after.password).toBe(before.password);
+      await request(app.getHttpServer())
+        .post('/api/login')
+        .send({ email: 'alterado@example.com', password: userBody.password })
+        .expect(status ? 201 : 401);
+    },
+  );
+
+  it.each([true, false])(
+    'permite alterar status explicitamente para %s',
+    async (status) => {
+      const created = await authorized('post', '/api/users')
+        .send({ ...userBody, status: !status })
+        .expect(201);
+      await authorized('put', `/api/users/${created.body.id}`)
+        .send({ ...updateBody, status })
+        .expect(200);
+      expect(
+        await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
+      ).toMatchObject({ status, roles: userBody.roles });
+    },
+  );
+
+  it('recusa status textual sem alterar dados persistidos', async () => {
+    const created = await authorized('post', '/api/users')
+      .send({ ...userBody, status: false })
+      .expect(201);
+    const id = created.body.id;
+    const before = await prisma.user.findUniqueOrThrow({ where: { id } });
+    await authorized('put', `/api/users/${id}`)
+      .send({ ...updateBody, name: 'Não Persistir', status: 'true' })
+      .expect(400);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id } })).toEqual(
+      before,
+    );
+  });
+
+  it('aplica status ativo padrão no cadastro sem status', async () => {
+    const created = await authorized('post', '/api/users')
+      .send({
+        name: userBody.name,
+        email: userBody.email,
+        password: userBody.password,
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({ status: true, roles: [] });
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
+    ).toMatchObject({ status: true, roles: [] });
+  });
+
   it('consulta setup e impede repetir o primeiro acesso', async () => {
     const setup = await request(app.getHttpServer())
       .get('/api/login/setup')

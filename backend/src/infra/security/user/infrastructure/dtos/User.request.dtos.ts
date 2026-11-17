@@ -25,11 +25,6 @@ export class BaseUserDto {
   @IsOptional()
   @IsEnum(RolesEnum, { each: true })
   roles?: RolesEnum[];
-
-  @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  status: boolean = true;
 }
 
 export class CreateUserDto extends BaseUserDto {
@@ -37,9 +32,19 @@ export class CreateUserDto extends BaseUserDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  status: boolean = true;
 }
 
-export class UpdateUserDto extends BaseUserDto {}
+export class UpdateUserDto extends BaseUserDto {
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  status?: boolean;
+}
 
 export class CreateFirstUserDto {
   @ApiProperty()

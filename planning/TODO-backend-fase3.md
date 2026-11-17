@@ -1,11 +1,9 @@
 # TODO — adequações do backend para a fase 3
 
 Revisão: 17/11/2026. Base: releitura dos três PDFs e do backend atual.
-Este arquivo é planejamento; não altera a aplicação. Última validação após a
-separação dos DTOs de usuários: build aprovado; 261 testes unitários passaram e 4
-falharam; 20 testes de integração com PostgreSQL real passaram e 3 falharam. O reset
-e todas as migrations do banco de testes foram executados com sucesso. As falhas
-e os ajustes pendentes estão detalhados no módulo de usuários.
+Este arquivo é planejamento; não altera a aplicação. Última validação após ajuste
+às novas DTOs: `npm run test:all` passou com 278 testes unitários, 5 HTTP com mocks
+e 30 com PostgreSQL real, incluindo reset e migrations. Build e lint aprovados.
 As páginas são a posição no PDF. Este é o checklist revisado específico de backend;
 nos pontos de divergência, substitui as descrições anteriores de backend no planejamento.
 
@@ -49,6 +47,10 @@ deste checklist.
 4. Implementar as decisões, concluir as rotas de usuários e ajustar a autorização dos recursos.
 5. Validar a integração entre os módulos, a API e o banco.
 
+As rotas /administradores, /operadores e /despachantes, o modelo de role único e
+as alterações de autenticação/primeiro acesso ficam adiados conforme decisão do
+projeto. Seus itens permanecem abertos para uma etapa posterior.
+
 Testar cada alteração durante sua implementação. Preparar dados e
 DTOs não significa publicar endpoints sem a autorização final. Itens bloqueados
 por decisões estão indicados nas respectivas seções.
@@ -58,8 +60,8 @@ por decisões estão indicados nas respectivas seções.
 Referências: fase 2, páginas 3–4; fase 3, páginas 10–11.
 
 - [x] Adicionar numeroONU ao produto em schema/migration, DTOs de entrada/saída e serviços. A fase 2 admite código simulado.
-- [x] Incluir numeroONU em ProdutoResumoDto na resposta da carga. O @Expose atual
-      não inclui o campo; apenas adicioná-lo ao banco não o disponibiliza nos detalhes.
+- [x] Incluir numeroONU em ProdutoResumoDto na resposta da carga, com @Expose
+      para disponibilizar o campo nos detalhes.
 
 ## Módulo de usuários
 
@@ -76,37 +78,30 @@ Referência: fase 3, páginas 6–11. Preservar roles e primeiro acesso atuais.
       UpdateUserDto não contém senha. Controller e serviço usam os DTOs correspondentes.
 - [x] Retirar a exigência de senha/login no update e preservar o hash armazenado:
       o serviço não gera hash nem inclui password no UPDATE.
-- [ ] Concluir os contratos de edição por perfil: administrador recebe nome/email;
-      operador/despachante permite senha opcional. Hoje UpdateUserDto rejeita password
-      com 400; ainda não há suporte à troca opcional de senha.
-- [ ] Preservar roles atuais quando o corpo de edição não os informa; hoje o serviço
-      usa body.roles ?? [] e apaga os perfis nesse caso.
-- [ ] Preservar status quando omitido na edição; o default true herdado de BaseUserDto
-      pode reativar um usuário inativo ao editar apenas nome/email.
-- [ ] Preparar DTOs/serviços de edição sem mudar a política de acesso atual;
-      manter hash/email/perfil quando não houver alteração prevista. As novas rotas
-      e a revisão da proteção do administrador ficam nas etapas dependentes de roles.
+- [ ] Concluir os contratos de edição por perfil com nome/email, sem alteração de senha.
+      A troca de senha fica para depois por decisão do projeto.
+- [x] Preservar status quando omitido na edição: default true apenas em CreateUserDto;
+      UpdateUserDto mantém undefined e o Prisma preserva o status armazenado.
 
 ### Testes da remoção de username e inclusão de email
 
-- [ ] Atualizar fixtures, mocks e testes para CreateUserDto/UpdateUserDto:
-      User.request.dtos.spec.ts ainda importa CreateOrUpdateUserDto, que foi removido;
-      três testes de DTO falham. Preservar os cenários de email obrigatório/inválido.
-- [ ] Atualizar User.service.spec.ts para esperar preservação de senha na edição:
-      o teste antigo ainda espera password: 'updated-hash' no UPDATE e falha.
-- [ ] Atualizar os payloads de PUT nos testes HTTP para o contrato atual sem password;
-      três cenários recebem 400 antes de validar resposta, conflito e novo login.
-- [ ] Revalidar que respostas de criação, consulta, edição e /me expõem email,
-      não expõem username e ocultam senha/hash após adaptar o payload de edição;
-      o teste HTTP correspondente atualmente para no PUT com 400.
-- [x] Testar edição de email e conflito com email de outro usuário no serviço/banco,
-      inclusive com diferenças de caixa.
-- [ ] Revalidar o conflito de email na edição HTTP (409) com o novo UpdateUserDto;
-      o teste atual envia password e recebe 400 na validação do corpo.
-- [ ] Testar edição sem senha verificando que o hash persistido permanece idêntico e
-      que PasswordService.hash não é chamado; testar também a rejeição de password no PUT atual.
-- [ ] Implementar e testar preservação de roles e status quando omitidos na edição,
-      incluindo edição de usuário inativo sem reativação acidental.
+- [x] Atualizar fixtures, mocks e testes para CreateUserDto/UpdateUserDto, mantendo
+      validação dos campos obrigatórios e rejeição de senha no contrato de edição.
+- [x] Atualizar User.service.spec.ts: update sem password na gravação e sem chamada
+      a PasswordService.hash.
+- [x] Atualizar os payloads de PUT nos testes HTTP para o contrato sem password.
+- [x] Verificar email e ocultação de username/senha nas respostas de criação,
+      consulta, edição e /me.
+- [x] Testar edição de email e conflitos com diferenças de caixa no serviço/banco
+      e nas rotas HTTP (409).
+- [x] Testar que o hash persistido permanece idêntico após edição sem senha e que
+      password no PUT é rejeitado com 400.
+- [x] Testar preservação de status quando omitido na edição, incluindo usuários
+      ativos e inativos, com mocks e HTTP/PostgreSQL real.
+- [x] Testar alteração explícita de status true/false e rejeição de valores não booleanos,
+      verificando que requisição inválida não altera os dados persistidos.
+- [x] Testar que edição apenas de nome/email limpa roles para [] e preserva o hash,
+      conforme as decisões do projeto; criação sem status continua usando true.
 - [x] Definir e testar o tratamento do campo legado username nas requisições;
       garantir que não seja exigido nem usado como identificador após a remoção.
       A ValidationPipe com forbidNonWhitelisted retorna 400 quando username é enviado,
@@ -116,16 +111,17 @@ Referência: fase 3, páginas 6–11. Preservar roles e primeiro acesso atuais.
 
 ### Evidências e pendências da revisão de usuários
 
-- **Validação atual:** `npm run build` passou; `npm test` teve 261 aprovações e
-  4 falhas (3 DTOs e 1 expectativa antiga de hash no update). `npm run test:integration`
-  teve 20 aprovações e 3 falhas HTTP nos PUTs que ainda enviam password.
-- **Banco:** os 14 testes de serviço/banco passaram após reset e migrations;
-  dos 9 casos HTTP, 6 passaram. Revalidar os cenários de edição após adaptar seus payloads.
-- **Concluído por revisão do código:** DTOs distintos e update sem gravação/recalculo
-  de senha. Falta teste específico da preservação exata do hash no banco.
-- **Edição ainda incompleta:** UpdateUserDto não permite senha opcional, roles omitido
-  vira [] e status omitido recebe true pelo default herdado. A política de acesso atual
-  permanece; as rotas de edição por perfil continuam pendentes.
+- **Validação atual:** 278 testes unitários, 5 HTTP com mocks e 30 com PostgreSQL
+  real passaram (14 de serviço/banco e 16 HTTP). Reset, migrations, build e lint
+  aprovados. O comando `npm run test:all` executa as três suítes em sequência.
+  A CI está configurada para esse comando; a execução remota depende do próximo push.
+- **Concluído:** DTOs distintos, update sem gravação de senha e teste da preservação
+  exata do hash no banco.
+- **Decisões de edição:** PUT não permite alteração de senha; essa funcionalidade
+  fica para depois. Roles omitido deve continuar virando [], conforme decisão do projeto.
+  Esses comportamentos não são pendências. As rotas por perfil continuam pendentes.
+- **Status omitido:** fica undefined no DTO de edição e preserva o valor no banco,
+  inclusive false; comportamento confirmado nos testes de regressão.
 - **Último administrador:** validateUniqueAdmin é chamado em todo update/remove e
   bloqueia a edição de nome/email do único administrador ativo. A checagem também
   precisa distinguir o perfil do usuário alvo e considerar concorrência nas alterações
@@ -158,21 +154,21 @@ Reaproveitar os DTOs e serviços preparados acima.
 Referência: fase 3, páginas 5–9. Todas sob /api.
 Hoje existem /users e /login genéricos; as rotas abaixo ainda não existem.
 
-| Feito | Método e rota                   | Entrada                     |
-| ----- | ------------------------------- | --------------------------- |
-| [ ]   | GET /administradores            | pagina, limite              |
-| [ ]   | PUT /administradores/:id        | nome, email                 |
-| [ ]   | DELETE /administradores/:id     | id                          |
-| [ ]   | POST /operadores                | nome, email, login, senha   |
-| [ ]   | GET /operadores                 | pagina, limite, login       |
-| [ ]   | PUT /operadores/:id             | nome, email, senha opcional |
-| [ ]   | DELETE /operadores/:id          | id                          |
-| [ ]   | POST /operadores/autenticacao   | login, senha                |
-| [ ]   | POST /despachantes              | nome, email, login, senha   |
-| [ ]   | GET /despachantes               | pagina, limite, login       |
-| [ ]   | PUT /despachantes/:id           | nome, email, senha opcional |
-| [ ]   | DELETE /despachantes/:id        | id                          |
-| [ ]   | POST /despachantes/autenticacao | login, senha                |
+| Feito | Método e rota                   | Entrada                   |
+| ----- | ------------------------------- | ------------------------- |
+| [ ]   | GET /administradores            | pagina, limite            |
+| [ ]   | PUT /administradores/:id        | nome, email               |
+| [ ]   | DELETE /administradores/:id     | id                        |
+| [ ]   | POST /operadores                | nome, email, login, senha |
+| [ ]   | GET /operadores                 | pagina, limite, login     |
+| [ ]   | PUT /operadores/:id             | nome, email               |
+| [ ]   | DELETE /operadores/:id          | id                        |
+| [ ]   | POST /operadores/autenticacao   | login, senha              |
+| [ ]   | POST /despachantes              | nome, email, login, senha |
+| [ ]   | GET /despachantes               | pagina, limite, login     |
+| [ ]   | PUT /despachantes/:id           | nome, email               |
+| [ ]   | DELETE /despachantes/:id        | id                        |
+| [ ]   | POST /despachantes/autenticacao | login, senha              |
 
 - [ ] Definir perfil no servidor conforme a rota; impedir atribuição indevida de
       perfil pelo corpo. Rejeitar perfis não permitidos pelo modelo decidido em entradas mantidas.
@@ -291,7 +287,9 @@ e CargaQuimica.permissoes.ts.
 
 ### Verificações durante as mudanças independentes
 
-- [ ] Atualizar testes dos campos/DTOs afetados.
+- [x] Atualizar testes de usuários para email, CreateUserDto/UpdateUserDto,
+      status omitido/explícito, roles omitido e rejeição de password no PUT.
+- [ ] Complementar os testes dos campos alterados de produtos/cargas, incluindo numeroONU.
 - [x] Validar migrations de email/remoção de username em banco de testes limpo,
       mantendo roles e primeiro acesso atuais. Neste projeto os bancos são recriados
       do zero; conversão de dados de usuários legados não é necessária.
@@ -305,19 +303,22 @@ e CargaQuimica.permissoes.ts.
       que difira apenas em maiúsculas/minúsculas; verificar também conflito em atualização.
 - [x] Validar busca por email com caixa diferente e preservação da escrita original;
       confirmar que a unicidade é garantida pelo banco, inclusive em inserções simultâneas.
-- [ ] Revalidar via E2E criação → login por email → /me → edição de email → novo login
-      com PUT sem password; o cenário atual falha com 400. A troca e o novo login
-      continuam passando no teste de serviço/banco.
-- [ ] Revalidar retorno HTTP 409 para email duplicado em criação e edição na suíte real
-      após adaptar o corpo do PUT ao novo contrato.
+- [x] Validar via E2E criação → login por email → /me → edição sem password → novo login,
+      recusando o email antigo e aceitando o novo com variação de caixa.
+- [x] Validar retorno HTTP 409 para email duplicado em criação e edição na suíte real.
 
 ### E2E, CI e ambiente — antes da autorização final
 
-- [ ] Corrigir nos e2e a rota /api/produto-quimico para /api/produtos-quimicos
+- [x] Corrigir nos e2e a rota /api/produto-quimico para /api/produtos-quimicos
       e emitir tokens com token_use: 'access', mantendo os perfis atuais nos cenários.
-- [ ] Incluir npm run test:e2e na CI existente após corrigir os testes.
-- [ ] Executar lint, build e testes dos módulos de dados e integridade de cargas; fazer regressão de documentos,
-      motivos, terminais, executor, hash, inativos e login/refresh existentes.
+- [x] Usar npm run test:all na CI existente do GitHub Actions, cobrindo unitários,
+      HTTP com mocks e integração real, com serviço PostgreSQL exclusivo de testes.
+- [x] Executar lint, build e todas as suítes do backend atual: 278 unitários,
+      5 HTTP com mocks e 30 com PostgreSQL real aprovados.
+- [x] Executar a regressão automatizada existente de documentos, motivos, terminais,
+      executor, hash, inativos e login/refresh.
+- [ ] Revalidar os testes após implementar as mudanças pendentes de transições
+      e concorrência de cargas.
 - [ ] Conferir a execução atual em Docker com API/banco e healthchecks,
       sem alterar ainda a política de acesso dos endpoints de monitoramento.
 
@@ -326,17 +327,20 @@ e CargaQuimica.permissoes.ts.
 - [ ] Adaptar os testes ao modelo de roles e primeiro acesso realmente escolhidos,
       sem presumir perfil único ou remoção de perfis antes da decisão.
 - [ ] Acrescentar casos das novas rotas: paginação/filtro, email inválido, login
-      duplicado, senha opcional, perfil do ID, atribuição indevida de perfil e login pela rota errada.
+      duplicado, rejeição de senha no PUT, perfil do ID, atribuição indevida de perfil e login pela rota errada.
 - [ ] Verificar admin/operador executando o fluxo completo e despachante consultando,
       recebendo 403 em todas as alterações. Conferir 401 para chamadas sem autenticação.
 - [ ] Testar edição de nome/email do único admin e recusa de sua inativação,
       exclusão lógica, inativos sem acesso e preservação de vínculos após migration.
 - [ ] Revisitar os e2e corrigidos na etapa de E2E anterior à autorização final e adequar cenários à autorização final.
-- [ ] Incluir npm run test:e2e na CI existente; não criar outra pipeline do zero.
-- [ ] Executar regressão de documentos, motivos, terminais, executor, login/refresh,
-      hash/ocultação de senha e regras de produto/carga existentes.
-- [ ] Executar lint, build, testes e migrations/seed em banco limpo e com dados anteriores;
-      verificar a integração entre API e banco em Docker após alterações de contratos/healthchecks.
+- [x] Incluir test:e2e na CI existente por meio de test:all, sem outra pipeline.
+- [x] Executar a regressão automatizada atual de documentos, motivos, terminais,
+      executor, login/refresh, hash/ocultação de senha e regras de produto/carga.
+- [ ] Repetir a regressão após as futuras alterações de roles, autorização e cargas.
+- [x] Validar reset e reaplicação das migrations em banco de testes limpo, com
+      PostgreSQL em Docker e testes de integração de serviços e HTTP.
+- [ ] Validar o seed e o ambiente completo de API/banco em Docker após as futuras
+      alterações de inicialização e healthchecks. Migração de dados legados não se aplica.
 
 ## Fora das alterações obrigatórias de backend
 

@@ -16,6 +16,43 @@ async function invalidFields(
 }
 
 describe('validação dos DTOs de usuário', () => {
+  it('aplica status true somente na criação e mantém indefinido na edição', async () => {
+    const body = { name: 'Bruno', email: 'bruno@email.com' };
+    expect(
+      plainToInstance(CreateUserDto, { ...body, password: 'secret' }).status,
+    ).toBe(true);
+    const updated = plainToInstance(UpdateUserDto, body);
+    expect(updated.status).toBeUndefined();
+    expect(updated.roles).toBeUndefined();
+    expect(await validate(updated)).toEqual([]);
+  });
+
+  it.each([true, false])(
+    'aceita status explícito %s na edição',
+    async (status) => {
+      const dto = plainToInstance(UpdateUserDto, {
+        name: 'Bruno',
+        email: 'bruno@email.com',
+        status,
+      });
+      expect(await validate(dto)).toEqual([]);
+      expect(dto.status).toBe(status);
+    },
+  );
+
+  it.each(['false', 0, 'active'])(
+    'recusa status não booleano %s na edição',
+    async (status) => {
+      await expect(
+        invalidFields(UpdateUserDto, {
+          name: 'Bruno',
+          email: 'bruno@email.com',
+          status,
+        }),
+      ).resolves.toContain('status');
+    },
+  );
+
   it('exige senha na criação e permite edição sem senha', async () => {
     const body = { name: 'Bruno', email: 'bruno@email.com' };
     await expect(invalidFields(CreateUserDto, body)).resolves.toContain(

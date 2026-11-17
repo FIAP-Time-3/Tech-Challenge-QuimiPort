@@ -76,13 +76,15 @@ describe('API HTTP (e2e)', () => {
   });
 
   it('exige autenticação para rotas de produtos', async () => {
-    await request(app.getHttpServer()).get('/api/produto-quimico').expect(401);
+    await request(app.getHttpServer())
+      .get('/api/produtos-quimicos')
+      .expect(401);
     expect(prismaMock.produtosQuimicos.findMany).not.toHaveBeenCalled();
   });
 
   it('aplica perfis a rota protegida e aceita administrador', async () => {
     const jwt = app.get(JwtService);
-    const token = await jwt.signAsync({ id: 1 });
+    const token = await jwt.signAsync({ id: 1, token_use: 'access' });
     prismaMock.user.findFirst.mockResolvedValueOnce({
       id: 1,
       email: 'tecnico@email.com',
@@ -91,12 +93,12 @@ describe('API HTTP (e2e)', () => {
     });
 
     await request(app.getHttpServer())
-      .get('/api/produto-quimico')
+      .get('/api/produtos-quimicos')
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
 
     await request(app.getHttpServer())
-      .get('/api/produto-quimico')
+      .get('/api/produtos-quimicos')
       .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect([]);
@@ -114,7 +116,9 @@ describe('API HTTP (e2e)', () => {
         status: true,
       },
     ]);
-    const token = await app.get(JwtService).signAsync({ id: 1 });
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
 
     await request(app.getHttpServer())
       .get('/api/users')

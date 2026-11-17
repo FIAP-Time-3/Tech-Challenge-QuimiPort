@@ -30,6 +30,30 @@ jobs:
     name: Build and Test Node
     runs-on: ubuntu-24.04
 
+    services:
+      postgres-test:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: quimiport_test
+          POSTGRES_USER: quimiport_test
+          POSTGRES_PASSWORD: quimiport_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quimiport_test -d quimiport_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_HOSTNAME: localhost
+      TEST_DATABASE_PORT: "5432"
+      TEST_DATABASE_NAME: quimiport_test
+      TEST_DATABASE_USERNAME: quimiport_test
+      TEST_DATABASE_PASSWORD: quimiport_test
+      PASSWORD_SALT: "4"
+      JWT_SECRET: ci-test-only-secret
+
     defaults:
       run:
         working-directory: ./backend
@@ -49,7 +73,7 @@ jobs:
         run: npm ci
 
       - name: Prepare Prisma
-        run: npm run prisma:generate
+        run: npx prisma generate --config prisma.test.config.ts
 
       - name: Lint
         run: npm run lint
@@ -58,7 +82,7 @@ jobs:
         run: npm run build
 
       - name: Execute Tests
-        run: npm test
+        run: npm run test:all
 
   docker:
     name: Build and Test Docker Image
