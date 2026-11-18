@@ -315,4 +315,47 @@ describe('API HTTP (e2e)', () => {
       .send({ email: 42, password: '' })
       .expect(400);
   });
+
+  it('permite ao despachante consultar cargas químicas paginadas', async () => {
+    prismaMock.user.findFirst.mockResolvedValue({
+      id: 1,
+      role: RolesEnum.DESPACHANTE,
+      status: true,
+    });
+    prismaMock.cargaQuimicas.count.mockResolvedValue(0);
+    prismaMock.cargaQuimicas.findMany.mockResolvedValue([]);
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
+
+    await request(app.getHttpServer())
+      .get('/api/cargas-quimicas')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200, { data: [], page: 1, limit: 10, total: 0, totalPages: 0 });
+  });
+
+  it.each([
+    ['put', '/api/produtos-quimicos/1'],
+    ['patch', '/api/produtos-quimicos/1/inativar'],
+    ['delete', '/api/produtos-quimicos/1'],
+    ['post', '/api/cargas-quimicas'],
+    ['put', '/api/cargas-quimicas/1'],
+    ['patch', '/api/cargas-quimicas/1/cancelar'],
+    ['post', '/api/cargas-quimicas/1/documentos'],
+    ['patch', '/api/cargas-quimicas/1/documentos/1/validar'],
+  ] as const)('nega %s %s ao despachante', async (method, path) => {
+    prismaMock.user.findFirst.mockResolvedValue({
+      id: 1,
+      role: RolesEnum.DESPACHANTE,
+      status: true,
+    });
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
+
+    await request(app.getHttpServer())
+      [method](path)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+  });
 });

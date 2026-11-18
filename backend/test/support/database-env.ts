@@ -2,12 +2,11 @@ import { config } from 'dotenv';
 
 export function configureTestDatabase() {
   config({ path: '.env', quiet: true });
-  config({ path: '.env.test.local', override: true, quiet: true });
   const fields = ['HOSTNAME', 'PORT', 'NAME', 'USERNAME', 'PASSWORD'] as const;
   for (const field of fields) {
     if (!process.env[`TEST_DATABASE_${field}`]) {
       throw new Error(
-        `Configure TEST_DATABASE_${field} em .env.test.local ou no ambiente.`,
+        `Configure TEST_DATABASE_${field} no .env usado pelo backend ou no ambiente.`,
       );
     }
   }

@@ -1,3 +1,4 @@
+import { config } from 'dotenv';
 import { configureTestDatabase } from './database-env.js';
 
 const original = { ...process.env };
@@ -18,6 +19,15 @@ afterEach(() => {
 vi.mock('dotenv', () => ({ config: vi.fn() }));
 
 describe('proteção do reset do banco de integração', () => {
+  it('carrega apenas o arquivo de ambiente padrão e respeita o ambiente do processo', () => {
+    vi.mocked(config).mockClear();
+    configureTestDatabase();
+
+    expect(config).toHaveBeenCalledExactlyOnceWith({
+      path: '.env',
+      quiet: true,
+    });
+  });
   it('exige configuração exclusiva, sem fallback para a aplicação', () => {
     delete process.env.TEST_DATABASE_PASSWORD;
     expect(() => configureTestDatabase()).toThrow('TEST_DATABASE_PASSWORD');
