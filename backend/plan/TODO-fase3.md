@@ -8,7 +8,7 @@ O maior trabalho é implementar as 13 rotas de usuários, fechar as permissões 
 
 - [x] **Resolver a edição de senha.** O projeto adota `PATCH /api/users/password/:id` para reset administrativo e `PATCH /api/me/password` para troca pelo próprio usuário. A senha permanece fora do `PUT` de operadores e despachantes. Documentar esse contrato no Swagger e no README. [PDF da fase 3](../../planning/pdfs/fase3.pdf)
 
-- [ ] **Definir o modelo de perfis.** Introduzir `DESPACHANTE`, decidir se um usuário pode acumular perfis e mapear os perfis atuais. Alinhar banco, DTOs, `/me`, JWT e guards. Definir quem pode ser responsável técnico. Hoje o vínculo exige um usuário ativo com perfil `TECNICO`.
+- [ ] **Definir o modelo de perfis.** Cada usuário tem exatamente um perfil. Introduzir `DESPACHANTE` e mapear os perfis atuais. Alinhar banco, DTOs, `/me`, JWT e guards. Definir quem pode ser responsável técnico. Hoje o vínculo exige um usuário ativo com perfil `TECNICO`.
 
 - [ ] **Implementar as 13 rotas sob `/api`.** Administradores precisam de listagem, edição e exclusão. Operadores e despachantes precisam de cadastro, listagem, edição, exclusão e autenticação, cinco rotas para cada perfil. Paginar as três listas e filtrar por `login` nas duas últimas. Definir o perfil no servidor, conferir o perfil do ID antes de editar ou excluir e reaproveitar o serviço de autenticação.
 
