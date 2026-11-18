@@ -966,39 +966,50 @@ Padrões já adotados no código, que devem ser mantidos:
 
 ## Testes de integração com PostgreSQL real
 
-A suíte `test:integration` usa as variáveis `TEST_DATABASE_*`, separadas das
-variáveis `DATABASE_*` da aplicação. Ela gera o Prisma Client, **reseta o banco
-exclusivo de testes e reaplica todas as migrations antes de executar os casos**.
-Não há mocks de PostgreSQL, Prisma, bcrypt ou JWT nessa suíte.
+As variáveis `TEST_DATABASE_*` ficam no mesmo arquivo que configura o banco
+normal. Use `backend/.env` ao executar a API diretamente ou
+`backend/.env.docker` ao executar no Compose. A suíte gera o Prisma Client,
+**reseta apenas o banco de testes e reaplica todas as migrations** antes de
+executar os casos.
+
+| Variável | Local (`.env`) | Docker (`.env.docker`) |
+| --- | --- | --- |
+| `TEST_DATABASE_HOSTNAME` | `localhost` | `postgres-test` |
+| `TEST_DATABASE_PORT` | `55432` | `5432` |
+| `TEST_DATABASE_NAME` | `quimiport_test` | `quimiport_test` |
+| `TEST_DATABASE_USERNAME` | `quimiport_test` | `quimiport_test` |
+| `TEST_DATABASE_PASSWORD` | `quimiport_test` | `quimiport_test` |
+
+Os dois modelos de ambiente já incluem esses valores. Em uma instalação
+existente, adicione apenas o bloco `TEST_DATABASE_*` do modelo correspondente.
+
+Para rodar o backend localmente com o PostgreSQL de testes no Docker, execute
+em `backend/`:
 
 ```bash
-cp .env.test.example .env.test.local
 docker compose -f compose.test.yml up -d --wait
 npm run test:integration
 ```
 
-O exemplo usa `quimiport_test` em `localhost:55432`. O container possui dados
-voláteis, sem volume persistente. Para encerrá-lo:
+Para rodar a suíte inteira dentro do Docker, execute na raiz do repositório:
 
 ```bash
-docker compose -f compose.test.yml down
+docker compose -f docker-compose.yml -f backend/compose.test.yml up -d --wait postgres-test
+docker compose -f docker-compose.yml -f backend/compose.test.yml run --rm --no-deps --build api npm run test:integration
 ```
 
-Também é possível usar um PostgreSQL de testes já existente, configurando em
-`.env.test.local` ou no ambiente:
+Use somente uma dessas formas de subir o serviço `postgres-test` por vez, pois
+ambas publicam a porta `55432` no host. Para pará-lo, rode
+`docker compose -f compose.test.yml down` em `backend/` se ele foi iniciado
+com o primeiro comando. Se ele foi iniciado com ambos os arquivos, use
+`docker compose -f docker-compose.yml -f backend/compose.test.yml rm -sf postgres-test`
+na raiz. Os dados do contêiner de testes são voláteis.
 
-| Variável | Exemplo |
-| --- | --- |
-| `TEST_DATABASE_HOSTNAME` | `localhost` |
-| `TEST_DATABASE_PORT` | `55432` |
-| `TEST_DATABASE_NAME` | `quimiport_test` |
-| `TEST_DATABASE_USERNAME` | `quimiport_test` |
-| `TEST_DATABASE_PASSWORD` | `quimiport_test` |
-
-O nome deve terminar em `_test` e diferir do banco da aplicação. A configuração
-não utiliza credenciais da aplicação como fallback; o usuário de testes precisa
-poder executar migrations, recriar o schema e habilitar `citext`. Não execute
-duas instâncias da suíte contra o mesmo banco ao mesmo tempo.
+Para usar um PostgreSQL já instalado, ajuste `TEST_DATABASE_*` no arquivo de
+ambiente correspondente. O nome do banco de testes deve terminar em `_test` e
+ser diferente do banco da aplicação. O usuário de testes precisa poder
+executar migrations, recriar o schema e habilitar `citext`. Execute uma
+instância da suíte por banco de testes de cada vez.
 
 Os casos cobrem a ausência de `username`, tipo/obrigatoriedade de `email`,
 unicidade case insensitive em criação, atualização e inserções simultâneas,

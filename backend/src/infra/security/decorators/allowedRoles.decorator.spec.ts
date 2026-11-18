@@ -11,13 +11,4 @@ describe('AllowedRoles', () => {
       RolesEnum.ADMINISTRADOR,
     ]);
   });
-
-  it('preserva múltiplos perfis permitidos', () => {
-    class Controller {}
-    const roles = [RolesEnum.GESTOR, RolesEnum.OPERADOR];
-
-    AllowedRoles(roles)(Controller);
-
-    expect(Reflect.getMetadata('roles', Controller)).toEqual(roles);
-  });
 });

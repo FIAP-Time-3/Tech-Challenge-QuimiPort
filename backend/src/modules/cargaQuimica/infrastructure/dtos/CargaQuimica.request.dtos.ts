@@ -13,12 +13,17 @@ import { StatusCargaEnum } from '../../domain/value-objects/StatusCarga.enum.js'
 import { TipoDocumentoEnum } from '../../domain/value-objects/TipoDocumento.enum.js';
 
 export class CreateOrUpdateCargaQuimicaDto {
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, type: 'integer', minimum: 1 })
   @IsInt()
   @IsPositive()
   produtoQuimicoId: number;
 
-  @ApiProperty({ example: 500, description: 'Deve ser maior que zero' })
+  @ApiProperty({
+    example: 500,
+    type: 'integer',
+    minimum: 1,
+    description: 'Deve ser maior que zero',
+  })
   @IsInt()
   @IsPositive()
   quantidade: number;
@@ -40,13 +45,19 @@ export class CreateOrUpdateCargaQuimicaDto {
 
   @ApiProperty({
     example: 3,
-    description: 'ID de um usuário ativo com perfil TECNICO. Obrigatório.',
+    type: 'integer',
+    minimum: 1,
+    description: 'ID de um usuário ativo com perfil OPERADOR. Obrigatório.',
   })
   @IsInt()
   @IsPositive()
   responsavelTecnicoId: number;
 
-  @ApiPropertyOptional({ example: '2026-11-01T10:00:00.000Z' })
+  @ApiPropertyOptional({
+    type: String,
+    format: 'date-time',
+    example: '2026-11-01T10:00:00.000Z',
+  })
   @IsOptional()
   @Type(() => Date)
   @IsDate()

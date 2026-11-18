@@ -13,6 +13,7 @@ describe('ProdutoQuimicoController', () => {
   };
   const body = {
     nome: 'Acetona',
+    numeroONU: '1090',
     descricao: 'Solvente',
     classeRisco: 3,
     status: true,
@@ -36,11 +37,15 @@ describe('ProdutoQuimicoController', () => {
     expect(serviceMock.create).toHaveBeenCalledWith({ body });
   });
 
-  it('encaminha listagem ao serviço', async () => {
-    serviceMock.findAll.mockResolvedValue([]);
+  it('encaminha paginação e ordenação ao serviço e devolve a página', async () => {
+    const paginatedSort = { page: 2, limit: 5, column: 'nome', order: 'desc' };
+    const result = { data: [], page: 2, limit: 5, total: 0, totalPages: 0 };
+    serviceMock.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll()).resolves.toEqual([]);
-    expect(serviceMock.findAll).toHaveBeenCalledOnce();
+    await expect(controller.findAll(paginatedSort)).resolves.toBe(result);
+    expect(serviceMock.findAll).toHaveBeenCalledExactlyOnceWith({
+      paginatedSort,
+    });
   });
 
   it('encaminha id para busca', async () => {

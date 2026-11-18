@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEmail,
@@ -15,34 +15,40 @@ export class BaseUserDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({ format: 'email', example: 'usuario@example.com' })
   @IsString()
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty()
-  @IsOptional()
-  @IsEnum(RolesEnum, { each: true })
-  roles?: RolesEnum[];
+  @ApiProperty({ enum: RolesEnum, description: 'Perfil do usuário.' })
+  @IsEnum(RolesEnum)
+  role: RolesEnum;
+}
 
-  @ApiProperty()
+export class CreateUserDto extends BaseUserDto {
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @ApiPropertyOptional({ default: true })
   @IsBoolean()
   @IsOptional()
   status: boolean = true;
 }
 
-export class CreateUserDto extends BaseUserDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  password: string;
+export class UpdateUserDto extends BaseUserDto {
+  @ApiPropertyOptional({
+    description: 'Quando omitido, preserva o status atual.',
+  })
+  @IsBoolean()
+  @IsOptional()
+  status?: boolean;
 }
 
-export class UpdateUserDto extends BaseUserDto {}
-
 export class CreateFirstUserDto {
-  @ApiProperty()
+  @ApiProperty({ format: 'email', example: 'admin@example.com' })
   @IsString()
   @IsNotEmpty()
   @IsEmail()
@@ -53,8 +59,32 @@ export class CreateFirstUserDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({ format: 'password', writeOnly: true })
   @IsString()
   @IsNotEmpty()
   password: string;
+}
+
+export class UserPasswordResetDto {
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}
+
+export class UserPasswordChangeDto {
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword: string;
+
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPasswordConfirm: string;
 }

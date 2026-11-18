@@ -10,14 +10,22 @@ import {
   CreateFirstUserDto,
   CreateUserDto,
   UpdateUserDto,
+  UserPasswordChangeDto,
+  UserPasswordResetDto,
 } from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
 import { RolesEnum } from '../../enums/roles.enum.js';
+import { PaginatedSortQueryDto } from '../../../paginatedSort/paginated-sort.query.dtos.js';
+import { adjustPaginationAndSortOptions } from '../../../paginatedSort/paginated-sort.utils.js';
+import { Prisma } from '../../../database/generated/prisma/client.js';
+import { PaginatedResponseDto } from '../../../paginatedSort/pagination/paginated.response.dtos.js';
 
 @Injectable()
 export class UserService {
+  public readonly fields = Prisma.UserScalarFieldEnum;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async createFirst({
@@ -29,7 +37,7 @@ export class UserService {
       // Serializa o primeiro cadastro entre requisições e instâncias da API.
       await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
       const countAdmin = await transaction.user.count({
-        where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+        where: { role: RolesEnum.ADMINISTRADOR, status: true },
       });
       if (countAdmin > 0) {
         throw new ForbiddenException(
@@ -38,7 +46,7 @@ export class UserService {
       }
       return await this.create(
         {
-          body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+          body: { ...body, role: RolesEnum.ADMINISTRADOR, status: true },
         },
         transaction,
       );
@@ -63,7 +71,7 @@ export class UserService {
         email: body.email,
         name: this.normalizeName(body.name),
         password: hashedPassword,
-        roles: body.roles ?? [],
+        role: body.role,
         status: body.status,
       },
     });
@@ -71,10 +79,27 @@ export class UserService {
     return this.toResponse(user);
   }
 
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.prisma.user.findMany();
+  async findAll({
+    paginatedSort,
+  }: {
+    paginatedSort: PaginatedSortQueryDto;
+  }): Promise<PaginatedResponseDto<UserResponseDto>> {
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        ...adjustPaginationAndSortOptions({
+          paginatedSort,
+          fields: this.fields,
+        }),
+      }),
+      this.prisma.user.count(),
+    ]);
 
-    return users.map((user) => this.toResponse(user));
+    return new PaginatedResponseDto(
+      users.map((user) => this.toResponse(user)),
+      paginatedSort.page,
+      paginatedSort.limit,
+      total,
+    );
   }
 
   async findOne({ id }: { id: number }): Promise<UserResponseDto> {
@@ -112,8 +137,77 @@ export class UserService {
       data: {
         email: body.email,
         name: this.normalizeName(body.name),
-        roles: body.roles ?? [],
+        role: body.role,
         status: body.status,
+      },
+    });
+
+    return this.toResponse(updatedUser);
+  }
+
+  async resetPassword({
+    id,
+    body,
+  }: {
+    id: number;
+    body: UserPasswordResetDto;
+  }) {
+    const user = await this.prisma.user.findFirst({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('Usuário Invalido');
+    }
+
+    const hashedPassword = await PasswordService.hash({
+      password: body.newPassword,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return this.toResponse(updatedUser);
+  }
+
+  async changePassword({
+    id,
+    body,
+  }: {
+    id: number;
+    body: UserPasswordChangeDto;
+  }) {
+    const { currentPassword, newPassword, newPasswordConfirm } = body;
+    const user = await this.prisma.user.findFirst({ where: { id } });
+
+    if (!user) {
+      throw new BadRequestException('Usuário Invalido');
+    }
+
+    const isValidPassword = await PasswordService.compare({
+      hash: user.password,
+      password: currentPassword,
+    });
+
+    if (!isValidPassword) {
+      throw new BadRequestException('Senha incorreta');
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      throw new BadRequestException(
+        'Senha e Confirmação de senha devem ser iguais',
+      );
+    }
+    const hashedPassword = await PasswordService.hash({
+      password: body.newPassword,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
       },
     });
 
@@ -157,7 +251,7 @@ export class UserService {
   private async validateUniqueAdmin({ id }: { id: number }) {
     const countAdmin = await this.prisma.user.count({
       where: {
-        roles: { has: RolesEnum.ADMINISTRADOR },
+        role: RolesEnum.ADMINISTRADOR,
         status: true,
         id: { not: id },
       },

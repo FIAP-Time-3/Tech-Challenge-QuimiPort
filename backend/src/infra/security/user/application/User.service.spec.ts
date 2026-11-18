@@ -29,13 +29,13 @@ describe('UserService', () => {
     email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
-    roles: [RolesEnum.OPERADOR],
+    role: RolesEnum.OPERADOR,
     status: true,
   };
   const updateBody = {
     email: userBody.email,
     name: userBody.name,
-    roles: userBody.roles,
+    role: userBody.role,
     status: userBody.status,
   };
   let hashPassword: ReturnType<typeof vi.spyOn>;
@@ -105,7 +105,7 @@ describe('UserService', () => {
       prismaMock.user.create.mockResolvedValue({
         ...userBody,
         password: 'hashed',
-        roles: [RolesEnum.ADMINISTRADOR],
+        role: RolesEnum.ADMINISTRADOR,
       });
 
       await service.createFirst({
@@ -113,12 +113,15 @@ describe('UserService', () => {
       });
 
       expect(prismaMock.$executeRaw).toHaveBeenCalledOnce();
+      expect(prismaMock.user.count).toHaveBeenNthCalledWith(1, {
+        where: { role: RolesEnum.ADMINISTRADOR, status: true },
+      });
       expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
           email: 'admin@email.com',
           name: 'Admin',
           password: 'hashed',
-          roles: [RolesEnum.ADMINISTRADOR],
+          role: RolesEnum.ADMINISTRADOR,
           status: true,
         },
       });
@@ -165,25 +168,9 @@ describe('UserService', () => {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'hashed',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
           status: true,
         },
-      });
-    });
-
-    it('usa lista vazia quando perfis não são informados', async () => {
-      const bodyWithoutRoles = { ...userBody, roles: undefined };
-      prismaMock.user.count.mockResolvedValue(0);
-      prismaMock.user.create.mockResolvedValue({
-        ...bodyWithoutRoles,
-        roles: [],
-        password: 'hashed',
-      });
-
-      await service.create({ body: bodyWithoutRoles });
-
-      expect(prismaMock.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ roles: [] }),
       });
     });
 
@@ -199,22 +186,38 @@ describe('UserService', () => {
   });
 
   describe('consultas e alterações', () => {
-    it('lista usuários sem expor hashes de senha', async () => {
+    it('pagina e ordena usuários sem expor hashes de senha', async () => {
       prismaMock.user.findMany.mockResolvedValue([
         {
           id: 20,
           email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'stored-hash',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
         },
       ]);
 
-      const users = await service.findAll();
+      prismaMock.user.count.mockResolvedValue(3);
 
-      expect(users).toHaveLength(1);
-      expect(users[0]).toHaveProperty('id', 20);
-      expect(JSON.stringify(users[0])).not.toContain('stored-hash');
+      const result = await service.findAll({
+        paginatedSort: { page: 2, limit: 2, column: 'name', order: 'desc' },
+      });
+
+      expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+        skip: 2,
+        take: 2,
+        orderBy: { name: 'desc' },
+      });
+      expect(prismaMock.user.count).toHaveBeenCalledOnce();
+      expect(result).toMatchObject({
+        data: [{ id: 20, email: 'bruno@email.com' }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
+      expect(result.data[0]?.password).toBeUndefined();
+      expect(JSON.stringify(result.data[0])).not.toContain('stored-hash');
     });
 
     it('devolve 404 ao consultar usuário inexistente', async () => {
@@ -241,30 +244,61 @@ describe('UserService', () => {
         data: {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
           status: true,
         },
       });
       expect(hashPassword).not.toHaveBeenCalled();
     });
 
-    it('usa lista vazia quando atualização não informa perfis', async () => {
-      const bodyWithoutRoles = { ...updateBody, roles: undefined };
+    it('não fornece status nem senha ao Prisma quando omitidos na edição', async () => {
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
-      prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
+      prismaMock.user.findUnique.mockResolvedValue({ id: 20, status: false });
       prismaMock.user.update.mockResolvedValue({
         id: 20,
-        ...bodyWithoutRoles,
-        password: 'stored-hash',
+        email: userBody.email,
+        status: false,
+        password: 'hash',
       });
-
-      await service.update({ id: 20, body: bodyWithoutRoles });
-
+      await service.update({
+        id: 20,
+        body: {
+          name: userBody.name,
+          email: userBody.email,
+          role: userBody.role,
+        },
+      });
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 20 },
-        data: expect.objectContaining({ roles: [] }),
+        data: {
+          name: userBody.name,
+          email: userBody.email,
+          role: userBody.role,
+          status: undefined,
+        },
       });
+      expect(hashPassword).not.toHaveBeenCalled();
     });
+
+    it.each([true, false])(
+      'encaminha status explícito %s sem gerar senha',
+      async (status) => {
+        prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+        prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
+        prismaMock.user.update.mockResolvedValue({
+          id: 20,
+          ...updateBody,
+          status,
+          password: 'hash',
+        });
+        await service.update({ id: 20, body: { ...updateBody, status } });
+        expect(prismaMock.user.update).toHaveBeenCalledWith({
+          where: { id: 20 },
+          data: { ...updateBody, status },
+        });
+        expect(hashPassword).not.toHaveBeenCalled();
+      },
+    );
 
     it('devolve 404 ao atualizar usuário inexistente sem gerar hash', async () => {
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
@@ -278,11 +312,23 @@ describe('UserService', () => {
     });
 
     it('impede desativar o último administrador', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 1,
+        role: RolesEnum.ADMINISTRADOR,
+        status: true,
+      });
       prismaMock.user.count.mockResolvedValue(0);
 
       await expect(service.remove({ id: 1 })).rejects.toThrow(
         BadRequestException,
       );
+      expect(prismaMock.user.count).toHaveBeenCalledWith({
+        where: {
+          role: RolesEnum.ADMINISTRADOR,
+          status: true,
+          id: { not: 1 },
+        },
+      });
       expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
 
@@ -295,6 +341,104 @@ describe('UserService', () => {
         where: { id: 20 },
         data: { status: false },
       });
+    });
+  });
+
+  describe('proteção do último administrador ativo', () => {
+    const admin = {
+      id: 1,
+      email: 'admin@example.com',
+      name: 'Admin Original',
+      role: RolesEnum.ADMINISTRADOR,
+      status: true,
+      password: 'stored-hash',
+    };
+    const changes = {
+      name: 'Admin Editado',
+      email: 'editado@example.com',
+      role: RolesEnum.ADMINISTRADOR,
+    };
+
+    it.each([undefined, true])(
+      'permite editar nome e e-mail do único administrador com status %s',
+      async (status) => {
+        prismaMock.user.findUnique.mockResolvedValue(admin);
+        prismaMock.user.count.mockResolvedValue(0);
+        prismaMock.user.update.mockResolvedValue({ ...admin, ...changes });
+
+        const body = status === undefined ? changes : { ...changes, status };
+        await expect(
+          service.update({ id: admin.id, body }),
+        ).resolves.toMatchObject({
+          ...changes,
+          status: true,
+        });
+        expect(prismaMock.user.update).toHaveBeenCalledWith({
+          where: { id: admin.id },
+          data: expect.objectContaining(changes),
+        });
+        expect(hashPassword).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      { role: RolesEnum.ADMINISTRADOR, status: false },
+      { role: RolesEnum.OPERADOR, status: true },
+      { role: RolesEnum.DESPACHANTE, status: true },
+    ])('impede perder o último administrador com %o', async (transition) => {
+      prismaMock.user.findUnique.mockResolvedValue(admin);
+      prismaMock.user.count.mockResolvedValue(0);
+
+      await expect(
+        service.update({ id: admin.id, body: { ...changes, ...transition } }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
+    });
+
+    it('permite inativar administrador se houver outro ativo', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(admin);
+      prismaMock.user.count.mockResolvedValue(1);
+
+      await expect(service.remove({ id: admin.id })).resolves.toEqual({
+        id: admin.id,
+      });
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: admin.id },
+        data: { status: false },
+      });
+    });
+
+    it.each([
+      { role: RolesEnum.OPERADOR, status: true },
+      { role: RolesEnum.DESPACHANTE, status: true },
+      { role: RolesEnum.ADMINISTRADOR, status: false },
+    ])(
+      'permite inativar %o quando a operação não reduz o número de admins ativos',
+      async (current) => {
+        prismaMock.user.findUnique.mockResolvedValue({ ...admin, ...current });
+        prismaMock.user.count.mockResolvedValue(0);
+
+        await expect(service.remove({ id: admin.id })).resolves.toEqual({
+          id: admin.id,
+        });
+        expect(prismaMock.user.update).toHaveBeenCalledWith({
+          where: { id: admin.id },
+          data: { status: false },
+        });
+      },
+    );
+
+    it('devolve 404 ao tentar editar ou inativar um ID inexistente', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.user.count.mockResolvedValue(0);
+
+      await expect(service.update({ id: 404, body: changes })).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.remove({ id: 404 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
   });
 });

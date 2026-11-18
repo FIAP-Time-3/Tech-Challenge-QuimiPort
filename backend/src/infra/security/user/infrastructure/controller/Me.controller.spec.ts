@@ -7,7 +7,7 @@ it('consulta o usuário pelo id autenticado, sem depender de perfil administrado
     id: 8,
     name: 'Maria Souza',
     email: 'maria@email.com',
-    roles: ['OPERADOR'],
+    role: 'OPERADOR',
     status: true,
   };
   const findOne = vi.fn().mockResolvedValue(user);

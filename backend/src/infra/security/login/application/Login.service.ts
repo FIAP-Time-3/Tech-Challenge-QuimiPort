@@ -22,7 +22,7 @@ export class LoginService {
 
   async getSetup(): Promise<SetupResponseDto> {
     const count = await this.prisma.user.count({
-      where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+      where: { role: RolesEnum.ADMINISTRADOR, status: true },
     });
     return { requiresSetup: count === 0 };
   }
@@ -87,17 +87,13 @@ export class LoginService {
     return await this.issueTokens(user);
   }
 
-  private async issueTokens(user: {
-    id: number;
-    email: string;
-    roles: string[];
-  }) {
+  private async issueTokens(user: { id: number; email: string; role: string }) {
     const { accessTokenMinutes, refreshTokenMinutes } = configurations().jwt;
     const access_token = await this.jwt.signAsync(
       {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        role: user.role,
         token_use: 'access',
       },
       { expiresIn: accessTokenMinutes * 60, jwtid: randomUUID() },

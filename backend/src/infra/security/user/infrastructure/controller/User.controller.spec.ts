@@ -17,7 +17,7 @@ describe('UserController', () => {
     email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
-    roles: [RolesEnum.OPERADOR],
+    role: RolesEnum.OPERADOR,
     status: true,
   };
 
@@ -46,12 +46,22 @@ describe('UserController', () => {
   });
 
   it('encaminha operações de consulta de usuário', async () => {
-    serviceMock.findAll.mockResolvedValue([{ id: 1 }]);
+    const paginatedSort = { page: 2, limit: 5, column: 'name', order: 'desc' };
+    const result = {
+      data: [{ id: 1 }],
+      page: 2,
+      limit: 5,
+      total: 6,
+      totalPages: 2,
+    };
+    serviceMock.findAll.mockResolvedValue(result);
     serviceMock.findOne.mockResolvedValue({ id: 1 });
 
-    await expect(controller.findAll()).resolves.toEqual([{ id: 1 }]);
+    await expect(controller.findAll(paginatedSort)).resolves.toEqual(result);
     await expect(controller.findOne(1)).resolves.toEqual({ id: 1 });
-    expect(serviceMock.findAll).toHaveBeenCalledOnce();
+    expect(serviceMock.findAll).toHaveBeenCalledExactlyOnceWith({
+      paginatedSort,
+    });
     expect(serviceMock.findOne).toHaveBeenCalledWith({ id: 1 });
   });
 

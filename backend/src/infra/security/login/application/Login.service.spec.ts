@@ -53,7 +53,7 @@ describe('LoginService', () => {
       prismaMock.user.count.mockResolvedValue(count);
       await expect(service.getSetup()).resolves.toEqual({ requiresSetup });
       expect(prismaMock.user.count).toHaveBeenCalledWith({
-        where: { roles: { has: 'ADMINISTRADOR' }, status: true },
+        where: { role: 'ADMINISTRADOR', status: true },
       });
     },
   );
@@ -64,7 +64,7 @@ describe('LoginService', () => {
         id: 8,
         email: 'Bruno@email.com',
         password: 'hash',
-        roles: ['OPERADOR'],
+        role: 'OPERADOR',
         status: true,
       };
       prismaMock.user.findFirst.mockResolvedValue(user);
@@ -94,7 +94,7 @@ describe('LoginService', () => {
         {
           id: 8,
           email: 'Bruno@email.com',
-          roles: ['OPERADOR'],
+          role: 'OPERADOR',
           token_use: 'access',
         },
         { expiresIn: 3600, jwtid: expect.any(String) },
@@ -122,7 +122,7 @@ describe('LoginService', () => {
         id: 8,
         email: 'Bruno@email.com',
         password: 'hash',
-        roles: ['OPERADOR'],
+        role: 'OPERADOR',
         status: true,
       });
 
@@ -137,7 +137,7 @@ describe('LoginService', () => {
         id: 8,
         email: 'Bruno@email.com',
         password: 'hash',
-        roles: ['OPERADOR'],
+        role: 'OPERADOR',
         status: false,
       });
 
@@ -158,7 +158,7 @@ describe('LoginService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
         email: 'Bruno@email.com',
-        roles: ['OPERADOR'],
+        role: 'OPERADOR',
         status: true,
       });
       jwtMock.signAsync
@@ -180,7 +180,7 @@ describe('LoginService', () => {
         {
           id: 8,
           email: 'Bruno@email.com',
-          roles: ['OPERADOR'],
+          role: 'OPERADOR',
           token_use: 'access',
         },
         { expiresIn: 3600, jwtid: expect.any(String) },
@@ -233,7 +233,7 @@ describe('LoginService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 8,
         email: 'Bruno@email.com',
-        roles: ['OPERADOR'],
+        role: 'OPERADOR',
         status: false,
       });
 

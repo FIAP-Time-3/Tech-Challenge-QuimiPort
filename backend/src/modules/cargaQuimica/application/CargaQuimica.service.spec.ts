@@ -25,12 +25,18 @@ describe('CargaQuimicaService', () => {
     produtosQuimicos: { findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
     cargaQuimicas: {
+      count: vi.fn(),
       create: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
     },
-    movimentacoes: { create: vi.fn(), aggregate: vi.fn(), findMany: vi.fn() },
+    movimentacoes: {
+      create: vi.fn(),
+      aggregate: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
     documentoCargas: {
       findFirst: vi.fn(),
       create: vi.fn(),
@@ -40,8 +46,8 @@ describe('CargaQuimicaService', () => {
     $transaction: vi.fn(),
   };
 
-  const admin = { id: 1, roles: ['ADMINISTRADOR'] };
-  const tecnico = { id: 3, status: true, roles: ['TECNICO'] };
+  const admin = { id: 1, role: 'ADMINISTRADOR' };
+  const tecnico = { id: 3, status: true, role: 'OPERADOR' };
   const body = {
     produtoQuimicoId: 1,
     quantidade: 100,
@@ -169,7 +175,7 @@ describe('CargaQuimicaService', () => {
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });
 
-    it('recusa usuário sem o perfil TECNICO', async () => {
+    it('recusa responsável sem o perfil OPERADOR', async () => {
       prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
         id: 1,
         status: true,
@@ -177,23 +183,41 @@ describe('CargaQuimicaService', () => {
       });
       prismaMock.user.findUnique.mockResolvedValue({
         ...tecnico,
-        roles: ['OPERADOR'],
+        role: 'DESPACHANTE',
       });
 
       await expect(service.create({ body, usuario: admin })).rejects.toThrow(
-        /TECNICO/,
+        /OPERADOR/,
       );
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });
   });
 
   describe('consultas', () => {
-    it('lista cargas em ordem crescente com documentos e código público', async () => {
+    it('lista cargas paginadas e ordenadas com documentos e código público', async () => {
+      prismaMock.cargaQuimicas.count.mockResolvedValue(3);
       prismaMock.cargaQuimicas.findMany.mockResolvedValue([
-        { ...carga(S.CADASTRADA), documentoCargases: [] },
+        {
+          ...carga(S.CADASTRADA),
+          documentoCargases: [],
+          produtoQuimico: {
+            id: 1,
+            nome: 'Acetona',
+            numeroONU: '1090',
+            classeRisco: 3,
+            status: true,
+          },
+        },
       ]);
 
-      const result = await service.findAll();
+      const result = await service.findAll({
+        paginatedSort: {
+          page: 2,
+          limit: 2,
+          column: 'dataEntrada',
+          order: 'desc',
+        },
+      });
 
       expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
         include: {
@@ -210,9 +234,18 @@ describe('CargaQuimicaService', () => {
             select: { id: true, name: true, email: true },
           },
         },
-        orderBy: { id: 'asc' },
+        skip: 2,
+        take: 2,
+        orderBy: { dataEntrada: 'desc' },
       });
-      expect(result[0].codigo).toBe('CQ-000010');
+      expect(prismaMock.cargaQuimicas.count).toHaveBeenCalledExactlyOnceWith();
+      expect(result).toMatchObject({
+        data: [{ codigo: 'CQ-000010', produtoQuimico: { numeroONU: '1090' } }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
     });
 
     it('devolve 404 ao consultar carga inexistente', async () => {
@@ -223,18 +256,72 @@ describe('CargaQuimicaService', () => {
       );
     });
 
-    it('consulta histórico em ordem crescente de step', async () => {
+    it('pagina o histórico da carga em ordem crescente de step', async () => {
+      const where = { cargaQuimicaId: 10 };
+      const query = {
+        id: 10,
+        paginatedSort: { page: 2, limit: 2, column: 'id', order: 'asc' },
+      };
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.movimentacoes.findMany.mockResolvedValue([
+        { id: 13, step: 3, statusAtual: S.EM_PREPARACAO },
+      ]);
+      prismaMock.movimentacoes.count.mockResolvedValue(3);
+
+      const result = await service.historico(query);
+
+      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledExactlyOnceWith(
+        {
+          where,
+          orderBy: { step: 'asc' },
+          skip: 2,
+          take: 2,
+        },
+      );
+      expect(prismaMock.movimentacoes.count).toHaveBeenCalledExactlyOnceWith({
+        where,
+      });
+      expect(result).toMatchObject({
+        data: [{ id: 13, step: 3, statusAtual: S.EM_PREPARACAO }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
+    });
+
+    it('mantém o total do histórico quando a página solicitada está vazia', async () => {
+      const query = {
+        id: 10,
+        paginatedSort: { page: 3, limit: 2, column: 'id', order: 'asc' },
+      };
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
         carga(S.EM_PREPARACAO),
       );
       prismaMock.movimentacoes.findMany.mockResolvedValue([]);
+      prismaMock.movimentacoes.count.mockResolvedValue(3);
 
-      await expect(service.historico({ id: 10 })).resolves.toEqual([]);
-
-      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
-        where: { cargaQuimicaId: 10 },
-        orderBy: { step: 'asc' },
+      await expect(service.historico(query)).resolves.toMatchObject({
+        data: [],
+        page: 3,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
       });
+    });
+
+    it('devolve 404 ao consultar o histórico de carga inexistente', async () => {
+      const query = {
+        id: 99,
+        paginatedSort: { page: 1, limit: 10, column: 'id', order: 'asc' },
+      };
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.historico(query)).rejects.toThrow(NotFoundException);
+      expect(prismaMock.movimentacoes.findMany).not.toHaveBeenCalled();
+      expect(prismaMock.movimentacoes.count).not.toHaveBeenCalled();
     });
   });
 
@@ -318,7 +405,7 @@ describe('CargaQuimicaService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 4,
         status: true,
-        roles: ['OPERADOR'],
+        role: 'DESPACHANTE',
       });
 
       await expect(
@@ -334,7 +421,7 @@ describe('CargaQuimicaService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 4,
         status: true,
-        roles: ['TECNICO', 'DOCUMENTACAO'],
+        role: 'OPERADOR',
       });
 
       await service.update({
@@ -445,7 +532,7 @@ describe('CargaQuimicaService', () => {
         service.transicionar({
           id: 10,
           statusDestino: S.EM_PREPARACAO,
-          usuario: { id: 5, roles: ['QUALIDADE'] },
+          usuario: { id: 5, role: 'DESPACHANTE' },
         }),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -558,14 +645,14 @@ describe('CargaQuimicaService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('só administrador e gestor cancelam', async () => {
+    it('despachante não pode cancelar', async () => {
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.LIBERADA));
 
       await expect(
         service.cancelar({
           id: 10,
           motivo: 'x',
-          usuario: { id: 7, roles: ['OPERADOR'] },
+          usuario: { id: 7, role: 'DESPACHANTE' },
         }),
       ).rejects.toThrow(ForbiddenException);
     });

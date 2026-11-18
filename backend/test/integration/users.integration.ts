@@ -1,10 +1,17 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { JwtService } from '@nestjs/jwt';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
 import { UserService } from '../../src/infra/security/user/application/User.service.js';
 import { LoginService } from '../../src/infra/security/login/application/Login.service.js';
 import { PasswordService } from '../../src/infra/security/password/password.service.js';
 import { RolesEnum } from '../../src/infra/security/enums/roles.enum.js';
+import { configureTestDatabase } from '../support/database-env.js';
 
 const prisma = new PrismaService();
 const users = new UserService(prisma);
@@ -14,7 +21,7 @@ const body = {
   name: 'Bruno Dias',
   email: 'Bruno@example.com',
   password: 'secret',
-  roles: [RolesEnum.OPERADOR],
+  role: RolesEnum.OPERADOR,
   status: true,
 };
 
@@ -87,7 +94,7 @@ describe('Usuários com PostgreSQL real', () => {
 
   it('recusa email nulo diretamente no banco', async () => {
     await expect(prisma.$executeRaw`
-      INSERT INTO "User" (name, email, password, roles) VALUES ('Teste', NULL, 'hash', ARRAY[]::text[])
+      INSERT INTO "User" (name, email, password, role) VALUES ('Teste', NULL, 'hash', 'OPERADOR')
     `).rejects.toMatchObject({
       code: 'P2010',
       meta: {
@@ -166,7 +173,7 @@ describe('Usuários com PostgreSQL real', () => {
       body: {
         ...body,
         email: 'admin@example.com',
-        roles: [RolesEnum.ADMINISTRADOR],
+        role: RolesEnum.ADMINISTRADOR,
       },
     });
     const user = await users.create({ body });
@@ -175,7 +182,7 @@ describe('Usuários com PostgreSQL real', () => {
       body: {
         name: body.name,
         email: 'novo@example.com',
-        roles: body.roles,
+        role: body.role,
         status: body.status,
       },
     });
@@ -199,5 +206,123 @@ describe('Usuários com PostgreSQL real', () => {
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     expect(await prisma.user.count()).toBe(1);
+  });
+
+  it.each([
+    ['remover', 'remover'],
+    ['desativar', 'desativar'],
+    ['rebaixar', 'rebaixar'],
+    ['remover', 'rebaixar'],
+    ['desativar', 'remover'],
+  ] as const)(
+    'mantém um administrador ativo ao %s e %s simultaneamente',
+    async (firstAction, secondAction) => {
+      const adminData = { ...body, role: RolesEnum.ADMINISTRADOR };
+      const first = await prisma.user.create({
+        data: { ...adminData, email: 'primeiro@example.com' },
+      });
+      const second = await prisma.user.create({
+        data: { ...adminData, email: 'segundo@example.com' },
+      });
+
+      function apply(
+        action: 'remover' | 'desativar' | 'rebaixar',
+        user: typeof first,
+      ) {
+        if (action === 'remover') return users.remove({ id: user.id });
+        return users.update({
+          id: user.id,
+          body: {
+            email: user.email,
+            name: user.name,
+            role:
+              action === 'rebaixar'
+                ? RolesEnum.OPERADOR
+                : RolesEnum.ADMINISTRADOR,
+            status: action !== 'desativar',
+          },
+        });
+      }
+
+      const results = await Promise.allSettled([
+        apply(firstAction, first),
+        apply(secondAction, second),
+      ]);
+      expect(
+        results.filter(({ status }) => status === 'fulfilled'),
+      ).toHaveLength(1);
+      expect(results).toContainEqual({
+        status: 'rejected',
+        reason: expect.any(BadRequestException),
+      });
+      const remaining = await prisma.user.findMany({
+        where: { role: RolesEnum.ADMINISTRADOR, status: true },
+      });
+      expect(remaining).toHaveLength(1);
+      expect([first.id, second.id]).toContain(remaining[0]?.id);
+    },
+  );
+});
+
+describe('Seed do primeiro administrador', () => {
+  const seedCredentials = {
+    name: 'Admin Inicial',
+    email: 'admin-seed@example.com',
+    password: 'senha-exclusiva-do-seed',
+  };
+
+  async function runSeed({ name, email, password } = seedCredentials) {
+    const url = configureTestDatabase();
+    const database = new URL(url);
+    await promisify(execFile)('npm', ['run', 'seed:admin'], {
+      timeout: 10000,
+      env: {
+        ...process.env,
+        DATABASE_URL: url,
+        DATABASE_HOSTNAME: database.hostname,
+        DATABASE_PORT: database.port || '5432',
+        DATABASE_NAME: database.pathname.slice(1),
+        DATABASE_USERNAME: decodeURIComponent(database.username),
+        DATABASE_PASSWORD: decodeURIComponent(database.password),
+        SEED_ADMIN_NAME: name,
+        SEED_ADMIN_EMAIL: email,
+        SEED_ADMIN_PASSWORD: password,
+      },
+    });
+  }
+
+  it('cria um administrador ativo em banco limpo com senha válida para login', async () => {
+    await runSeed();
+    const rows = await prisma.user.findMany();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      name: seedCredentials.name,
+      email: seedCredentials.email,
+      role: RolesEnum.ADMINISTRADOR,
+      status: true,
+    });
+    expect(rows[0]?.password).not.toBe(seedCredentials.password);
+    await expect(login.login(seedCredentials)).resolves.toMatchObject({
+      access_token: expect.any(String),
+      refresh_token: expect.any(String),
+    });
+  });
+
+  it('pode ser reexecutado sem duplicar nem alterar o administrador existente', async () => {
+    await runSeed();
+    const original = await prisma.user.findUniqueOrThrow({
+      where: { email: seedCredentials.email },
+    });
+
+    await runSeed({ ...seedCredentials, password: 'outra-senha-do-seed' });
+
+    expect(await prisma.user.findMany()).toEqual([original]);
+  });
+
+  it('recusa credenciais incompletas sem criar usuário', async () => {
+    await expect(
+      runSeed({ ...seedCredentials, password: '' }),
+    ).rejects.toThrow();
+    expect(await prisma.user.count()).toBe(0);
   });
 });

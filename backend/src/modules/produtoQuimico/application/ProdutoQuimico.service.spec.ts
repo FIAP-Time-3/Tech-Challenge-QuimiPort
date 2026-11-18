@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { ProdutoQuimicoService } from './ProdutoQuimico.service.js';
 
@@ -20,6 +24,7 @@ describe('ProdutoQuimicoService', () => {
 
   const body = {
     nome: 'Acetona',
+    numeroONU: '1090',
     descricao: 'Solvente',
     classeRisco: 3,
     status: true,
@@ -60,11 +65,44 @@ describe('ProdutoQuimicoService', () => {
   });
 
   describe('queries', () => {
-    it('lista produtos', async () => {
+    it('lista produtos com paginação, ordenação e total de registros', async () => {
       prismaMock.produtosQuimicos.findMany.mockResolvedValue([product]);
+      prismaMock.produtosQuimicos.count.mockResolvedValue(3);
 
-      await expect(service.findAll()).resolves.toMatchObject([product]);
-      expect(prismaMock.produtosQuimicos.findMany).toHaveBeenCalledOnce();
+      await expect(
+        service.findAll({
+          paginatedSort: { page: 2, limit: 2, column: 'nome', order: 'desc' },
+        }),
+      ).resolves.toMatchObject({
+        data: [product],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
+      expect(prismaMock.produtosQuimicos.findMany).toHaveBeenCalledWith({
+        skip: 2,
+        take: 2,
+        orderBy: { nome: 'desc' },
+      });
+      expect(
+        prismaMock.produtosQuimicos.count,
+      ).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    it('rejeita uma coluna de ordenação inválida antes de consultar o banco', async () => {
+      await expect(
+        service.findAll({
+          paginatedSort: {
+            page: 1,
+            limit: 10,
+            column: 'cargaQuimicas',
+            order: 'asc',
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaMock.produtosQuimicos.findMany).not.toHaveBeenCalled();
+      expect(prismaMock.produtosQuimicos.count).not.toHaveBeenCalled();
     });
 
     it('busca produto por id', async () => {
