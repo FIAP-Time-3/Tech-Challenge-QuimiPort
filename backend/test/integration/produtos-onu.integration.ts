@@ -112,8 +112,16 @@ describe('Número ONU com PostgreSQL real', () => {
         classeRisco: 1,
       })
       .expect(200);
-    const list = await api('get', '/api/produtos-quimicos').expect(200);
-    expect(list.body[0].numeroONU).toBe('0005');
+    const list = await api('get', '/api/produtos-quimicos')
+      .query({ page: 1, limit: 1 })
+      .expect(200);
+    expect(list.body).toMatchObject({
+      data: [{ id: created.body.id, numeroONU: '0005' }],
+      page: 1,
+      limit: 1,
+      total: 1,
+      totalPages: 1,
+    });
     expect(
       (
         await prisma.produtosQuimicos.findUniqueOrThrow({

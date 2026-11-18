@@ -8,10 +8,15 @@ import { plainToInstance } from 'class-transformer';
 import { PrismaService } from '../../../infra/database/prisma.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../infrastructure/dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from '../infrastructure/dtos/ProdutoQuimico.response.dtos.js';
+import { Prisma } from '../../../infra/database/generated/prisma/client.js';
+import { PaginatedResponseDto } from '../../../infra/paginatedSort/pagination/paginated.response.dtos.js';
+import { adjustPaginationAndSortOptions } from '../../../infra/paginatedSort/paginated-sort.utils.js';
+import { PaginatedSortQueryDto } from '../../../infra/paginatedSort/paginated-sort.query.dtos.js';
 
 @Injectable()
 export class ProdutoQuimicoService {
   private readonly logger = new Logger(ProdutoQuimicoService.name);
+  public readonly fields = Prisma.ProdutosQuimicosScalarFieldEnum;
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -29,9 +34,26 @@ export class ProdutoQuimicoService {
     return await this.findOne({ id: newProduct.id });
   }
 
-  async findAll(): Promise<ProdutoQuimicoResponseDto[]> {
-    const products = await this.prisma.produtosQuimicos.findMany();
-    return plainToInstance(ProdutoQuimicoResponseDto, products);
+  async findAll({
+    paginatedSort,
+  }: {
+    paginatedSort: PaginatedSortQueryDto;
+  }): Promise<PaginatedResponseDto<ProdutoQuimicoResponseDto>> {
+    const [products, total] = await Promise.all([
+      this.prisma.produtosQuimicos.findMany({
+        ...adjustPaginationAndSortOptions({
+          paginatedSort,
+          fields: this.fields,
+        }),
+      }),
+      this.prisma.produtosQuimicos.count(),
+    ]);
+    return new PaginatedResponseDto(
+      plainToInstance(ProdutoQuimicoResponseDto, products),
+      paginatedSort.page,
+      paginatedSort.limit,
+      total,
+    );
   }
 
   async findOne({ id }: { id: number }): Promise<ProdutoQuimicoResponseDto> {

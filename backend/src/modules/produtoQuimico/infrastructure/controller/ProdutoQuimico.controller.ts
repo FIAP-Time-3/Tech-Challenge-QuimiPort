@@ -13,6 +13,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiOkResponse,
@@ -26,6 +27,8 @@ import { RolesEnum } from '../../../../infra/security/enums/roles.enum.js';
 import { ProdutoQuimicoService } from '../../application/ProdutoQuimico.service.js';
 import { CreateOrUpdateProdutoQuimicoDto } from '../dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from '../dtos/ProdutoQuimico.response.dtos.js';
+import { PaginatedResponseDto } from '../../../../infra/paginatedSort/pagination/paginated.response.dtos.js';
+import { PaginatedSortQueryDto } from '../../../../infra/paginatedSort/paginated-sort.query.dtos.js';
 
 @ApiAuthenticated()
 @ApiErrors(403)
@@ -52,8 +55,10 @@ export class ProdutoQuimicoController {
   @ApiOperation({ summary: 'Listar produtos químicos' })
   @ApiOkResponse({ type: [ProdutoQuimicoResponseDto] })
   @Get()
-  async findAll(): Promise<ProdutoQuimicoResponseDto[]> {
-    return await this.service.findAll();
+  async findAll(
+    @Query() paginatedSort: PaginatedSortQueryDto,
+  ): Promise<PaginatedResponseDto<ProdutoQuimicoResponseDto>> {
+    return await this.service.findAll({ paginatedSort });
   }
 
   @ApiOperation({ summary: 'Buscar produto químico por id' })

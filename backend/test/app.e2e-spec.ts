@@ -27,6 +27,15 @@ describe('API HTTP (e2e)', () => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    cargaQuimicas: {
+      count: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    movimentacoes: {
+      count: vi.fn(),
+      findMany: vi.fn(),
+    },
     $queryRaw: vi.fn(),
   };
 
@@ -141,8 +150,7 @@ describe('API HTTP (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/produtos-quimicos')
         .set('Authorization', `Bearer ${token}`)
-        .expect(200)
-        .expect([]);
+        .expect(200);
 
       await request(app.getHttpServer())
         .post('/api/produtos-quimicos')
@@ -155,6 +163,61 @@ describe('API HTTP (e2e)', () => {
       );
     },
   );
+
+  it.each([
+    { path: '/api/users', model: 'user', key: 'id' },
+    { path: '/api/produtos-quimicos', model: 'produtosQuimicos', key: 'id' },
+    { path: '/api/cargas-quimicas', model: 'cargaQuimicas', key: 'id' },
+    {
+      path: '/api/cargas-quimicas/1/historico',
+      model: 'movimentacoes',
+      key: 'step',
+    },
+  ] as const)('pagina a listagem em $path', async ({ path, model, key }) => {
+    const rows = [1, 2, 3].map((id) => ({ id, step: id }));
+    const { count, findMany } = prismaMock[model];
+    count.mockResolvedValue(rows.length);
+    findMany.mockImplementation(({ skip = 0, take = rows.length } = {}) =>
+      rows.slice(skip, skip + take),
+    );
+    prismaMock.cargaQuimicas.findUnique.mockResolvedValue({ id: 1 });
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
+
+    const response = await request(app.getHttpServer())
+      .get(path)
+      .query({ page: 2, limit: 2 })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      data: [{ [key]: 3 }],
+      page: 2,
+      limit: 2,
+      total: 3,
+      totalPages: 2,
+    });
+    expect(response.body.data).toHaveLength(1);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 2, take: 2 }),
+    );
+    expect(count).toHaveBeenCalledOnce();
+  });
+
+  it('retorna todos os próximos status mesmo com parâmetros de paginação', async () => {
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/cargas-quimicas/transicoes/CADASTRADA')
+      .query({ page: 2, limit: 1 })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(response.body).toEqual(['EM_PREPARACAO', 'CANCELADA']);
+  });
 
   it('não expõe hash da senha em respostas HTTP de usuários', async () => {
     prismaMock.user.findMany.mockResolvedValue([
