@@ -16,10 +16,10 @@ export class RolesGuard implements CanActivate {
     }
 
     const rolesContextHandler =
-      this.reflector.get<RolesEnum>('role', context.getHandler()) ?? [];
+      this.reflector.get<RolesEnum[]>('roles', context.getHandler()) ?? [];
 
     const rolesContextClass =
-      this.reflector.get<RolesEnum>('role', context.getClass()) ?? [];
+      this.reflector.get<RolesEnum[]>('roles', context.getClass()) ?? [];
 
     const rolesAllowed = [
       ...new Set([rolesContextHandler, rolesContextClass].flat()),
@@ -31,12 +31,6 @@ export class RolesGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest();
 
-    for (const role of user.roles) {
-      if (rolesAllowed.includes(role)) {
-        return true;
-      }
-    }
-
-    return false;
+    return rolesAllowed.includes(user?.role);
   }
 }

@@ -1,5 +1,7 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AllowedRoles } from '../decorators/allowedRoles.decorator.js';
+import { SetPublic } from '../decorators/setPublic.decorator.js';
 import { RolesEnum } from '../enums/roles.enum.js';
 import { RolesGuard } from './roles.guard.js';
 
@@ -7,34 +9,36 @@ function setup({
   publicRoute = false,
   handlerRoles = [],
   classRoles = [],
-  userRoles = [],
+  userRole,
   noRoleMetadata = false,
 }: {
   publicRoute?: boolean;
   handlerRoles?: RolesEnum[];
   classRoles?: RolesEnum[];
-  userRoles?: RolesEnum[];
+  userRole?: RolesEnum;
   noRoleMetadata?: boolean;
 } = {}) {
-  const handler = {};
-  const controller = {};
+  class Controller {
+    handler() {}
+  }
+  const handler = Controller.prototype.handler;
+  if (!noRoleMetadata) {
+    AllowedRoles(classRoles)(Controller);
+    AllowedRoles(handlerRoles)(
+      Controller.prototype,
+      'handler',
+      Object.getOwnPropertyDescriptor(Controller.prototype, 'handler')!,
+    );
+  }
+  if (publicRoute) SetPublic()(Controller);
   const context = {
     getHandler: () => handler,
-    getClass: () => controller,
+    getClass: () => Controller,
     switchToHttp: () => ({
-      getRequest: () => ({ user: { roles: userRoles } }),
+      getRequest: () => ({ user: { role: userRole } }),
     }),
   } as unknown as ExecutionContext;
-  const reflectorMock = {
-    get: vi.fn((key: string, target: object) => {
-      if (key === 'isPublic') return publicRoute;
-      if (noRoleMetadata) return undefined;
-      if (target === handler) return handlerRoles;
-      if (target === controller) return classRoles;
-      return undefined;
-    }),
-  };
-  const guard = new RolesGuard(reflectorMock as unknown as Reflector);
+  const guard = new RolesGuard(new Reflector());
 
   return { guard, context };
 }
@@ -61,7 +65,7 @@ describe('RolesGuard', () => {
   it('permite quando usuário possui perfil exigido pelo handler', () => {
     const { guard, context } = setup({
       handlerRoles: [RolesEnum.ADMINISTRADOR],
-      userRoles: [RolesEnum.ADMINISTRADOR],
+      userRole: RolesEnum.ADMINISTRADOR,
     });
 
     expect(guard.canActivate(context)).toBe(true);
@@ -69,8 +73,8 @@ describe('RolesGuard', () => {
 
   it('permite quando o perfil exigido está somente no controller', () => {
     const { guard, context } = setup({
-      classRoles: [RolesEnum.GESTOR],
-      userRoles: [RolesEnum.GESTOR],
+      classRoles: [RolesEnum.OPERADOR],
+      userRole: RolesEnum.OPERADOR,
     });
 
     expect(guard.canActivate(context)).toBe(true);
@@ -79,8 +83,8 @@ describe('RolesGuard', () => {
   it('considera perfis declarados no controller e no handler', () => {
     const { guard, context } = setup({
       classRoles: [RolesEnum.ADMINISTRADOR],
-      handlerRoles: [RolesEnum.GESTOR],
-      userRoles: [RolesEnum.GESTOR],
+      handlerRoles: [RolesEnum.OPERADOR],
+      userRole: RolesEnum.OPERADOR,
     });
 
     expect(guard.canActivate(context)).toBe(true);
@@ -88,9 +92,9 @@ describe('RolesGuard', () => {
 
   it('deduplica perfis repetidos sem negar acesso', () => {
     const { guard, context } = setup({
-      classRoles: [RolesEnum.GESTOR],
-      handlerRoles: [RolesEnum.GESTOR],
-      userRoles: [RolesEnum.GESTOR],
+      classRoles: [RolesEnum.OPERADOR],
+      handlerRoles: [RolesEnum.OPERADOR],
+      userRole: RolesEnum.OPERADOR,
     });
 
     expect(guard.canActivate(context)).toBe(true);
@@ -99,7 +103,7 @@ describe('RolesGuard', () => {
   it('recusa usuário sem perfil permitido', () => {
     const { guard, context } = setup({
       handlerRoles: [RolesEnum.ADMINISTRADOR],
-      userRoles: [RolesEnum.OPERADOR],
+      userRole: RolesEnum.OPERADOR,
     });
 
     expect(guard.canActivate(context)).toBe(false);

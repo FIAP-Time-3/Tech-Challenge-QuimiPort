@@ -14,7 +14,7 @@ const body = {
   name: 'Bruno Dias',
   email: 'Bruno@example.com',
   password: 'secret',
-  roles: [RolesEnum.OPERADOR],
+  role: RolesEnum.OPERADOR,
   status: true,
 };
 
@@ -87,7 +87,7 @@ describe('Usuários com PostgreSQL real', () => {
 
   it('recusa email nulo diretamente no banco', async () => {
     await expect(prisma.$executeRaw`
-      INSERT INTO "User" (name, email, password, roles) VALUES ('Teste', NULL, 'hash', ARRAY[]::text[])
+      INSERT INTO "User" (name, email, password, role) VALUES ('Teste', NULL, 'hash', 'OPERADOR')
     `).rejects.toMatchObject({
       code: 'P2010',
       meta: {
@@ -166,7 +166,7 @@ describe('Usuários com PostgreSQL real', () => {
       body: {
         ...body,
         email: 'admin@example.com',
-        roles: [RolesEnum.ADMINISTRADOR],
+        role: RolesEnum.ADMINISTRADOR,
       },
     });
     const user = await users.create({ body });
@@ -175,7 +175,7 @@ describe('Usuários com PostgreSQL real', () => {
       body: {
         name: body.name,
         email: 'novo@example.com',
-        roles: body.roles,
+        role: body.role,
         status: body.status,
       },
     });

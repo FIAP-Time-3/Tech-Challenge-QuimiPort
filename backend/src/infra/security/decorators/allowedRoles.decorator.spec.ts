@@ -7,7 +7,7 @@ describe('AllowedRoles', () => {
 
     AllowedRoles(RolesEnum.ADMINISTRADOR)(Controller);
 
-    expect(Reflect.getMetadata('role', Controller)).toEqual([
+    expect(Reflect.getMetadata('roles', Controller)).toEqual([
       RolesEnum.ADMINISTRADOR,
     ]);
   });

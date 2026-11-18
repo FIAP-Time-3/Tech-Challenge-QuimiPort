@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { PrismaService } from '../src/infra/database/prisma.service.js';
+import { RolesEnum } from '../src/infra/security/enums/roles.enum.js';
 
 describe('API HTTP (e2e)', () => {
   let app: INestApplication<App>;
@@ -21,7 +22,10 @@ describe('API HTTP (e2e)', () => {
       findUnique: vi.fn(),
     },
     produtosQuimicos: {
+      count: vi.fn(),
+      create: vi.fn(),
       findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     $queryRaw: vi.fn(),
   };
@@ -34,7 +38,7 @@ describe('API HTTP (e2e)', () => {
     prismaMock.user.findFirst.mockResolvedValue({
       id: 1,
       email: 'admin@email.com',
-      roles: ['ADMINISTRADOR'],
+      role: 'ADMINISTRADOR',
       status: true,
     });
     prismaMock.produtosQuimicos.findMany.mockResolvedValue([]);
@@ -112,28 +116,45 @@ describe('API HTTP (e2e)', () => {
     expect(prismaMock.produtosQuimicos.findMany).not.toHaveBeenCalled();
   });
 
-  it('aplica perfis a rota protegida e aceita administrador', async () => {
-    const jwt = app.get(JwtService);
-    const token = await jwt.signAsync({ id: 1, token_use: 'access' });
-    prismaMock.user.findFirst.mockResolvedValueOnce({
-      id: 1,
-      email: 'tecnico@email.com',
-      roles: ['QUALIDADE'],
-      status: true,
-    });
+  it.each([
+    { role: RolesEnum.DESPACHANTE, statusCadastro: 403 },
+    { role: RolesEnum.ADMINISTRADOR, statusCadastro: 201 },
+    { role: RolesEnum.OPERADOR, statusCadastro: 201 },
+  ])(
+    'permite consulta para $role e retorna $statusCadastro no cadastro',
+    async ({ role, statusCadastro }) => {
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: 1, token_use: 'access' });
+      prismaMock.user.findFirst.mockResolvedValue({
+        id: 1,
+        email: 'usuario@email.com',
+        role,
+        status: true,
+      });
+      const body = { nome: 'Acetona', numeroONU: '1090', classeRisco: 3 };
+      const produto = { id: 1, ...body, status: true };
+      prismaMock.produtosQuimicos.count.mockResolvedValue(0);
+      prismaMock.produtosQuimicos.create.mockResolvedValue(produto);
+      prismaMock.produtosQuimicos.findUnique.mockResolvedValue(produto);
 
-    await request(app.getHttpServer())
-      .get('/api/produtos-quimicos')
-      .set('Authorization', `Bearer ${token}`)
-      .expect(403);
+      await request(app.getHttpServer())
+        .get('/api/produtos-quimicos')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200)
+        .expect([]);
 
-    await request(app.getHttpServer())
-      .get('/api/produtos-quimicos')
-      .set('Authorization', `Bearer ${token}`)
-      .expect(200)
-      .expect([]);
-    expect(prismaMock.produtosQuimicos.findMany).toHaveBeenCalledOnce();
-  });
+      await request(app.getHttpServer())
+        .post('/api/produtos-quimicos')
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(statusCadastro);
+
+      expect(prismaMock.produtosQuimicos.create).toHaveBeenCalledTimes(
+        statusCadastro === 201 ? 1 : 0,
+      );
+    },
+  );
 
   it('não expõe hash da senha em respostas HTTP de usuários', async () => {
     prismaMock.user.findMany.mockResolvedValue([
@@ -142,7 +163,7 @@ describe('API HTTP (e2e)', () => {
         email: 'admin@email.com',
         name: 'Administrador',
         password: 'stored-password-hash',
-        roles: ['ADMINISTRADOR'],
+        role: 'ADMINISTRADOR',
         status: true,
       },
     ]);

@@ -31,7 +31,7 @@ export class UserService {
       // Serializa o primeiro cadastro entre requisições e instâncias da API.
       await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
       const countAdmin = await transaction.user.count({
-        where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+        where: { role: RolesEnum.ADMINISTRADOR, status: true },
       });
       if (countAdmin > 0) {
         throw new ForbiddenException(
@@ -228,7 +228,7 @@ export class UserService {
   private async validateUniqueAdmin({ id }: { id: number }) {
     const countAdmin = await this.prisma.user.count({
       where: {
-        roles: { has: RolesEnum.ADMINISTRADOR },
+        role: RolesEnum.ADMINISTRADOR,
         status: true,
         id: { not: id },
       },

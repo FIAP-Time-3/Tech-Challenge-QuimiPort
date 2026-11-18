@@ -29,13 +29,13 @@ describe('UserService', () => {
     email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
-    roles: [RolesEnum.OPERADOR],
+    role: RolesEnum.OPERADOR,
     status: true,
   };
   const updateBody = {
     email: userBody.email,
     name: userBody.name,
-    roles: userBody.roles,
+    role: userBody.role,
     status: userBody.status,
   };
   let hashPassword: ReturnType<typeof vi.spyOn>;
@@ -105,7 +105,7 @@ describe('UserService', () => {
       prismaMock.user.create.mockResolvedValue({
         ...userBody,
         password: 'hashed',
-        roles: [RolesEnum.ADMINISTRADOR],
+        role: RolesEnum.ADMINISTRADOR,
       });
 
       await service.createFirst({
@@ -113,12 +113,15 @@ describe('UserService', () => {
       });
 
       expect(prismaMock.$executeRaw).toHaveBeenCalledOnce();
+      expect(prismaMock.user.count).toHaveBeenNthCalledWith(1, {
+        where: { role: RolesEnum.ADMINISTRADOR, status: true },
+      });
       expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
           email: 'admin@email.com',
           name: 'Admin',
           password: 'hashed',
-          roles: [RolesEnum.ADMINISTRADOR],
+          role: RolesEnum.ADMINISTRADOR,
           status: true,
         },
       });
@@ -165,25 +168,9 @@ describe('UserService', () => {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'hashed',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
           status: true,
         },
-      });
-    });
-
-    it('usa lista vazia quando perfis não são informados', async () => {
-      const bodyWithoutRoles = { ...userBody, roles: undefined };
-      prismaMock.user.count.mockResolvedValue(0);
-      prismaMock.user.create.mockResolvedValue({
-        ...bodyWithoutRoles,
-        roles: [],
-        password: 'hashed',
-      });
-
-      await service.create({ body: bodyWithoutRoles });
-
-      expect(prismaMock.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ roles: [] }),
       });
     });
 
@@ -206,7 +193,7 @@ describe('UserService', () => {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
           password: 'stored-hash',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
         },
       ]);
 
@@ -241,7 +228,7 @@ describe('UserService', () => {
         data: {
           email: 'bruno@email.com',
           name: 'Bruno Dias',
-          roles: [RolesEnum.OPERADOR],
+          role: RolesEnum.OPERADOR,
           status: true,
         },
       });
@@ -259,14 +246,18 @@ describe('UserService', () => {
       });
       await service.update({
         id: 20,
-        body: { name: userBody.name, email: userBody.email },
+        body: {
+          name: userBody.name,
+          email: userBody.email,
+          role: userBody.role,
+        },
       });
       expect(prismaMock.user.update).toHaveBeenCalledWith({
         where: { id: 20 },
         data: {
           name: userBody.name,
           email: userBody.email,
-          roles: [],
+          role: userBody.role,
           status: undefined,
         },
       });
@@ -293,24 +284,6 @@ describe('UserService', () => {
       },
     );
 
-    it('usa lista vazia quando atualização não informa perfis', async () => {
-      const bodyWithoutRoles = { ...updateBody, roles: undefined };
-      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
-      prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
-      prismaMock.user.update.mockResolvedValue({
-        id: 20,
-        ...bodyWithoutRoles,
-        password: 'stored-hash',
-      });
-
-      await service.update({ id: 20, body: bodyWithoutRoles });
-
-      expect(prismaMock.user.update).toHaveBeenCalledWith({
-        where: { id: 20 },
-        data: expect.objectContaining({ roles: [] }),
-      });
-    });
-
     it('devolve 404 ao atualizar usuário inexistente sem gerar hash', async () => {
       prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue(null);
@@ -328,6 +301,13 @@ describe('UserService', () => {
       await expect(service.remove({ id: 1 })).rejects.toThrow(
         BadRequestException,
       );
+      expect(prismaMock.user.count).toHaveBeenCalledWith({
+        where: {
+          role: RolesEnum.ADMINISTRADOR,
+          status: true,
+          id: { not: 1 },
+        },
+      });
       expect(prismaMock.user.update).not.toHaveBeenCalled();
     });
 

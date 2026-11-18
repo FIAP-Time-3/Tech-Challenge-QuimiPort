@@ -60,7 +60,7 @@ beforeEach(async () => {
       name: 'Admin',
       email: 'admin@example.com',
       password: 'unused',
-      roles: [RolesEnum.ADMINISTRADOR],
+      role: RolesEnum.ADMINISTRADOR,
     },
   });
   adminId = admin.id;
@@ -175,7 +175,7 @@ describe('Número ONU com PostgreSQL real', () => {
         name: 'Técnico',
         email: 'tecnico@example.com',
         password: 'unused',
-        roles: [RolesEnum.TECNICO],
+        role: RolesEnum.OPERADOR,
       },
     });
     const service = new CargaQuimicaService(prisma);
@@ -188,7 +188,7 @@ describe('Número ONU com PostgreSQL real', () => {
         destino: 'Destino',
         responsavelTecnicoId: tecnico.id,
       },
-      usuario: { id: adminId, roles: [RolesEnum.ADMINISTRADOR] },
+      usuario: { id: adminId, role: RolesEnum.ADMINISTRADOR },
     });
     expect(carga.produtoQuimico.numeroONU).toBe('1090');
     expect(

@@ -47,7 +47,7 @@ export class CreateOrUpdateCargaQuimicaDto {
     example: 3,
     type: 'integer',
     minimum: 1,
-    description: 'ID de um usuário ativo com perfil TECNICO. Obrigatório.',
+    description: 'ID de um usuário ativo com perfil OPERADOR. Obrigatório.',
   })
   @IsInt()
   @IsPositive()

@@ -17,7 +17,7 @@ describe('UserController', () => {
     email: 'bruno@email.com',
     name: 'Bruno Dias',
     password: 'secret',
-    roles: [RolesEnum.OPERADOR],
+    role: RolesEnum.OPERADOR,
     status: true,
   };
 

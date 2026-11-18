@@ -22,7 +22,7 @@ export class LoginService {
 
   async getSetup(): Promise<SetupResponseDto> {
     const count = await this.prisma.user.count({
-      where: { roles: { has: RolesEnum.ADMINISTRADOR }, status: true },
+      where: { role: RolesEnum.ADMINISTRADOR, status: true },
     });
     return { requiresSetup: count === 0 };
   }

@@ -100,7 +100,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Editar usuário sem alterar senha',
     description:
-      'Nome/email obrigatórios. Password é rejeitado. Status omitido é preservado; roles omitido vira []. A proteção atual pode impedir edição do único administrador ativo.',
+      'Nome, e-mail e perfil obrigatórios. Password é rejeitado. Status omitido é preservado. A proteção atual pode impedir edição do único administrador ativo.',
   })
   @ApiOkResponse({ type: UserResponseDto })
   @ApiErrors(400, 404, 409)

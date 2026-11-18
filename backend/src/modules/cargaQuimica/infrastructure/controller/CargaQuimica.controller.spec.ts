@@ -29,7 +29,7 @@ describe('CargaQuimicaController', () => {
     destino: 'Santos',
     responsavelTecnico: 'Maria Souza',
   };
-  const req = { user: { id: 8, roles: [RolesEnum.ADMINISTRADOR] } };
+  const req = { user: { id: 8, role: RolesEnum.ADMINISTRADOR } };
 
   beforeEach(async () => {
     vi.resetAllMocks();

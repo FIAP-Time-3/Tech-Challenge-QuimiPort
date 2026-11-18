@@ -36,7 +36,7 @@ describe('JWTs de acesso e renovação', () => {
     const user = {
       id: 1,
       email: 'admin@email.com',
-      roles: ['ADMINISTRADOR'],
+      role: 'ADMINISTRADOR',
       status: true,
       password: 'hash',
     };

@@ -211,8 +211,8 @@ export class CargaQuimicaService {
 
     const autorizado =
       statusDestino === StatusCargaEnum.CANCELADA
-        ? perfilPodeCancelar(usuario.roles)
-        : perfilPodeAgir(usuario.roles, statusAtual);
+        ? perfilPodeCancelar(usuario.role)
+        : perfilPodeAgir(usuario.role, statusAtual);
     if (!autorizado) {
       throw new ForbiddenException(
         'Seu perfil não pode executar esta ação na etapa atual da carga.',
@@ -460,9 +460,9 @@ export class CargaQuimicaService {
         'Responsável técnico inativo não pode ser designado.',
       );
     }
-    if (!(usuario.role == RolesEnum.OPERADOR)) {
+    if (usuario.role !== RolesEnum.OPERADOR) {
       throw new BadRequestException(
-        'O usuário informado não possui o perfil TECNICO.',
+        'O usuário informado não possui o perfil OPERADOR.',
       );
     }
     return usuario;

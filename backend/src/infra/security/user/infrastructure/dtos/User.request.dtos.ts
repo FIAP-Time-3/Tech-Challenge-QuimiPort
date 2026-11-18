@@ -21,11 +21,7 @@ export class BaseUserDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiPropertyOptional({
-    enum: RolesEnum,
-    isArray: true,
-    description: 'Perfis atuais. Omitido na criação ou edição resulta em [].',
-  })
+  @ApiProperty({ enum: RolesEnum, description: 'Perfil do usuário.' })
   @IsEnum(RolesEnum)
   role: RolesEnum;
 }

@@ -3,14 +3,13 @@ import { StatusCargaEnum as S } from '../domain/value-objects/StatusCarga.enum.j
 
 export interface UsuarioLogado {
   id: number;
-  roles: string[];
+  role: string;
 }
 
-// Quem atua em cada etapa (PM-04 a PM-07). Administrador e gestor atuam em todas.
 const PERFIS_POR_STATUS: Record<S, RolesEnum[]> = {
   [S.CADASTRADA]: [RolesEnum.OPERADOR],
-  [S.EM_PREPARACAO]: [RolesEnum.OPERADOR, RolesEnum.OPERADOR],
-  [S.EM_INSPECAO]: [RolesEnum.OPERADOR, RolesEnum.OPERADOR],
+  [S.EM_PREPARACAO]: [RolesEnum.OPERADOR],
+  [S.EM_INSPECAO]: [RolesEnum.OPERADOR],
   [S.BLOQUEADA]: [RolesEnum.OPERADOR],
   [S.LIBERADA]: [RolesEnum.OPERADOR],
   [S.EM_MOVIMENTACAO]: [RolesEnum.OPERADOR],
@@ -18,18 +17,13 @@ const PERFIS_POR_STATUS: Record<S, RolesEnum[]> = {
   [S.CANCELADA]: [],
 };
 
-export function perfilPodeCancelar(roles: string[]): boolean {
-  return (
-    roles.includes(RolesEnum.ADMINISTRADOR) ||
-    roles.includes(RolesEnum.OPERADOR)
-  );
+export function perfilPodeCancelar(role: string): boolean {
+  return role === RolesEnum.ADMINISTRADOR || role === RolesEnum.OPERADOR;
 }
 
-export function perfilPodeAgir(roles: string[], statusAtual: S): boolean {
-  if (perfilPodeCancelar(roles)) {
+export function perfilPodeAgir(role: string, statusAtual: S): boolean {
+  if (perfilPodeCancelar(role)) {
     return true;
   }
-  return PERFIS_POR_STATUS[statusAtual].some((perfil) =>
-    roles.includes(perfil),
-  );
+  return PERFIS_POR_STATUS[statusAtual].some((perfil) => perfil === role);
 }

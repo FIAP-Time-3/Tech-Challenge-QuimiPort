@@ -17,13 +17,17 @@ async function invalidFields(
 
 describe('validação dos DTOs de usuário', () => {
   it('aplica status true somente na criação e mantém indefinido na edição', async () => {
-    const body = { name: 'Bruno', email: 'bruno@email.com' };
+    const body = {
+      name: 'Bruno',
+      email: 'bruno@email.com',
+      role: RolesEnum.OPERADOR,
+    };
     expect(
       plainToInstance(CreateUserDto, { ...body, password: 'secret' }).status,
     ).toBe(true);
     const updated = plainToInstance(UpdateUserDto, body);
     expect(updated.status).toBeUndefined();
-    expect(updated.roles).toBeUndefined();
+    expect(updated.role).toBe(RolesEnum.OPERADOR);
     expect(await validate(updated)).toEqual([]);
   });
 
@@ -33,6 +37,7 @@ describe('validação dos DTOs de usuário', () => {
       const dto = plainToInstance(UpdateUserDto, {
         name: 'Bruno',
         email: 'bruno@email.com',
+        role: RolesEnum.OPERADOR,
         status,
       });
       expect(await validate(dto)).toEqual([]);
@@ -47,6 +52,7 @@ describe('validação dos DTOs de usuário', () => {
         invalidFields(UpdateUserDto, {
           name: 'Bruno',
           email: 'bruno@email.com',
+          role: RolesEnum.OPERADOR,
           status,
         }),
       ).resolves.toContain('status');
@@ -54,7 +60,11 @@ describe('validação dos DTOs de usuário', () => {
   );
 
   it('exige senha na criação e permite edição sem senha', async () => {
-    const body = { name: 'Bruno', email: 'bruno@email.com' };
+    const body = {
+      name: 'Bruno',
+      email: 'bruno@email.com',
+      role: RolesEnum.OPERADOR,
+    };
     await expect(invalidFields(CreateUserDto, body)).resolves.toContain(
       'password',
     );
@@ -66,6 +76,7 @@ describe('validação dos DTOs de usuário', () => {
       plainToInstance(UpdateUserDto, {
         name: 'Bruno',
         email: 'bruno@email.com',
+        role: RolesEnum.OPERADOR,
         password: 'secret',
       }),
       { whitelist: true, forbidNonWhitelisted: true },
@@ -86,6 +97,7 @@ describe('validação dos DTOs de usuário', () => {
     const body: Record<string, unknown> = {
       name: 'Bruno',
       email: 'bruno@email.com',
+      role: RolesEnum.OPERADOR,
     };
     delete body[field];
     await expect(invalidFields(UpdateUserDto, body)).resolves.toContain(field);
@@ -121,22 +133,23 @@ describe('validação dos DTOs de usuário', () => {
     await expect(
       invalidFields(CreateUserDto, {
         email: 'bruno@email.com',
+        role: RolesEnum.OPERADOR,
         name: 'Bruno',
         password: 'secret',
-        roles: [RolesEnum.OPERADOR, RolesEnum.TECNICO],
         status: false,
       }),
     ).resolves.toEqual([]);
   });
 
-  it('aplica defaults para roles e status opcionais', () => {
+  it('aplica status ativo por padrão', () => {
     const user = plainToInstance(CreateUserDto, {
       email: 'bruno@email.com',
+      role: RolesEnum.OPERADOR,
       name: 'Bruno',
       password: 'secret',
     });
 
-    expect(user.roles).toBeUndefined();
+    expect(user.role).toBe(RolesEnum.OPERADOR);
     expect(user.status).toBe(true);
   });
 
@@ -146,9 +159,9 @@ describe('validação dos DTOs de usuário', () => {
         email: 'bruno@email.com',
         name: 'Bruno',
         password: 'secret',
-        roles: ['ROOT'],
+        role: 'ROOT',
         status: 'active',
       }),
-    ).resolves.toEqual(expect.arrayContaining(['roles', 'status']));
+    ).resolves.toEqual(expect.arrayContaining(['role', 'status']));
   });
 });

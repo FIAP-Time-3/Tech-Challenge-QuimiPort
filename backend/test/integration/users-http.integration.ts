@@ -14,14 +14,14 @@ const userBody = {
   email: 'Bruno@example.com',
   name: 'Bruno Dias',
   password: 'secret',
-  roles: ['OPERADOR'],
+  role: 'OPERADOR',
   status: true,
 };
 
 const updateBody = {
   email: userBody.email,
   name: userBody.name,
-  roles: userBody.roles,
+  role: userBody.role,
   status: userBody.status,
 };
 
@@ -218,7 +218,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it.each([true, false])(
-    'preserva status %s e hash ao editar somente nome/email; roles omitido vira []',
+    'preserva status %s e hash ao editar nome e e-mail',
     async (status) => {
       const created = await authorized('post', '/api/users')
         .send({ ...userBody, status })
@@ -226,17 +226,21 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       const id = created.body.id;
       const before = await prisma.user.findUniqueOrThrow({ where: { id } });
       const result = await authorized('put', `/api/users/${id}`)
-        .send({ name: 'Nome Alterado', email: 'alterado@example.com' })
+        .send({
+          name: 'Nome Alterado',
+          email: 'alterado@example.com',
+          role: userBody.role,
+        })
         .expect(200);
       expect(result.body).toMatchObject({
         status,
-        roles: [],
+        role: userBody.role,
         email: 'alterado@example.com',
       });
       const after = await prisma.user.findUniqueOrThrow({ where: { id } });
       expect(after).toMatchObject({
         status,
-        roles: [],
+        role: userBody.role,
         name: 'Nome Alterado',
         email: 'alterado@example.com',
       });
@@ -259,7 +263,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
         .expect(200);
       expect(
         await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-      ).toMatchObject({ status, roles: userBody.roles });
+      ).toMatchObject({ status, role: userBody.role });
     },
   );
 
@@ -283,12 +287,13 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
         name: userBody.name,
         email: userBody.email,
         password: userBody.password,
+        role: userBody.role,
       })
       .expect(201);
-    expect(created.body).toMatchObject({ status: true, roles: [] });
+    expect(created.body).toMatchObject({ status: true, role: userBody.role });
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-    ).toMatchObject({ status: true, roles: [] });
+    ).toMatchObject({ status: true, role: userBody.role });
   });
 
   it('consulta setup e impede repetir o primeiro acesso', async () => {

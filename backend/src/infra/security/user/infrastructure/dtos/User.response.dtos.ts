@@ -23,7 +23,7 @@ export class UserResponseDto {
   @Exclude()
   password: string;
 
-  @ApiProperty({ enum: RolesEnum, isArray: true })
+  @ApiProperty({ enum: RolesEnum })
   @Expose()
-  roles: RolesEnum[];
+  role: RolesEnum;
 }

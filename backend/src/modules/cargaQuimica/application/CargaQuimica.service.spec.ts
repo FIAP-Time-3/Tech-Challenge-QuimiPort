@@ -40,8 +40,8 @@ describe('CargaQuimicaService', () => {
     $transaction: vi.fn(),
   };
 
-  const admin = { id: 1, roles: ['ADMINISTRADOR'] };
-  const tecnico = { id: 3, status: true, roles: ['TECNICO'] };
+  const admin = { id: 1, role: 'ADMINISTRADOR' };
+  const tecnico = { id: 3, status: true, role: 'OPERADOR' };
   const body = {
     produtoQuimicoId: 1,
     quantidade: 100,
@@ -169,7 +169,7 @@ describe('CargaQuimicaService', () => {
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });
 
-    it('recusa usuário sem o perfil TECNICO', async () => {
+    it('recusa responsável sem o perfil OPERADOR', async () => {
       prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
         id: 1,
         status: true,
@@ -177,11 +177,11 @@ describe('CargaQuimicaService', () => {
       });
       prismaMock.user.findUnique.mockResolvedValue({
         ...tecnico,
-        roles: ['OPERADOR'],
+        role: 'DESPACHANTE',
       });
 
       await expect(service.create({ body, usuario: admin })).rejects.toThrow(
-        /TECNICO/,
+        /OPERADOR/,
       );
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });
@@ -329,7 +329,7 @@ describe('CargaQuimicaService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 4,
         status: true,
-        roles: ['OPERADOR'],
+        role: 'DESPACHANTE',
       });
 
       await expect(
@@ -345,7 +345,7 @@ describe('CargaQuimicaService', () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 4,
         status: true,
-        roles: ['TECNICO', 'DOCUMENTACAO'],
+        role: 'OPERADOR',
       });
 
       await service.update({
@@ -456,7 +456,7 @@ describe('CargaQuimicaService', () => {
         service.transicionar({
           id: 10,
           statusDestino: S.EM_PREPARACAO,
-          usuario: { id: 5, roles: ['QUALIDADE'] },
+          usuario: { id: 5, role: 'DESPACHANTE' },
         }),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -569,14 +569,14 @@ describe('CargaQuimicaService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('só administrador e gestor cancelam', async () => {
+    it('despachante não pode cancelar', async () => {
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(carga(S.LIBERADA));
 
       await expect(
         service.cancelar({
           id: 10,
           motivo: 'x',
-          usuario: { id: 7, roles: ['OPERADOR'] },
+          usuario: { id: 7, role: 'DESPACHANTE' },
         }),
       ).rejects.toThrow(ForbiddenException);
     });
