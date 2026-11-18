@@ -1,9 +1,12 @@
-import { applyDecorators } from '@nestjs/common';
+import { applyDecorators, type Type } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiExtraModels,
+  ApiOkResponse,
   ApiProperty,
   ApiPropertyOptional,
   ApiResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 
 export class IdResponseDto {
@@ -51,4 +54,26 @@ export function ApiErrors(...statuses: number[]) {
 
 export function ApiAuthenticated() {
   return applyDecorators(ApiBearerAuth('jwt'), ApiErrors(401, 412));
+}
+
+export function ApiPaginatedOkResponse(model: Type<unknown>) {
+  return applyDecorators(
+    ApiExtraModels(model),
+    ApiOkResponse({
+      schema: {
+        type: 'object',
+        required: ['data', 'page', 'limit', 'total', 'totalPages'],
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: getSchemaPath(model) },
+          },
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
+          total: { type: 'integer' },
+          totalPages: { type: 'integer' },
+        },
+      },
+    }),
+  );
 }

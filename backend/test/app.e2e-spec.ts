@@ -91,6 +91,31 @@ describe('API HTTP (e2e)', () => {
       .expect(200);
     expect(response.body.openapi).toBe('3.0.0');
     expect(response.body.paths).toHaveProperty('/api/users');
+    for (const [path, model] of [
+      ['/api/users', 'UserResponseDto'],
+      ['/api/produtos-quimicos', 'ProdutoQuimicoResponseDto'],
+      ['/api/cargas-quimicas', 'CargaQuimicaResponseDto'],
+      ['/api/cargas-quimicas/{id}/historico', 'MovimentacaoResponseDto'],
+    ]) {
+      expect(
+        response.body.paths[path].get.responses['200'].content[
+          'application/json'
+        ].schema,
+      ).toMatchObject({
+        type: 'object',
+        required: ['data', 'page', 'limit', 'total', 'totalPages'],
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: `#/components/schemas/${model}` },
+          },
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
+          total: { type: 'integer' },
+          totalPages: { type: 'integer' },
+        },
+      });
+    }
     expect(response.body.paths['/api/login'].post.security).toEqual([]);
     expect(
       response.body.components.schemas.UpdateUserDto.properties,

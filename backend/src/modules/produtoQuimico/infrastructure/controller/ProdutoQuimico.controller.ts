@@ -1,6 +1,7 @@
 import {
   ApiAuthenticated,
   ApiErrors,
+  ApiPaginatedOkResponse,
   IdResponseDto,
 } from '../../../../infra/swagger/contracts.js';
 import {
@@ -53,7 +54,7 @@ export class ProdutoQuimicoController {
   }
 
   @ApiOperation({ summary: 'Listar produtos químicos' })
-  @ApiOkResponse({ type: [ProdutoQuimicoResponseDto] })
+  @ApiPaginatedOkResponse(ProdutoQuimicoResponseDto)
   @Get()
   async findAll(
     @Query() paginatedSort: PaginatedSortQueryDto,

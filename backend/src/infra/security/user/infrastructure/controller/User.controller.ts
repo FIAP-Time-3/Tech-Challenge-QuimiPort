@@ -1,6 +1,7 @@
 import {
   ApiAuthenticated,
   ApiErrors,
+  ApiPaginatedOkResponse,
   IdResponseDto,
 } from '../../../../swagger/contracts.js';
 import {
@@ -75,7 +76,7 @@ export class UserController {
   @ApiErrors(403)
   @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiOperation({ summary: 'Listar usuários' })
-  @ApiOkResponse({ type: [UserResponseDto] })
+  @ApiPaginatedOkResponse(UserResponseDto)
   async findAll(
     @Query() paginatedSort: PaginatedSortQueryDto,
   ): Promise<PaginatedResponseDto<UserResponseDto>> {

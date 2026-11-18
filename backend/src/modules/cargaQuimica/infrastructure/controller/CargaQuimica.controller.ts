@@ -1,6 +1,7 @@
 import {
   ApiAuthenticated,
   ApiErrors,
+  ApiPaginatedOkResponse,
 } from '../../../../infra/swagger/contracts.js';
 import {
   BadRequestException,
@@ -121,7 +122,7 @@ export class CargaQuimicaController {
 
   @ApiOperation({ summary: 'Listar cargas químicas' })
   @Get()
-  @ApiOkResponse({ type: [CargaQuimicaResponseDto] })
+  @ApiPaginatedOkResponse(CargaQuimicaResponseDto)
   async findAll(
     @Query() paginatedSort: PaginatedSortQueryDto,
   ): Promise<PaginatedResponseDto<CargaQuimicaResponseDto>> {
@@ -146,7 +147,7 @@ export class CargaQuimicaController {
   })
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @Get(':id/historico')
-  @ApiOkResponse({ type: [MovimentacaoResponseDto] })
+  @ApiPaginatedOkResponse(MovimentacaoResponseDto)
   @ApiErrors(400, 404)
   async historico(
     @Param('id', new ParseIntPipe()) id: number,
