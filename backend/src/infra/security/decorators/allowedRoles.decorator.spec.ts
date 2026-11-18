@@ -7,17 +7,8 @@ describe('AllowedRoles', () => {
 
     AllowedRoles(RolesEnum.ADMINISTRADOR)(Controller);
 
-    expect(Reflect.getMetadata('roles', Controller)).toEqual([
+    expect(Reflect.getMetadata('role', Controller)).toEqual([
       RolesEnum.ADMINISTRADOR,
     ]);
-  });
-
-  it('preserva múltiplos perfis permitidos', () => {
-    class Controller {}
-    const roles = [RolesEnum.GESTOR, RolesEnum.OPERADOR];
-
-    AllowedRoles(roles)(Controller);
-
-    expect(Reflect.getMetadata('roles', Controller)).toEqual(roles);
   });
 });

@@ -460,7 +460,7 @@ export class CargaQuimicaService {
         'Responsável técnico inativo não pode ser designado.',
       );
     }
-    if (!usuario.roles.includes(RolesEnum.OPERADOR)) {
+    if (!(usuario.role == RolesEnum.OPERADOR)) {
       throw new BadRequestException(
         'O usuário informado não possui o perfil TECNICO.',
       );

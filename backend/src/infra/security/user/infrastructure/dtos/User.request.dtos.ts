@@ -26,9 +26,8 @@ export class BaseUserDto {
     isArray: true,
     description: 'Perfis atuais. Omitido na criação ou edição resulta em [].',
   })
-  @IsOptional()
-  @IsEnum(RolesEnum, { each: true })
-  roles?: RolesEnum[];
+  @IsEnum(RolesEnum)
+  role: RolesEnum;
 }
 
 export class CreateUserDto extends BaseUserDto {

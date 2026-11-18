@@ -16,10 +16,10 @@ export class RolesGuard implements CanActivate {
     }
 
     const rolesContextHandler =
-      this.reflector.get<RolesEnum[]>('roles', context.getHandler()) ?? [];
+      this.reflector.get<RolesEnum>('role', context.getHandler()) ?? [];
 
     const rolesContextClass =
-      this.reflector.get<RolesEnum[]>('roles', context.getClass()) ?? [];
+      this.reflector.get<RolesEnum>('role', context.getClass()) ?? [];
 
     const rolesAllowed = [
       ...new Set([rolesContextHandler, rolesContextClass].flat()),

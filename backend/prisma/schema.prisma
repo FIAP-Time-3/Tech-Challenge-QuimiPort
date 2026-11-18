@@ -88,7 +88,7 @@ model User {
   name              String
   email             String          @unique @db.Citext
   password          String
-  roles             String[]
+  role              String
   status            Boolean         @default(true)
   cargasComoTecnico CargaQuimicas[] @relation("ResponsavelTecnico")
 }

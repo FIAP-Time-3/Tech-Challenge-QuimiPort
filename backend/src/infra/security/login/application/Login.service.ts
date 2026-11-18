@@ -87,17 +87,13 @@ export class LoginService {
     return await this.issueTokens(user);
   }
 
-  private async issueTokens(user: {
-    id: number;
-    email: string;
-    roles: string[];
-  }) {
+  private async issueTokens(user: { id: number; email: string; role: string }) {
     const { accessTokenMinutes, refreshTokenMinutes } = configurations().jwt;
     const access_token = await this.jwt.signAsync(
       {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        role: user.role,
         token_use: 'access',
       },
       { expiresIn: accessTokenMinutes * 60, jwtid: randomUUID() },

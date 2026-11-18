@@ -40,7 +40,7 @@ export class UserService {
       }
       return await this.create(
         {
-          body: { ...body, roles: [RolesEnum.ADMINISTRADOR], status: true },
+          body: { ...body, role: RolesEnum.ADMINISTRADOR, status: true },
         },
         transaction,
       );
@@ -65,7 +65,7 @@ export class UserService {
         email: body.email,
         name: this.normalizeName(body.name),
         password: hashedPassword,
-        roles: body.roles ?? [],
+        role: body.role,
         status: body.status,
       },
     });
@@ -114,7 +114,7 @@ export class UserService {
       data: {
         email: body.email,
         name: this.normalizeName(body.name),
-        roles: body.roles ?? [],
+        role: body.role,
         status: body.status,
       },
     });
