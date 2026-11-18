@@ -17,9 +17,15 @@ import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
 import { RolesEnum } from '../../enums/roles.enum.js';
+import { PaginatedSortQueryDto } from '../../../paginatedSort/paginated-sort.query.dtos.js';
+import { adjustPaginationAndSortOptions } from '../../../paginatedSort/paginated-sort.utils.js';
+import { Prisma } from '../../../database/generated/prisma/client.js';
+import { PaginatedResponseDto } from '../../../paginatedSort/pagination/paginated.response.dtos.js';
 
 @Injectable()
 export class UserService {
+  public readonly fields = Prisma.UserScalarFieldEnum;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async createFirst({
@@ -73,10 +79,27 @@ export class UserService {
     return this.toResponse(user);
   }
 
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.prisma.user.findMany();
+  async findAll({
+    paginatedSort,
+  }: {
+    paginatedSort: PaginatedSortQueryDto;
+  }): Promise<PaginatedResponseDto<UserResponseDto>> {
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        ...adjustPaginationAndSortOptions({
+          paginatedSort,
+          fields: this.fields,
+        }),
+      }),
+      this.prisma.user.count(),
+    ]);
 
-    return users.map((user) => this.toResponse(user));
+    return new PaginatedResponseDto(
+      users.map((user) => this.toResponse(user)),
+      paginatedSort.page,
+      paginatedSort.limit,
+      total,
+    );
   }
 
   async findOne({ id }: { id: number }): Promise<UserResponseDto> {

@@ -186,7 +186,7 @@ describe('UserService', () => {
   });
 
   describe('consultas e alterações', () => {
-    it('lista usuários sem expor hashes de senha', async () => {
+    it('pagina e ordena usuários sem expor hashes de senha', async () => {
       prismaMock.user.findMany.mockResolvedValue([
         {
           id: 20,
@@ -197,11 +197,27 @@ describe('UserService', () => {
         },
       ]);
 
-      const users = await service.findAll();
+      prismaMock.user.count.mockResolvedValue(3);
 
-      expect(users).toHaveLength(1);
-      expect(users[0]).toHaveProperty('id', 20);
-      expect(JSON.stringify(users[0])).not.toContain('stored-hash');
+      const result = await service.findAll({
+        paginatedSort: { page: 2, limit: 2, column: 'name', order: 'desc' },
+      });
+
+      expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+        skip: 2,
+        take: 2,
+        orderBy: { name: 'desc' },
+      });
+      expect(prismaMock.user.count).toHaveBeenCalledOnce();
+      expect(result).toMatchObject({
+        data: [{ id: 20, email: 'bruno@email.com' }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
+      expect(result.data[0]?.password).toBeUndefined();
+      expect(JSON.stringify(result.data[0])).not.toContain('stored-hash');
     });
 
     it('devolve 404 ao consultar usuário inexistente', async () => {

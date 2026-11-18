@@ -13,6 +13,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiParam,
@@ -32,6 +33,8 @@ import { UserResponseDto } from '../dtos/User.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
 import { RolesEnum } from '../../../enums/roles.enum.js';
 import { SetPublic } from '../../../decorators/setPublic.decorator.js';
+import { PaginatedSortQueryDto } from '../../../../paginatedSort/paginated-sort.query.dtos.js';
+import { PaginatedResponseDto } from '../../../../paginatedSort/pagination/paginated.response.dtos.js';
 
 @ApiTags('Usuários')
 @Controller('users')
@@ -73,8 +76,10 @@ export class UserController {
   @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiOperation({ summary: 'Listar usuários' })
   @ApiOkResponse({ type: [UserResponseDto] })
-  async findAll(): Promise<UserResponseDto[]> {
-    return await this.service.findAll();
+  async findAll(
+    @Query() paginatedSort: PaginatedSortQueryDto,
+  ): Promise<PaginatedResponseDto<UserResponseDto>> {
+    return await this.service.findAll({ paginatedSort });
   }
 
   @Get(':id')

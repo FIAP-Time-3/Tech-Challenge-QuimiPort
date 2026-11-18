@@ -235,6 +235,7 @@ describe('API HTTP (e2e)', () => {
   });
 
   it('não expõe hash da senha em respostas HTTP de usuários', async () => {
+    prismaMock.user.count.mockResolvedValue(1);
     prismaMock.user.findMany.mockResolvedValue([
       {
         id: 1,
@@ -254,6 +255,14 @@ describe('API HTTP (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect(({ body }) => {
+        expect(body).toMatchObject({
+          data: [{ id: 1, email: 'admin@email.com' }],
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        });
+        expect(body.data[0]).not.toHaveProperty('password');
         expect(JSON.stringify(body)).not.toContain('stored-password-hash');
       });
   });

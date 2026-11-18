@@ -78,7 +78,26 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
     expectSafeUser(created.body, userBody.email);
     const id = created.body.id;
     const list = await authorized('get', '/api/users').expect(200);
-    for (const user of list.body) expectSafeUser(user, user.email);
+    expect(list.body).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 2,
+      totalPages: 1,
+    });
+    expect(list.body.data).toHaveLength(2);
+    expectSafeUser(list.body.data[0], credentials.email);
+    expectSafeUser(list.body.data[1], userBody.email);
+    const secondPage = await authorized('get', '/api/users')
+      .query({ page: 2, limit: 1, column: 'id', order: 'desc' })
+      .expect(200);
+    expect(secondPage.body).toMatchObject({
+      page: 2,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
+    expect(secondPage.body.data).toHaveLength(1);
+    expectSafeUser(secondPage.body.data[0], credentials.email);
     const detail = await authorized('get', `/api/users/${id}`).expect(200);
     expectSafeUser(detail.body, userBody.email);
     const updated = await authorized('put', `/api/users/${id}`)
