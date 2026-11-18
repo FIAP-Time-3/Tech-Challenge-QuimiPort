@@ -27,7 +27,7 @@ describe('CargaQuimicaController', () => {
     unidadeMedida: 'kg',
     origem: 'Rotterdam',
     destino: 'Santos',
-    responsavelTecnico: 'Maria Souza',
+    responsavelTecnicoId: 3,
   };
   const req = { user: { id: 8, role: RolesEnum.ADMINISTRADOR } };
 
@@ -52,11 +52,13 @@ describe('CargaQuimicaController', () => {
     });
   });
 
-  it('encaminha listagem ao serviço', async () => {
-    serviceMock.findAll.mockResolvedValue([]);
+  it('encaminha paginação e ordenação e devolve a página de cargas', async () => {
+    const paginatedSort = { page: 2, limit: 5, column: 'id', order: 'desc' };
+    const result = { data: [], page: 2, limit: 5, total: 0, totalPages: 0 };
+    serviceMock.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll()).resolves.toEqual([]);
-    expect(serviceMock.findAll).toHaveBeenCalledOnce();
+    await expect(controller.findAll(paginatedSort)).resolves.toBe(result);
+    expect(serviceMock.findAll).toHaveBeenCalledWith({ paginatedSort });
   });
 
   it('encaminha id para busca da carga e do histórico', async () => {

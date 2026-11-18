@@ -113,7 +113,7 @@ describe('Número ONU com PostgreSQL real', () => {
       })
       .expect(200);
     const list = await api('get', '/api/produtos-quimicos')
-      .query({ page: 1, limit: 1 })
+      .query({ page: 1, limit: 1, column: 'numeroONU', order: 'desc' })
       .expect(200);
     expect(list.body).toMatchObject({
       data: [{ id: created.body.id, numeroONU: '0005' }],
@@ -202,6 +202,9 @@ describe('Número ONU com PostgreSQL real', () => {
     expect(
       (await service.findOne({ id: carga.id })).produtoQuimico.numeroONU,
     ).toBe('1090');
-    expect((await service.findAll())[0].produtoQuimico.numeroONU).toBe('1090');
+    const list = await service.findAll({
+      paginatedSort: { page: 1, limit: 10, column: 'id', order: 'asc' },
+    });
+    expect(list.data[0].produtoQuimico.numeroONU).toBe('1090');
   });
 });

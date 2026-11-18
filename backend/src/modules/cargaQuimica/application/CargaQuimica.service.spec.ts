@@ -25,6 +25,7 @@ describe('CargaQuimicaService', () => {
     produtosQuimicos: { findUnique: vi.fn() },
     user: { findUnique: vi.fn() },
     cargaQuimicas: {
+      count: vi.fn(),
       create: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -188,7 +189,8 @@ describe('CargaQuimicaService', () => {
   });
 
   describe('consultas', () => {
-    it('lista cargas em ordem crescente com documentos e código público', async () => {
+    it('lista cargas paginadas e ordenadas com documentos e código público', async () => {
+      prismaMock.cargaQuimicas.count.mockResolvedValue(3);
       prismaMock.cargaQuimicas.findMany.mockResolvedValue([
         {
           ...carga(S.CADASTRADA),
@@ -203,7 +205,14 @@ describe('CargaQuimicaService', () => {
         },
       ]);
 
-      const result = await service.findAll();
+      const result = await service.findAll({
+        paginatedSort: {
+          page: 2,
+          limit: 2,
+          column: 'dataEntrada',
+          order: 'desc',
+        },
+      });
 
       expect(prismaMock.cargaQuimicas.findMany).toHaveBeenCalledWith({
         include: {
@@ -220,10 +229,18 @@ describe('CargaQuimicaService', () => {
             select: { id: true, name: true, email: true },
           },
         },
-        orderBy: { id: 'asc' },
+        skip: 2,
+        take: 2,
+        orderBy: { dataEntrada: 'desc' },
       });
-      expect(result[0].codigo).toBe('CQ-000010');
-      expect(result[0].produtoQuimico.numeroONU).toBe('1090');
+      expect(prismaMock.cargaQuimicas.count).toHaveBeenCalledExactlyOnceWith();
+      expect(result).toMatchObject({
+        data: [{ codigo: 'CQ-000010', produtoQuimico: { numeroONU: '1090' } }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
     });
 
     it('devolve 404 ao consultar carga inexistente', async () => {

@@ -31,6 +31,10 @@ import {
   perfilPodeCancelar,
   type UsuarioLogado,
 } from './CargaQuimica.permissoes.js';
+import { PaginatedSortQueryDto } from '../../../infra/paginatedSort/paginated-sort.query.dtos.js';
+import { adjustPaginationAndSortOptions } from '../../../infra/paginatedSort/paginated-sort.utils.js';
+import { Prisma } from '../../../infra/database/generated/prisma/client.js';
+import { PaginatedResponseDto } from '../../../infra/paginatedSort/pagination/paginated.response.dtos.js';
 
 const INCLUDE_CARGA = {
   produtoQuimico: true,
@@ -61,6 +65,8 @@ function isFileNotFound(error: unknown): boolean {
 
 @Injectable()
 export class CargaQuimicaService {
+  public readonly fields = Prisma.CargaQuimicasScalarFieldEnum;
+
   private readonly logger = new Logger(CargaQuimicaService.name);
 
   constructor(private readonly prisma: PrismaService) {}
@@ -110,12 +116,27 @@ export class CargaQuimicaService {
     return await this.findOne({ id: carga.id });
   }
 
-  async findAll(): Promise<CargaQuimicaResponseDto[]> {
-    const cargas = await this.prisma.cargaQuimicas.findMany({
-      include: INCLUDE_CARGA,
-      orderBy: { id: 'asc' },
-    });
-    return cargas.map((carga) => this.toResponse(carga));
+  async findAll({
+    paginatedSort,
+  }: {
+    paginatedSort: PaginatedSortQueryDto;
+  }): Promise<PaginatedResponseDto<CargaQuimicaResponseDto>> {
+    const [cargas, total] = await Promise.all([
+      this.prisma.cargaQuimicas.findMany({
+        include: INCLUDE_CARGA,
+        ...adjustPaginationAndSortOptions({
+          paginatedSort,
+          fields: this.fields,
+        }),
+      }),
+      this.prisma.cargaQuimicas.count(),
+    ]);
+    return new PaginatedResponseDto(
+      cargas.map((carga) => this.toResponse(carga)),
+      paginatedSort.page,
+      paginatedSort.limit,
+      total,
+    );
   }
 
   async findOne({ id }: { id: number }): Promise<CargaQuimicaResponseDto> {

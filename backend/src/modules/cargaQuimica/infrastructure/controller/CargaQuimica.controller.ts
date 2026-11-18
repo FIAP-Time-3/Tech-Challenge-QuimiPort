@@ -13,6 +13,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   StreamableFile,
   UploadedFile,
@@ -51,6 +52,8 @@ import {
   DocumentoResponseDto,
   MovimentacaoResponseDto,
 } from '../dtos/CargaQuimica.response.dtos.js';
+import { PaginatedSortQueryDto } from '../../../../infra/paginatedSort/paginated-sort.query.dtos.js';
+import { PaginatedResponseDto } from '../../../../infra/paginatedSort/pagination/paginated.response.dtos.js';
 
 interface RequisicaoAutenticada {
   user: UsuarioLogado;
@@ -119,8 +122,10 @@ export class CargaQuimicaController {
   @ApiOperation({ summary: 'Listar cargas químicas' })
   @Get()
   @ApiOkResponse({ type: [CargaQuimicaResponseDto] })
-  async findAll(): Promise<CargaQuimicaResponseDto[]> {
-    return await this.service.findAll();
+  async findAll(
+    @Query() paginatedSort: PaginatedSortQueryDto,
+  ): Promise<PaginatedResponseDto<CargaQuimicaResponseDto>> {
+    return await this.service.findAll({ paginatedSort });
   }
 
   @ApiOperation({ summary: 'Buscar carga química por id' })

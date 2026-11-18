@@ -50,6 +50,7 @@ describe('API HTTP (e2e)', () => {
       role: 'ADMINISTRADOR',
       status: true,
     });
+    prismaMock.produtosQuimicos.count.mockResolvedValue(0);
     prismaMock.produtosQuimicos.findMany.mockResolvedValue([]);
     prismaMock.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
 
@@ -150,7 +151,7 @@ describe('API HTTP (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/produtos-quimicos')
         .set('Authorization', `Bearer ${token}`)
-        .expect(200);
+        .expect(200, { data: [], page: 1, limit: 10, total: 0, totalPages: 0 });
 
       await request(app.getHttpServer())
         .post('/api/produtos-quimicos')
@@ -168,11 +169,6 @@ describe('API HTTP (e2e)', () => {
     { path: '/api/users', model: 'user', key: 'id' },
     { path: '/api/produtos-quimicos', model: 'produtosQuimicos', key: 'id' },
     { path: '/api/cargas-quimicas', model: 'cargaQuimicas', key: 'id' },
-    {
-      path: '/api/cargas-quimicas/1/historico',
-      model: 'movimentacoes',
-      key: 'step',
-    },
   ] as const)('pagina a listagem em $path', async ({ path, model, key }) => {
     const rows = [1, 2, 3].map((id) => ({ id, step: id }));
     const { count, findMany } = prismaMock[model];
@@ -180,7 +176,6 @@ describe('API HTTP (e2e)', () => {
     findMany.mockImplementation(({ skip = 0, take = rows.length } = {}) =>
       rows.slice(skip, skip + take),
     );
-    prismaMock.cargaQuimicas.findUnique.mockResolvedValue({ id: 1 });
     const token = await app
       .get(JwtService)
       .signAsync({ id: 1, token_use: 'access' });
@@ -203,6 +198,26 @@ describe('API HTTP (e2e)', () => {
       expect.objectContaining({ skip: 2, take: 2 }),
     );
     expect(count).toHaveBeenCalledOnce();
+  });
+
+  it('retorna o histórico da carga em ordem de etapa', async () => {
+    const rows = [1, 2, 3].map((step) => ({ step }));
+    prismaMock.cargaQuimicas.findUnique.mockResolvedValue({ id: 1 });
+    prismaMock.movimentacoes.findMany.mockResolvedValue(rows);
+    const token = await app
+      .get(JwtService)
+      .signAsync({ id: 1, token_use: 'access' });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/cargas-quimicas/1/historico')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(response.body).toEqual(rows);
+    expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
+      where: { cargaQuimicaId: 1 },
+      orderBy: { step: 'asc' },
+    });
   });
 
   it('retorna todos os próximos status mesmo com parâmetros de paginação', async () => {
