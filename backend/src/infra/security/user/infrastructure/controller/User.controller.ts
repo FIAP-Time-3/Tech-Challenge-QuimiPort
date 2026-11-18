@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ import {
   CreateFirstUserDto,
   CreateUserDto,
   UpdateUserDto,
+  UserPasswordResetDto,
 } from '../dtos/User.request.dtos.js';
 import { UserResponseDto } from '../dtos/User.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowedRoles.decorator.js';
@@ -107,6 +109,24 @@ export class UserController {
     @Body() body: UpdateUserDto,
   ): Promise<UserResponseDto> {
     return await this.service.update({ id, body });
+  }
+
+  @Patch('password/:id')
+  @ApiAuthenticated()
+  @ApiErrors(403)
+  @AllowedRoles([RolesEnum.ADMINISTRADOR])
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
+  @ApiOperation({
+    summary: 'Reset de senha por ID',
+    description: 'Acessível somente para ADMINISTRADORES',
+  })
+  @ApiOkResponse({ type: UserResponseDto })
+  @ApiErrors(400, 404, 409)
+  async resetPassword(
+    @Param('id', new ParseIntPipe()) id: number,
+    @Body() body: UserPasswordResetDto,
+  ): Promise<UserResponseDto> {
+    return await this.service.resetPassword({ id, body });
   }
 
   @Delete(':id')

@@ -69,3 +69,27 @@ export class CreateFirstUserDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class UserPasswordResetDto {
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}
+
+export class UserPasswordChangeDto {
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword: string;
+
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+
+  @ApiProperty({ format: 'password', writeOnly: true })
+  @IsString()
+  @IsNotEmpty()
+  newPasswordConfirm: string;
+}

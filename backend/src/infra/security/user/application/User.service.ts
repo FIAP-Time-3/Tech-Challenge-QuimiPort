@@ -10,6 +10,8 @@ import {
   CreateFirstUserDto,
   CreateUserDto,
   UpdateUserDto,
+  UserPasswordChangeDto,
+  UserPasswordResetDto,
 } from '../infrastructure/dtos/User.request.dtos.js';
 import { UserResponseDto } from '../infrastructure/dtos/User.response.dtos.js';
 import { PrismaService } from '../../../database/prisma.service.js';
@@ -114,6 +116,75 @@ export class UserService {
         name: this.normalizeName(body.name),
         roles: body.roles ?? [],
         status: body.status,
+      },
+    });
+
+    return this.toResponse(updatedUser);
+  }
+
+  async resetPassword({
+    id,
+    body,
+  }: {
+    id: number;
+    body: UserPasswordResetDto;
+  }) {
+    const user = await this.prisma.user.findFirst({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('Usuário Invalido');
+    }
+
+    const hashedPassword = await PasswordService.hash({
+      password: body.newPassword,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return this.toResponse(updatedUser);
+  }
+
+  async changePassword({
+    id,
+    body,
+  }: {
+    id: number;
+    body: UserPasswordChangeDto;
+  }) {
+    const { currentPassword, newPassword, newPasswordConfirm } = body;
+    const user = await this.prisma.user.findFirst({ where: { id } });
+
+    if (!user) {
+      throw new BadRequestException('Usuário Invalido');
+    }
+
+    const isValidPassword = await PasswordService.compare({
+      hash: user.password,
+      password: currentPassword,
+    });
+
+    if (!isValidPassword) {
+      throw new BadRequestException('Senha incorreta');
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      throw new BadRequestException(
+        'Senha e Confirmação de senha devem ser iguais',
+      );
+    }
+    const hashedPassword = await PasswordService.hash({
+      password: body.newPassword,
+    });
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
       },
     });
 
