@@ -4,8 +4,6 @@ import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 import configuration from './src/infra/configurations/configurations.js';
 
-console.log(configuration().database.url);
-
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
