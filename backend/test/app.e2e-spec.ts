@@ -197,27 +197,44 @@ describe('API HTTP (e2e)', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 2, take: 2 }),
     );
-    expect(count).toHaveBeenCalledOnce();
+    expect(count.mock.calls.filter((args) => args.length === 0)).toHaveLength(
+      1,
+    );
   });
 
-  it('retorna o histórico da carga em ordem de etapa', async () => {
+  it('pagina o histórico da carga em ordem de etapa', async () => {
     const rows = [1, 2, 3].map((step) => ({ step }));
+    const where = { cargaQuimicaId: 1 };
+    const { count, findMany } = prismaMock.movimentacoes;
     prismaMock.cargaQuimicas.findUnique.mockResolvedValue({ id: 1 });
-    prismaMock.movimentacoes.findMany.mockResolvedValue(rows);
+    count.mockResolvedValue(rows.length);
+    findMany.mockImplementation(({ skip = 0, take = rows.length } = {}) =>
+      rows.slice(skip, skip + take),
+    );
     const token = await app
       .get(JwtService)
       .signAsync({ id: 1, token_use: 'access' });
 
     const response = await request(app.getHttpServer())
       .get('/api/cargas-quimicas/1/historico')
+      .query({ page: 2, limit: 2 })
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(response.body).toEqual(rows);
-    expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
-      where: { cargaQuimicaId: 1 },
-      orderBy: { step: 'asc' },
+    expect(response.body).toEqual({
+      data: [{ step: 3 }],
+      page: 2,
+      limit: 2,
+      total: 3,
+      totalPages: 2,
     });
+    expect(findMany).toHaveBeenCalledWith({
+      where,
+      orderBy: { step: 'asc' },
+      skip: 2,
+      take: 2,
+    });
+    expect(count).toHaveBeenCalledExactlyOnceWith({ where });
   });
 
   it('retorna todos os próximos status mesmo com parâmetros de paginação', async () => {

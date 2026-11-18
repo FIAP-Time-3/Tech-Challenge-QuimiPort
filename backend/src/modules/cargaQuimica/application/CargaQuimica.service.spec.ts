@@ -31,7 +31,12 @@ describe('CargaQuimicaService', () => {
       findMany: vi.fn(),
       update: vi.fn(),
     },
-    movimentacoes: { create: vi.fn(), aggregate: vi.fn(), findMany: vi.fn() },
+    movimentacoes: {
+      create: vi.fn(),
+      aggregate: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
     documentoCargas: {
       findFirst: vi.fn(),
       create: vi.fn(),
@@ -251,18 +256,72 @@ describe('CargaQuimicaService', () => {
       );
     });
 
-    it('consulta histórico em ordem crescente de step', async () => {
+    it('pagina o histórico da carga em ordem crescente de step', async () => {
+      const where = { cargaQuimicaId: 10 };
+      const query = {
+        id: 10,
+        paginatedSort: { page: 2, limit: 2, column: 'id', order: 'asc' },
+      };
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
+        carga(S.EM_PREPARACAO),
+      );
+      prismaMock.movimentacoes.findMany.mockResolvedValue([
+        { id: 13, step: 3, statusAtual: S.EM_PREPARACAO },
+      ]);
+      prismaMock.movimentacoes.count.mockResolvedValue(3);
+
+      const result = await service.historico(query);
+
+      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledExactlyOnceWith(
+        {
+          where,
+          orderBy: { step: 'asc' },
+          skip: 2,
+          take: 2,
+        },
+      );
+      expect(prismaMock.movimentacoes.count).toHaveBeenCalledExactlyOnceWith({
+        where,
+      });
+      expect(result).toMatchObject({
+        data: [{ id: 13, step: 3, statusAtual: S.EM_PREPARACAO }],
+        page: 2,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
+      });
+    });
+
+    it('mantém o total do histórico quando a página solicitada está vazia', async () => {
+      const query = {
+        id: 10,
+        paginatedSort: { page: 3, limit: 2, column: 'id', order: 'asc' },
+      };
       prismaMock.cargaQuimicas.findUnique.mockResolvedValue(
         carga(S.EM_PREPARACAO),
       );
       prismaMock.movimentacoes.findMany.mockResolvedValue([]);
+      prismaMock.movimentacoes.count.mockResolvedValue(3);
 
-      await expect(service.historico({ id: 10 })).resolves.toEqual([]);
-
-      expect(prismaMock.movimentacoes.findMany).toHaveBeenCalledWith({
-        where: { cargaQuimicaId: 10 },
-        orderBy: { step: 'asc' },
+      await expect(service.historico(query)).resolves.toMatchObject({
+        data: [],
+        page: 3,
+        limit: 2,
+        total: 3,
+        totalPages: 2,
       });
+    });
+
+    it('devolve 404 ao consultar o histórico de carga inexistente', async () => {
+      const query = {
+        id: 99,
+        paginatedSort: { page: 1, limit: 10, column: 'id', order: 'asc' },
+      };
+      prismaMock.cargaQuimicas.findUnique.mockResolvedValue(null);
+
+      await expect(service.historico(query)).rejects.toThrow(NotFoundException);
+      expect(prismaMock.movimentacoes.findMany).not.toHaveBeenCalled();
+      expect(prismaMock.movimentacoes.count).not.toHaveBeenCalled();
     });
   });
 

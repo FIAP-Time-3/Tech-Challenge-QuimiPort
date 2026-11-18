@@ -150,8 +150,9 @@ export class CargaQuimicaController {
   @ApiErrors(400, 404)
   async historico(
     @Param('id', new ParseIntPipe()) id: number,
-  ): Promise<MovimentacaoResponseDto[]> {
-    return await this.service.historico({ id });
+    @Query() paginatedSort: PaginatedSortQueryDto,
+  ): Promise<PaginatedResponseDto<MovimentacaoResponseDto>> {
+    return await this.service.historico({ id, paginatedSort });
   }
 
   @AllowedRoles(PERFIS_CADASTRO)

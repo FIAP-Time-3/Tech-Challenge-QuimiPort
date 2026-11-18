@@ -150,15 +150,36 @@ export class CargaQuimicaService {
     return this.toResponse(carga);
   }
 
-  async historico({ id }: { id: number }): Promise<MovimentacaoResponseDto[]> {
+  async historico({
+    id,
+    paginatedSort,
+  }: {
+    id: number;
+    paginatedSort: PaginatedSortQueryDto;
+  }): Promise<PaginatedResponseDto<MovimentacaoResponseDto>> {
     await this.getCarga(id);
-    const movimentacoes = await this.prisma.movimentacoes.findMany({
-      where: { cargaQuimicaId: id },
-      orderBy: { step: 'asc' },
-    });
-    return plainToInstance(MovimentacaoResponseDto, movimentacoes, {
-      excludeExtraneousValues: true,
-    });
+    const [movimentacoes, total] = await Promise.all([
+      this.prisma.movimentacoes.findMany({
+        where: { cargaQuimicaId: id },
+        ...adjustPaginationAndSortOptions({
+          paginatedSort,
+          fields: this.fields,
+        }),
+        orderBy: { step: 'asc' },
+      }),
+      this.prisma.movimentacoes.count({
+        where: { cargaQuimicaId: id },
+      }),
+    ]);
+
+    return new PaginatedResponseDto(
+      plainToInstance(MovimentacaoResponseDto, movimentacoes, {
+        excludeExtraneousValues: true,
+      }),
+      paginatedSort.page,
+      paginatedSort.limit,
+      total,
+    );
   }
 
   async update({

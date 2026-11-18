@@ -61,14 +61,23 @@ describe('CargaQuimicaController', () => {
     expect(serviceMock.findAll).toHaveBeenCalledWith({ paginatedSort });
   });
 
-  it('encaminha id para busca da carga e do histórico', async () => {
+  it('encaminha id para busca da carga', async () => {
     serviceMock.findOne.mockResolvedValue({ id: 10 });
-    serviceMock.historico.mockResolvedValue([]);
 
     await expect(controller.findOne(10)).resolves.toEqual({ id: 10 });
-    await expect(controller.historico(10)).resolves.toEqual([]);
     expect(serviceMock.findOne).toHaveBeenCalledWith({ id: 10 });
-    expect(serviceMock.historico).toHaveBeenCalledWith({ id: 10 });
+  });
+
+  it('encaminha id e paginação e devolve a página do histórico', async () => {
+    const paginatedSort = { page: 2, limit: 5, column: 'id', order: 'asc' };
+    const result = { data: [], page: 2, limit: 5, total: 0, totalPages: 0 };
+    serviceMock.historico.mockResolvedValue(result);
+
+    await expect(controller.historico(10, paginatedSort)).resolves.toBe(result);
+    expect(serviceMock.historico).toHaveBeenCalledWith({
+      id: 10,
+      paginatedSort,
+    });
   });
 
   it('encaminha id e dados ao atualizar carga', async () => {
