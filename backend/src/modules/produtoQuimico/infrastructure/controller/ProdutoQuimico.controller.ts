@@ -27,12 +27,6 @@ import { ProdutoQuimicoService } from '../../application/ProdutoQuimico.service.
 import { CreateOrUpdateProdutoQuimicoDto } from '../dtos/ProdutoQuimico.request.dtos.js';
 import { ProdutoQuimicoResponseDto } from '../dtos/ProdutoQuimico.response.dtos.js';
 
-@AllowedRoles([
-  RolesEnum.ADMINISTRADOR,
-  RolesEnum.GESTOR,
-  RolesEnum.OPERADOR,
-  RolesEnum.TECNICO,
-])
 @ApiAuthenticated()
 @ApiErrors(403)
 @ApiTags('Produtos químicos')
@@ -40,6 +34,7 @@ import { ProdutoQuimicoResponseDto } from '../dtos/ProdutoQuimico.response.dtos.
 export class ProdutoQuimicoController {
   constructor(private readonly service: ProdutoQuimicoService) {}
 
+  @AllowedRoles([RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR])
   @ApiOperation({
     summary: 'Cadastrar produto químico',
     description:
@@ -72,6 +67,7 @@ export class ProdutoQuimicoController {
     return await this.service.findOne({ id });
   }
 
+  @AllowedRoles([RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR])
   @ApiOperation({ summary: 'Atualizar produto químico' })
   @ApiOkResponse({ type: ProdutoQuimicoResponseDto })
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
@@ -84,6 +80,7 @@ export class ProdutoQuimicoController {
     return await this.service.update({ id, body });
   }
 
+  @AllowedRoles([RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR])
   @ApiOperation({
     summary: 'Inativar produto químico',
     description:
@@ -99,6 +96,7 @@ export class ProdutoQuimicoController {
     return await this.service.inativar({ id });
   }
 
+  @AllowedRoles([RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR])
   @ApiOperation({
     summary: 'Excluir produto químico',
     description:

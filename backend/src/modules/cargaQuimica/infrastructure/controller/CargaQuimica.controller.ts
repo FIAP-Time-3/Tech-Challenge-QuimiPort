@@ -60,24 +60,10 @@ interface ArquivoPdfUpload {
   buffer: Buffer;
 }
 
-const PERFIS_CADASTRO = [
-  RolesEnum.ADMINISTRADOR,
-  RolesEnum.GESTOR,
-  RolesEnum.OPERADOR,
-];
-const PERFIS_CANCELAMENTO = [RolesEnum.ADMINISTRADOR, RolesEnum.GESTOR];
-const PERFIS_ANEXAR_DOCUMENTO = [
-  RolesEnum.ADMINISTRADOR,
-  RolesEnum.GESTOR,
-  RolesEnum.TECNICO,
-  RolesEnum.DOCUMENTACAO,
-];
-const PERFIS_VALIDAR_DOCUMENTO = [
-  RolesEnum.ADMINISTRADOR,
-  RolesEnum.GESTOR,
-  RolesEnum.QUALIDADE,
-  RolesEnum.INSPETOR,
-];
+const PERFIS_CADASTRO = [RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR];
+const PERFIS_CANCELAMENTO = [RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR];
+const PERFIS_ANEXAR_DOCUMENTO = [RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR];
+const PERFIS_VALIDAR_DOCUMENTO = [RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR];
 
 @ApiAuthenticated()
 @ApiErrors(403)

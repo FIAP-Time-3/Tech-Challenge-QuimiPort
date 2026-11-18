@@ -8,10 +8,10 @@ export interface UsuarioLogado {
 
 // Quem atua em cada etapa (PM-04 a PM-07). Administrador e gestor atuam em todas.
 const PERFIS_POR_STATUS: Record<S, RolesEnum[]> = {
-  [S.CADASTRADA]: [RolesEnum.TECNICO],
-  [S.EM_PREPARACAO]: [RolesEnum.TECNICO, RolesEnum.DOCUMENTACAO],
-  [S.EM_INSPECAO]: [RolesEnum.QUALIDADE, RolesEnum.INSPETOR],
-  [S.BLOQUEADA]: [RolesEnum.TECNICO],
+  [S.CADASTRADA]: [RolesEnum.OPERADOR],
+  [S.EM_PREPARACAO]: [RolesEnum.OPERADOR, RolesEnum.OPERADOR],
+  [S.EM_INSPECAO]: [RolesEnum.OPERADOR, RolesEnum.OPERADOR],
+  [S.BLOQUEADA]: [RolesEnum.OPERADOR],
   [S.LIBERADA]: [RolesEnum.OPERADOR],
   [S.EM_MOVIMENTACAO]: [RolesEnum.OPERADOR],
   [S.FINALIZADA]: [],
@@ -20,7 +20,8 @@ const PERFIS_POR_STATUS: Record<S, RolesEnum[]> = {
 
 export function perfilPodeCancelar(roles: string[]): boolean {
   return (
-    roles.includes(RolesEnum.ADMINISTRADOR) || roles.includes(RolesEnum.GESTOR)
+    roles.includes(RolesEnum.ADMINISTRADOR) ||
+    roles.includes(RolesEnum.OPERADOR)
   );
 }
 
