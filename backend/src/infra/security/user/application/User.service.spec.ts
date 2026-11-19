@@ -86,7 +86,7 @@ describe('UserService', () => {
           email: 'LoginOriginal@email.com',
         }),
       });
-      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.count.mockResolvedValueOnce(0);
       const editBody = { ...updateBody, name: body.name, email: body.email };
       await service.update({ id: 8, body: editBody });
       expect(prismaMock.user.update).toHaveBeenCalledWith({
@@ -229,7 +229,7 @@ describe('UserService', () => {
     });
 
     it('atualiza usuário sem gerar hash nem gravar senha', async () => {
-      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.count.mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
       prismaMock.user.update.mockResolvedValue({
         id: 20,
@@ -252,7 +252,7 @@ describe('UserService', () => {
     });
 
     it('não fornece status nem senha ao Prisma quando omitidos na edição', async () => {
-      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+      prismaMock.user.count.mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue({ id: 20, status: false });
       prismaMock.user.update.mockResolvedValue({
         id: 20,
@@ -283,7 +283,7 @@ describe('UserService', () => {
     it.each([true, false])(
       'encaminha status explícito %s sem gerar senha',
       async (status) => {
-        prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+        prismaMock.user.count.mockResolvedValueOnce(0);
         prismaMock.user.findUnique.mockResolvedValue({ id: 20 });
         prismaMock.user.update.mockResolvedValue({
           id: 20,
@@ -301,7 +301,6 @@ describe('UserService', () => {
     );
 
     it('devolve 404 ao atualizar usuário inexistente sem gerar hash', async () => {
-      prismaMock.user.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -319,9 +318,11 @@ describe('UserService', () => {
       });
       prismaMock.user.count.mockResolvedValue(0);
 
-      await expect(service.remove({ id: 1 })).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.remove({ id: 1 })).rejects.toMatchObject({
+        name: BadRequestException.name,
+        message: 'Nenhum ADMINISTRADOR no sistema',
+        status: 400,
+      });
       expect(prismaMock.user.count).toHaveBeenCalledWith({
         where: {
           role: RolesEnum.ADMINISTRADOR,
@@ -430,7 +431,6 @@ describe('UserService', () => {
 
     it('devolve 404 ao tentar editar ou inativar um ID inexistente', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
-      prismaMock.user.count.mockResolvedValue(0);
 
       await expect(service.update({ id: 404, body: changes })).rejects.toThrow(
         NotFoundException,

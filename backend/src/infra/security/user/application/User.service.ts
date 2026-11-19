@@ -33,9 +33,7 @@ export class UserService {
   }: {
     body: CreateFirstUserDto;
   }): Promise<UserResponseDto> {
-    return await this.prisma.$transaction(async (transaction) => {
-      // Serializa o primeiro cadastro entre requisições e instâncias da API.
-      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
+    return this.withAdminLock(async (transaction) => {
       const countAdmin = await transaction.user.count({
         where: { role: RolesEnum.ADMINISTRADOR, status: true },
       });
@@ -102,8 +100,11 @@ export class UserService {
     );
   }
 
-  async findOne({ id }: { id: number }): Promise<UserResponseDto> {
-    const user = await this.prisma.user.findUnique({
+  async findOne(
+    { id }: { id: number },
+    database: Pick<PrismaService, 'user'> = this.prisma,
+  ): Promise<UserResponseDto> {
+    const user = await database.user.findUnique({
       where: { id },
     });
 
@@ -121,28 +122,37 @@ export class UserService {
     id: number;
     body: UpdateUserDto;
   }): Promise<UserResponseDto> {
-    await this.validateUniqueAdmin({ id });
+    return this.withAdminLock(async (transaction) => {
+      const user = await transaction.user.findUnique({
+        where: { id },
+      });
 
-    await this.checkDuplicated({ body, id });
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+      if (!user) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      if (
+        user.role === RolesEnum.ADMINISTRADOR &&
+        user.status &&
+        (body.role !== RolesEnum.ADMINISTRADOR || body.status === false)
+      ) {
+        await this.validateUniqueAdmin({ id }, transaction);
+      }
+
+      await this.checkDuplicated({ body, id }, transaction);
+
+      const updatedUser = await transaction.user.update({
+        where: { id },
+        data: {
+          email: body.email,
+          name: this.normalizeName(body.name),
+          role: body.role,
+          status: body.status,
+        },
+      });
+
+      return this.toResponse(updatedUser);
     });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: {
-        email: body.email,
-        name: this.normalizeName(body.name),
-        role: body.role,
-        status: body.status,
-      },
-    });
-
-    return this.toResponse(updatedUser);
   }
 
   async resetPassword({
@@ -215,16 +225,20 @@ export class UserService {
   }
 
   async remove({ id }: { id: number }): Promise<{ id: number }> {
-    await this.validateUniqueAdmin({ id });
+    return this.withAdminLock(async (transaction) => {
+      const user = await this.findOne({ id }, transaction);
 
-    await this.findOne({ id });
+      if (user.role === RolesEnum.ADMINISTRADOR && user.status) {
+        await this.validateUniqueAdmin({ id }, transaction);
+      }
 
-    await this.prisma.user.update({
-      where: { id },
-      data: { status: false },
+      await transaction.user.update({
+        where: { id },
+        data: { status: false },
+      });
+
+      return { id };
     });
-
-    return { id };
   }
 
   private async checkDuplicated(
@@ -248,8 +262,23 @@ export class UserService {
     }
   }
 
-  private async validateUniqueAdmin({ id }: { id: number }) {
-    const countAdmin = await this.prisma.user.count({
+  private withAdminLock<T>(
+    operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(
+      async (transaction) => {
+        await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
+        return operation(transaction);
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  }
+
+  private async validateUniqueAdmin(
+    { id }: { id: number },
+    database: Pick<PrismaService, 'user'>,
+  ) {
+    const countAdmin = await database.user.count({
       where: {
         role: RolesEnum.ADMINISTRADOR,
         status: true,
