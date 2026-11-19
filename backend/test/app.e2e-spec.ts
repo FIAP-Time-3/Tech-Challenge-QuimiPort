@@ -14,12 +14,24 @@ describe('API HTTP (e2e)', () => {
   let app: INestApplication<App>;
   let swaggerDir: string;
 
+  const user = {
+    id: 1,
+    name: 'Maria Souza',
+    email: 'maria@example.com',
+    role: RolesEnum.OPERADOR,
+    status: true,
+  };
+  const password = 'senha-atual';
+  const newPassword = 'nova-senha';
+
   const prismaMock = {
     user: {
       count: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     produtosQuimicos: {
       count: vi.fn(),
@@ -37,12 +49,17 @@ describe('API HTTP (e2e)', () => {
       findMany: vi.fn(),
     },
     $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
+    $transaction: vi.fn(),
   };
 
   beforeEach(async () => {
     process.env.JWT_SECRET = 'e2e-test-secret';
     process.env.PASSWORD_SALT = '4';
     vi.resetAllMocks();
+    prismaMock.$transaction.mockImplementation(async (operation) =>
+      operation(prismaMock),
+    );
     prismaMock.user.count.mockResolvedValue(1);
     prismaMock.user.findFirst.mockResolvedValue({
       id: 1,
@@ -308,6 +325,155 @@ describe('API HTTP (e2e)', () => {
         expect(JSON.stringify(body)).not.toContain('stored-password-hash');
       });
   });
+
+  it.each([
+    { activeAdmins: 0, expectedStatus: 201 },
+    { activeAdmins: 1, expectedStatus: 403 },
+  ])(
+    'permite primeiro acesso sem token com $activeAdmins administradores ativos e retorna $expectedStatus',
+    async ({ activeAdmins, expectedStatus }) => {
+      const { name, email } = user;
+      prismaMock.user.count
+        .mockResolvedValueOnce(activeAdmins)
+        .mockResolvedValueOnce(0);
+      prismaMock.user.create.mockResolvedValue({
+        ...user,
+        role: RolesEnum.ADMINISTRADOR,
+      });
+
+      await request(app.getHttpServer())
+        .post('/api/users/first_access')
+        .send({ name, email, password })
+        .expect(expectedStatus);
+
+      expect(prismaMock.user.findFirst).not.toHaveBeenCalled();
+      expect(prismaMock.user.create).toHaveBeenCalledTimes(
+        expectedStatus === 201 ? 1 : 0,
+      );
+    },
+  );
+
+  it('exige token para consultar a própria conta e trocar a própria senha', async () => {
+    const client = request(app.getHttpServer());
+    await client.get('/api/me').expect(401);
+    await client
+      .patch('/api/me/password')
+      .send({
+        currentPassword: password,
+        newPassword,
+        newPasswordConfirm: newPassword,
+      })
+      .expect(401);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it.each(Object.values(RolesEnum))(
+    'permite que %s consulte a própria conta e troque a própria senha',
+    async (role) => {
+      const { PasswordService } = await import(
+        '../src/infra/security/password/password.service.js'
+      );
+      const currentUser = {
+        ...user,
+        role,
+        password: await PasswordService.hash({ password }),
+      };
+      prismaMock.user.findFirst.mockResolvedValue(currentUser);
+      prismaMock.user.findUnique.mockResolvedValue(currentUser);
+      prismaMock.user.update.mockResolvedValue(currentUser);
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: user.id, token_use: 'access' });
+      const client = request(app.getHttpServer());
+
+      const profile = await client
+        .get('/api/me')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(profile.body).toEqual({ ...user, role });
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id: user.id },
+      });
+
+      const changed = await client
+        .patch('/api/me/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: password,
+          newPassword,
+          newPasswordConfirm: newPassword,
+        })
+        .expect(200);
+      expect(changed.body).toEqual({ ...user, role });
+      expect(prismaMock.user.update).toHaveBeenCalledExactlyOnceWith({
+        where: { id: user.id },
+        data: { password: expect.any(String) },
+      });
+      const [{ data }] = prismaMock.user.update.mock.calls[0];
+      await expect(
+        PasswordService.compare({ password: newPassword, hash: data.password }),
+      ).resolves.toBe(true);
+    },
+  );
+
+  it.each([
+    {
+      method: 'post',
+      path: '/api/users',
+      body: { name: user.name, email: user.email, role: user.role, password },
+      success: 201,
+    },
+    { method: 'get', path: '/api/users', body: undefined, success: 200 },
+    { method: 'get', path: '/api/users/1', body: undefined, success: 200 },
+    {
+      method: 'put',
+      path: '/api/users/1',
+      body: { name: user.name, email: user.email, role: user.role },
+      success: 200,
+    },
+    {
+      method: 'patch',
+      path: '/api/users/password/1',
+      body: { newPassword },
+      success: 200,
+    },
+    { method: 'delete', path: '/api/users/1', body: undefined, success: 200 },
+  ] as const)(
+    'restringe $method $path a administradores',
+    async ({ method, path, body, success }) => {
+      prismaMock.user.count.mockImplementation(async (args) =>
+        args?.where?.email ? 0 : 1,
+      );
+      prismaMock.user.findMany.mockResolvedValue([user]);
+      prismaMock.user.findUnique.mockResolvedValue(user);
+      prismaMock.user.create.mockResolvedValue(user);
+      prismaMock.user.update.mockResolvedValue(user);
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: user.id, token_use: 'access' });
+      const client = request(app.getHttpServer());
+
+      const call = () => {
+        const pending = client[method](path);
+        return body ? pending.send(body) : pending;
+      };
+
+      await call().expect(401);
+      for (const role of [RolesEnum.OPERADOR, RolesEnum.DESPACHANTE]) {
+        prismaMock.user.findFirst.mockResolvedValue({ ...user, role });
+        await call().set('Authorization', `Bearer ${token}`).expect(403);
+      }
+      expect(prismaMock.user.create).not.toHaveBeenCalled();
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
+
+      prismaMock.user.findFirst.mockResolvedValue({
+        ...user,
+        role: RolesEnum.ADMINISTRADOR,
+      });
+      await call().set('Authorization', `Bearer ${token}`).expect(success);
+    },
+  );
 
   it('aplica validação global ao DTO de login', async () => {
     await request(app.getHttpServer())

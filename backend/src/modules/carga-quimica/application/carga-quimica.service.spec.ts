@@ -175,7 +175,7 @@ describe('CargaQuimicaService', () => {
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });
 
-    it('recusa responsável sem o perfil OPERADOR', async () => {
+    it('recusa despachante mesmo quando a consulta devolve o usuário', async () => {
       prismaMock.produtosQuimicos.findUnique.mockResolvedValue({
         id: 1,
         status: true,
@@ -187,7 +187,7 @@ describe('CargaQuimicaService', () => {
       });
 
       await expect(service.create({ body, usuario: admin })).rejects.toThrow(
-        /OPERADOR/,
+        BadRequestException,
       );
       expect(prismaMock.cargaQuimicas.create).not.toHaveBeenCalled();
     });

@@ -1,9 +1,12 @@
-import { ApiAuthenticated, ApiErrors } from '../../../../swagger/contracts.js';
+import {
+  ApiAuthenticated,
+  ApiErrors,
+} from '../../../../../swagger/contracts.js';
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserService } from '../../application/user.service.js';
-import { UserResponseDto } from '../dtos/user.response.dtos.js';
-import { UserPasswordChangeDto } from '../dtos/user.request.dtos.js';
+import { UserService } from '../../../application/user.service.js';
+import { UserResponseDto } from '../../dtos/user.response.dtos.js';
+import { UserPasswordChangeDto } from '../../dtos/user.request.dtos.js';
 
 @ApiTags('Usuários')
 @Controller('me')

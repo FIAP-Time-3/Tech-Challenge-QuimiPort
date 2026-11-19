@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { UserService } from '../../application/user.service.js';
+import { UserService } from '../../../application/user.service.js';
 import { MeController } from './me.controller.js';
 
 it('consulta o usuário pelo id autenticado, sem depender de perfil administrador', async () => {

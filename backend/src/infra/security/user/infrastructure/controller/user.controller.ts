@@ -25,7 +25,6 @@ import {
 } from '@nestjs/swagger';
 import { UserService } from '../../application/user.service.js';
 import {
-  CreateFirstUserDto,
   CreateUserDto,
   UpdateUserDto,
   UserPasswordResetDto,
@@ -33,37 +32,18 @@ import {
 import { UserResponseDto } from '../dtos/user.response.dtos.js';
 import { AllowedRoles } from '../../../decorators/allowed-roles.decorator.js';
 import { RolesEnum } from '../../../enums/roles.enum.js';
-import { SetPublic } from '../../../decorators/set-public.decorator.js';
 import { PaginatedSortQueryDto } from '../../../../paginated-sort/paginated-sort.query.dtos.js';
 import { PaginatedResponseDto } from '../../../../paginated-sort/pagination/paginated.response.dtos.js';
 
 @ApiTags('Usuários')
 @Controller('users')
+@AllowedRoles([RolesEnum.ADMINISTRADOR])
 export class UserController {
   constructor(private readonly service: UserService) {}
-
-  @ApiOperation({
-    summary: 'Criar o administrador inicial',
-    security: [],
-    description:
-      'Cadastro público permitido somente enquanto não existir administrador ativo.',
-  })
-  @ApiCreatedResponse({ type: UserResponseDto })
-  @ApiErrors(400, 403, 409)
-  @Post('first_access')
-  @SetPublic()
-  async createFirstAdmin(
-    @Body() body: CreateFirstUserDto,
-  ): Promise<UserResponseDto> {
-    return await this.service.createFirst({
-      body,
-    });
-  }
 
   @Post()
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiOperation({ summary: 'Cadastrar usuário' })
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiErrors(400, 409)
@@ -74,7 +54,6 @@ export class UserController {
   @Get()
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiOperation({ summary: 'Listar usuários' })
   @ApiPaginatedOkResponse(UserResponseDto)
   async findAll(
@@ -86,7 +65,6 @@ export class UserController {
   @Get(':id')
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiOperation({ summary: 'Consultar usuário' })
   @ApiOkResponse({ type: UserResponseDto })
@@ -101,7 +79,6 @@ export class UserController {
   @Put(':id')
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiOperation({
     summary: 'Editar usuário sem alterar senha',
@@ -120,7 +97,6 @@ export class UserController {
   @Patch('password/:id')
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiOperation({
     summary: 'Reset de senha por ID',
@@ -138,7 +114,6 @@ export class UserController {
   @Delete(':id')
   @ApiAuthenticated()
   @ApiErrors(403)
-  @AllowedRoles([RolesEnum.ADMINISTRADOR])
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiOperation({
     summary: 'Inativar usuário',

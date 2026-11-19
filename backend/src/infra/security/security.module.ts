@@ -1,4 +1,3 @@
-import { MeController } from './user/infrastructure/controller/me.controller.js';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth.guard.js';
@@ -10,6 +9,8 @@ import { PrismaService } from '../database/prisma.service.js';
 import { LoginService } from './login/application/login.service.js';
 import { UserController } from './user/infrastructure/controller/user.controller.js';
 import { UserService } from './user/application/user.service.js';
+import { FirstAdminController } from './user/infrastructure/controller/first-admin/first-admin.controller.js';
+import { MeController } from './user/infrastructure/controller/me/me.controller.js';
 
 @Module({
   imports: [
@@ -21,7 +22,12 @@ import { UserService } from './user/application/user.service.js';
     }),
   ],
   exports: [JwtModule],
-  controllers: [LoginController, UserController, MeController],
+  controllers: [
+    LoginController,
+    UserController,
+    MeController,
+    FirstAdminController,
+  ],
   providers: [
     UserService,
     PrismaService,
