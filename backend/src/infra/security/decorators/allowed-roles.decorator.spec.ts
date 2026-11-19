@@ -1,0 +1,14 @@
+import { RolesEnum } from '../enums/roles.enum.js';
+import { AllowedRoles } from './allowed-roles.decorator.js';
+
+describe('AllowedRoles', () => {
+  it('armazena um perfil informado individualmente', () => {
+    class Controller {}
+
+    AllowedRoles(RolesEnum.ADMINISTRADOR)(Controller);
+
+    expect(Reflect.getMetadata('roles', Controller)).toEqual([
+      RolesEnum.ADMINISTRADOR,
+    ]);
+  });
+});

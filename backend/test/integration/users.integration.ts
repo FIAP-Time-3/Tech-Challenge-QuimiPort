@@ -7,8 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
-import { UserService } from '../../src/infra/security/user/application/User.service.js';
-import { LoginService } from '../../src/infra/security/login/application/Login.service.js';
+import { UserService } from '../../src/infra/security/user/application/user.service.js';
+import { LoginService } from '../../src/infra/security/login/application/login.service.js';
 import { PasswordService } from '../../src/infra/security/password/password.service.js';
 import { RolesEnum } from '../../src/infra/security/enums/roles.enum.js';
 import { configureTestDatabase } from '../support/database-env.js';

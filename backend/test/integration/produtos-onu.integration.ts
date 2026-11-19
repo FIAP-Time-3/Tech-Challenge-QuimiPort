@@ -4,9 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { SecurityModule } from '../../src/infra/security/security.module.js';
-import { ProdutoQuimicoModule } from '../../src/modules/produtoQuimico/ProdutoQuimico.module.js';
+import { ProdutoQuimicoModule } from '../../src/modules/produto-quimico/produto-quimico.module.js';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
-import { CargaQuimicaService } from '../../src/modules/cargaQuimica/application/CargaQuimica.service.js';
+import { CargaQuimicaService } from '../../src/modules/carga-quimica/application/carga-quimica.service.js';
 import { RolesEnum } from '../../src/infra/security/enums/roles.enum.js';
 import { DatabaseExceptionFilter } from '../../src/infra/filters/database-exception.filter.js';
 

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoginService } from '../../application/Login.service.js';
+import { LoginService } from '../../application/login.service.js';
 import { LoginController } from './login.controller.js';
 
 describe('LoginController', () => {

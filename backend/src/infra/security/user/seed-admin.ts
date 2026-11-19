@@ -1,7 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { isEmail } from 'class-validator';
 import { PrismaService } from '../../database/prisma.service.js';
-import { UserService } from './application/User.service.js';
+import { UserService } from './application/user.service.js';
 
 async function seedAdmin() {
   const name = process.env.SEED_ADMIN_NAME?.trim();

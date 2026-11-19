@@ -5,7 +5,7 @@ import {
 } from './health.response.dtos.js';
 import { Controller, Get } from '@nestjs/common';
 import { HealthService } from './health.service.js';
-import { SetPublic } from '../security/decorators/setPublic.decorator.js';
+import { SetPublic } from '../security/decorators/set-public.decorator.js';
 
 @ApiTags('Saúde')
 @Controller('health')
