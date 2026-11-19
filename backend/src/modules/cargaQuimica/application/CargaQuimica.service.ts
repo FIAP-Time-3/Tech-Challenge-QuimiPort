@@ -492,7 +492,10 @@ export class CargaQuimicaService {
 
   private async getTecnicoAtivo(usuarioId: number) {
     const usuario = await this.prisma.user.findUnique({
-      where: { id: usuarioId },
+      where: {
+        id: usuarioId,
+        role: { in: [RolesEnum.ADMINISTRADOR, RolesEnum.OPERADOR] },
+      },
     });
     if (!usuario) {
       throw new BadRequestException('Responsável técnico não encontrado');
@@ -502,9 +505,13 @@ export class CargaQuimicaService {
         'Responsável técnico inativo não pode ser designado.',
       );
     }
-    if (usuario.role !== RolesEnum.OPERADOR) {
+    if (
+      ![RolesEnum.OPERADOR, RolesEnum.ADMINISTRADOR].includes(
+        usuario.role as RolesEnum,
+      )
+    ) {
       throw new BadRequestException(
-        'O usuário informado não possui o perfil OPERADOR.',
+        'O usuário informado não possui o perfil adequado (ADMINISTRADOR ou OPERADOR).',
       );
     }
     return usuario;
