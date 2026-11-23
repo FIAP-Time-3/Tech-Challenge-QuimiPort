@@ -1,3 +1,8 @@
+import type {
+  PaginatedResponseDto,
+  PaginationQueryDto,
+} from './pagination.dtos';
+
 export const UserRole = {
   ADMINISTRADOR: 'ADMINISTRADOR',
   OPERADOR: 'OPERADOR',
@@ -24,10 +29,8 @@ export interface UpdateUserRequestDto {
   status: boolean;
 }
 
-export interface ListUserQueryDto {
+export interface ListUserQueryDto extends PaginationQueryDto {
   email?: string;
-  page?: number;
-  limit?: number;
   column?: string;
   order?: 'asc' | 'desc';
 }
@@ -40,13 +43,7 @@ export interface UserResponseDto {
   status: boolean;
 }
 
-export interface ListUserResponseDto {
-  data: UserResponseDto[];
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+export type ListUserResponseDto = PaginatedResponseDto<UserResponseDto>;
 
 export interface RemoveUserResponseDto {
   id: number;

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { listAllPages } from '@/infrastructure/backend/listAllPages';
 import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtoQuimico.routes';
 import type { ProdutoQuimicoResponseDto } from '@/infrastructure/backend/dtos/produtoQuimico.dtos';
 import type {
@@ -19,7 +20,7 @@ function paraProdutoQuimico(data: ProdutoQuimicoResponseDto): ProdutoQuimico {
 }
 
 export async function listarProdutosQuimicos(): Promise<ProdutoQuimico[]> {
-  const { data } = await produtoQuimicoApiRoutes.findAll();
+  const data = await listAllPages(produtoQuimicoApiRoutes.findAll);
   return data.map(paraProdutoQuimico);
 }
 
