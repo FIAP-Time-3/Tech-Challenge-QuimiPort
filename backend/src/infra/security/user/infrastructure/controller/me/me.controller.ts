@@ -4,6 +4,7 @@ import {
 } from '../../../../../swagger/contracts.js';
 import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserCredentialsService } from '../../../application/user-credentials.service.js';
 import { UserService } from '../../../application/user.service.js';
 import { UserResponseDto } from '../../dtos/user.response.dtos.js';
 import { UserPasswordChangeDto } from '../../dtos/user.request.dtos.js';
@@ -11,7 +12,10 @@ import { UserPasswordChangeDto } from '../../dtos/user.request.dtos.js';
 @ApiTags('Usuários')
 @Controller('me')
 export class MeController {
-  constructor(private readonly service: UserService) {}
+  constructor(
+    private readonly service: UserService,
+    private readonly credentials: UserCredentialsService,
+  ) {}
 
   @Get()
   @ApiAuthenticated()
@@ -33,6 +37,6 @@ export class MeController {
     @Req() request: { user: { id: number } },
     @Body() body: UserPasswordChangeDto,
   ): Promise<UserResponseDto> {
-    return await this.service.changePassword({ id: request.user.id, body });
+    return await this.credentials.changePassword({ id: request.user.id, body });
   }
 }

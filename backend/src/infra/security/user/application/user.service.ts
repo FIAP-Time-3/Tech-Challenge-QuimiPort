@@ -1,19 +1,15 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
 import {
-  CreateFirstUserDto,
-  CreateUserDto,
-  UpdateUserDto,
-  UserPasswordChangeDto,
-  UserPasswordResetDto,
-} from '../infrastructure/dtos/user.request.dtos.js';
-import { UserResponseDto } from '../infrastructure/dtos/user.response.dtos.js';
+  toUserResponse,
+  type UserResponseDto,
+} from '../infrastructure/dtos/user.response.dtos.js';
+import { withAdminLock } from './admin-lock.js';
+import type { CreateUserInput, UpdateUserInput } from './user.inputs.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
 import { RolesEnum } from '../../enums/roles.enum.js';
@@ -28,34 +24,11 @@ export class UserService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createFirst({
-    body,
-  }: {
-    body: CreateFirstUserDto;
-  }): Promise<UserResponseDto> {
-    return this.withAdminLock(async (transaction) => {
-      const countAdmin = await transaction.user.count({
-        where: { role: RolesEnum.ADMINISTRADOR, status: true },
-      });
-      if (countAdmin > 0) {
-        throw new ForbiddenException(
-          'O administrador inicial já foi criado. Faça login.',
-        );
-      }
-      return await this.create(
-        {
-          body: { ...body, role: RolesEnum.ADMINISTRADOR, status: true },
-        },
-        transaction,
-      );
-    });
-  }
-
   async create(
     {
       body,
     }: {
-      body: CreateUserDto;
+      body: CreateUserInput;
     },
     database: Pick<PrismaService, 'user'> = this.prisma,
   ): Promise<UserResponseDto> {
@@ -74,7 +47,7 @@ export class UserService {
       },
     });
 
-    return this.toResponse(user);
+    return toUserResponse(user);
   }
 
   async findAll({
@@ -107,7 +80,7 @@ export class UserService {
     ]);
 
     return new PaginatedResponseDto(
-      users.map((user) => this.toResponse(user)),
+      users.map((user) => toUserResponse(user)),
       paginatedSort.page,
       paginatedSort.limit,
       total,
@@ -126,7 +99,7 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return this.toResponse(user);
+    return toUserResponse(user);
   }
 
   async update({
@@ -135,10 +108,10 @@ export class UserService {
     roleFilter = undefined,
   }: {
     id: number;
-    body: UpdateUserDto;
+    body: UpdateUserInput;
     roleFilter?: RolesEnum;
   }): Promise<UserResponseDto> {
-    return this.withAdminLock(async (transaction) => {
+    return withAdminLock(this.prisma, async (transaction) => {
       const user = await transaction.user.findUnique({
         where: { id, role: roleFilter ?? undefined },
       });
@@ -167,81 +140,8 @@ export class UserService {
         },
       });
 
-      return this.toResponse(updatedUser);
+      return toUserResponse(updatedUser);
     });
-  }
-
-  async resetPassword({
-    id,
-    body,
-    roleFilter = undefined,
-  }: {
-    id: number;
-    body: UserPasswordResetDto;
-    roleFilter?: RolesEnum;
-  }) {
-    const user = await this.prisma.user.findFirst({
-      where: { id, role: roleFilter ?? undefined },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário Invalido');
-    }
-
-    const hashedPassword = await PasswordService.hash({
-      password: body.newPassword,
-    });
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: {
-        password: hashedPassword,
-      },
-    });
-
-    return this.toResponse(updatedUser);
-  }
-
-  async changePassword({
-    id,
-    body,
-  }: {
-    id: number;
-    body: UserPasswordChangeDto;
-  }) {
-    const { currentPassword, newPassword, newPasswordConfirm } = body;
-    const user = await this.prisma.user.findFirst({ where: { id } });
-
-    if (!user) {
-      throw new BadRequestException('Usuário Invalido');
-    }
-
-    const isValidPassword = await PasswordService.compare({
-      hash: user.password,
-      password: currentPassword,
-    });
-
-    if (!isValidPassword) {
-      throw new BadRequestException('Senha incorreta');
-    }
-
-    if (newPassword !== newPasswordConfirm) {
-      throw new BadRequestException(
-        'Senha e Confirmação de senha devem ser iguais',
-      );
-    }
-    const hashedPassword = await PasswordService.hash({
-      password: body.newPassword,
-    });
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: {
-        password: hashedPassword,
-      },
-    });
-
-    return this.toResponse(updatedUser);
   }
 
   async remove({
@@ -251,7 +151,7 @@ export class UserService {
     id: number;
     roleFilter?: RolesEnum;
   }): Promise<{ id: number }> {
-    return this.withAdminLock(async (transaction) => {
+    return withAdminLock(this.prisma, async (transaction) => {
       const user = await this.findOne({ id, roleFilter }, transaction);
 
       if (user.role === RolesEnum.ADMINISTRADOR && user.status) {
@@ -273,7 +173,7 @@ export class UserService {
       body,
     }: {
       id?: number;
-      body: CreateUserDto | UpdateUserDto;
+      body: Pick<UpdateUserInput, 'email'>;
     },
     database: Pick<PrismaService, 'user'> = this.prisma,
   ) {
@@ -286,18 +186,6 @@ export class UserService {
     if (duplicated > 0) {
       throw new ConflictException('O email já está em uso');
     }
-  }
-
-  private withAdminLock<T>(
-    operation: (transaction: Prisma.TransactionClient) => Promise<T>,
-  ): Promise<T> {
-    return this.prisma.$transaction(
-      async (transaction) => {
-        await transaction.$executeRaw`SELECT pg_advisory_xact_lock(714205)`;
-        return operation(transaction);
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
-    );
   }
 
   private async validateUniqueAdmin(
@@ -327,11 +215,5 @@ export class UserService {
         (_, separator: string, letter: string) =>
           separator + letter.toLocaleUpperCase('pt-BR'),
       );
-  }
-
-  private toResponse<T extends { password: string }>(user: T): UserResponseDto {
-    const safeUser = { ...user };
-    Reflect.deleteProperty(safeUser, 'password');
-    return plainToInstance(UserResponseDto, safeUser);
   }
 }

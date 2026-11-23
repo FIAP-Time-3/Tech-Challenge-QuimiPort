@@ -1,12 +1,9 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { RolesEnum } from '../../../enums/roles.enum.js';
 import {
   CreateFirstUserDto,
   CreateUserRequestDto,
-  CreateUserDto,
   UpdateUserRequestDto,
-  UpdateUserDto,
 } from './user.request.dtos.js';
 
 async function invalidFields(
@@ -18,43 +15,13 @@ async function invalidFields(
 }
 
 describe('validação dos DTOs de usuário', () => {
-  it('aplica status true somente na criação e mantém indefinido na edição', async () => {
-    const body = {
-      name: 'Bruno',
-      email: 'bruno@email.com',
-      role: RolesEnum.OPERADOR,
-    };
-    expect(
-      plainToInstance(CreateUserDto, { ...body, password: 'secret' }).status,
-    ).toBe(true);
-    const updated = plainToInstance(UpdateUserDto, body);
-    expect(updated.status).toBeUndefined();
-    expect(updated.role).toBe(RolesEnum.OPERADOR);
-    expect(await validate(updated)).toEqual([]);
-  });
-
-  it.each([true, false])(
-    'aceita status explícito %s na edição',
-    async (status) => {
-      const dto = plainToInstance(UpdateUserDto, {
-        name: 'Bruno',
-        email: 'bruno@email.com',
-        role: RolesEnum.OPERADOR,
-        status,
-      });
-      expect(await validate(dto)).toEqual([]);
-      expect(dto.status).toBe(status);
-    },
-  );
-
   it.each(['false', 0, 'active'])(
     'recusa status não booleano %s na edição',
     async (status) => {
       await expect(
-        invalidFields(UpdateUserDto, {
+        invalidFields(UpdateUserRequestDto, {
           name: 'Bruno',
           email: 'bruno@email.com',
-          role: RolesEnum.OPERADOR,
           status,
         }),
       ).resolves.toContain('status');
@@ -65,20 +32,21 @@ describe('validação dos DTOs de usuário', () => {
     const body = {
       name: 'Bruno',
       email: 'bruno@email.com',
-      role: RolesEnum.OPERADOR,
     };
-    await expect(invalidFields(CreateUserDto, body)).resolves.toContain(
+    await expect(invalidFields(CreateUserRequestDto, body)).resolves.toContain(
       'password',
     );
-    await expect(invalidFields(UpdateUserDto, body)).resolves.toEqual([]);
+    await expect(
+      invalidFields(UpdateUserRequestDto, { ...body, status: true }),
+    ).resolves.toEqual([]);
   });
 
   it('rejeita senha na edição com a política de validação da API', async () => {
     const errors = await validate(
-      plainToInstance(UpdateUserDto, {
+      plainToInstance(UpdateUserRequestDto, {
         name: 'Bruno',
         email: 'bruno@email.com',
-        role: RolesEnum.OPERADOR,
+        status: true,
         password: 'secret',
       }),
       { whitelist: true, forbidNonWhitelisted: true },
@@ -99,10 +67,11 @@ describe('validação dos DTOs de usuário', () => {
     const body: Record<string, unknown> = {
       name: 'Bruno',
       email: 'bruno@email.com',
-      role: RolesEnum.OPERADOR,
     };
     delete body[field];
-    await expect(invalidFields(UpdateUserDto, body)).resolves.toContain(field);
+    await expect(invalidFields(UpdateUserRequestDto, body)).resolves.toContain(
+      field,
+    );
   });
 
   it('aceita dados válidos do primeiro administrador', async () => {
@@ -131,44 +100,19 @@ describe('validação dos DTOs de usuário', () => {
     },
   );
 
-  it('aceita usuário com perfil válido e status booleano', async () => {
+  it('recusa status não booleano na criação', async () => {
     await expect(
-      invalidFields(CreateUserDto, {
-        email: 'bruno@email.com',
-        role: RolesEnum.OPERADOR,
-        name: 'Bruno',
-        password: 'secret',
-        status: false,
-      }),
-    ).resolves.toEqual([]);
-  });
-
-  it('aplica status ativo por padrão', () => {
-    const user = plainToInstance(CreateUserDto, {
-      email: 'bruno@email.com',
-      role: RolesEnum.OPERADOR,
-      name: 'Bruno',
-      password: 'secret',
-    });
-
-    expect(user.role).toBe(RolesEnum.OPERADOR);
-    expect(user.status).toBe(true);
-  });
-
-  it('recusa perfil desconhecido e status não booleano', async () => {
-    await expect(
-      invalidFields(CreateUserDto, {
+      invalidFields(CreateUserRequestDto, {
         email: 'bruno@email.com',
         name: 'Bruno',
         password: 'secret',
-        role: 'ROOT',
         status: 'active',
       }),
-    ).resolves.toEqual(expect.arrayContaining(['role', 'status']));
+    ).resolves.toContain('status');
   });
 });
 
-describe('validação dos DTOs de operador', () => {
+describe('status nas rotas por perfil', () => {
   const body = { name: 'Operador', email: 'operador@example.com' };
 
   it('assume status ativo no cadastro quando omitido', async () => {

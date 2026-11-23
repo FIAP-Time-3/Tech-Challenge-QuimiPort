@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { RolesEnum } from '../../../../enums/roles.enum.js';
 import { AllowedRoles } from '../../../../decorators/allowed-roles.decorator.js';
+import { UserCredentialsService } from '../../../application/user-credentials.service.js';
 import { UserService } from '../../../application/user.service.js';
 import {
   ApiAuthenticated,
@@ -41,7 +42,10 @@ import { PaginatedResponseDto } from '../../../../../paginated-sort/pagination/p
 export class AdministradoresController {
   private readonly role = RolesEnum.ADMINISTRADOR;
 
-  constructor(private readonly service: UserService) {}
+  constructor(
+    private readonly service: UserService,
+    private readonly credentials: UserCredentialsService,
+  ) {}
 
   @Post()
   @ApiAuthenticated()
@@ -143,7 +147,7 @@ export class AdministradoresController {
     @Param('id', new ParseIntPipe()) id: number,
     @Body() body: UserPasswordResetDto,
   ): Promise<UserResponseDto> {
-    return await this.service.resetPassword({
+    return await this.credentials.resetPassword({
       id,
       body,
       roleFilter: this.role,

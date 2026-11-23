@@ -2,15 +2,15 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiErrors } from '../../../../../swagger/contracts.js';
 import { SetPublic } from '../../../../decorators/set-public.decorator.js';
-import { UserResponseDto } from '../../../infrastructure/dtos/user.response.dtos.js';
-import { UserService } from '../../../application/user.service.js';
+import { UserResponseDto } from '../../dtos/user.response.dtos.js';
+import { FirstAdminService } from '../../../application/first-admin.service.js';
 import { CreateFirstUserDto } from '../../dtos/user.request.dtos.js';
 
 @ApiTags('Usuários')
 @Controller('users/first_access')
 @SetPublic()
 export class FirstAdminController {
-  constructor(private readonly service: UserService) {}
+  constructor(private readonly service: FirstAdminService) {}
 
   @ApiOperation({
     summary: 'Criar o administrador inicial',

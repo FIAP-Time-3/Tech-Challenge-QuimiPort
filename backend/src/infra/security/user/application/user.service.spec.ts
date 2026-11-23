@@ -8,10 +8,12 @@ import {
 import { PrismaService } from '../../../database/prisma.service.js';
 import { PasswordService } from '../../password/password.service.js';
 import { RolesEnum } from '../../enums/roles.enum.js';
+import { FirstAdminService } from './first-admin.service.js';
 import { UserService } from './user.service.js';
 
 describe('UserService', () => {
   let service: UserService;
+  let firstAdmin: FirstAdminService;
 
   const prismaMock = {
     $transaction: vi.fn(),
@@ -53,11 +55,13 @@ describe('UserService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
+        FirstAdminService,
         { provide: PrismaService, useValue: prismaMock },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
+    firstAdmin = module.get(FirstAdminService);
   });
 
   it.each([
@@ -79,7 +83,7 @@ describe('UserService', () => {
           email: 'LoginOriginal@email.com',
         }),
       });
-      await service.createFirst({ body });
+      await firstAdmin.createFirst({ body });
       expect(prismaMock.user.create).toHaveBeenLastCalledWith({
         data: expect.objectContaining({
           name: expected,
@@ -108,7 +112,7 @@ describe('UserService', () => {
         role: RolesEnum.ADMINISTRADOR,
       });
 
-      await service.createFirst({
+      await firstAdmin.createFirst({
         body: { email: 'admin@email.com', name: 'Admin', password: 'secret' },
       });
 
@@ -131,7 +135,7 @@ describe('UserService', () => {
       prismaMock.user.count.mockResolvedValue(1);
 
       await expect(
-        service.createFirst({
+        firstAdmin.createFirst({
           body: {
             email: 'admin2@email.com',
             name: 'Admin 2',

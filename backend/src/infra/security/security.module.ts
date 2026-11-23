@@ -5,17 +5,12 @@ import { RolesGuard } from './guards/roles.guard.js';
 import { JwtModule } from '@nestjs/jwt';
 import configurations from '../configurations/configurations.js';
 import { LoginController } from './login/infrastructure/controller/login.controller.js';
-import { PrismaService } from '../database/prisma.service.js';
+import { UsersModule } from './user/users.module.js';
 import { LoginService } from './login/application/login.service.js';
-import { UserService } from './user/application/user.service.js';
-import { FirstAdminController } from './user/infrastructure/controller/first-admin/first-admin.controller.js';
-import { MeController } from './user/infrastructure/controller/me/me.controller.js';
-import { OperadoresController } from './user/infrastructure/controller/operadores/operadores.controller.js';
-import { DespachantesController } from './user/infrastructure/controller/despachantes/despachantes.controller.js';
-import { AdministradoresController } from './user/infrastructure/controller/administradores/administradores.controller.js';
 
 @Module({
   imports: [
+    UsersModule,
     JwtModule.register({
       secret: configurations().jwt.secret,
       signOptions: {
@@ -24,17 +19,8 @@ import { AdministradoresController } from './user/infrastructure/controller/admi
     }),
   ],
   exports: [JwtModule],
-  controllers: [
-    LoginController,
-    OperadoresController,
-    DespachantesController,
-    AdministradoresController,
-    MeController,
-    FirstAdminController,
-  ],
+  controllers: [LoginController],
   providers: [
-    UserService,
-    PrismaService,
     LoginService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { UserCredentialsService } from '../../../application/user-credentials.service.js';
 import { UserService } from '../../../application/user.service.js';
 import { MeController } from './me.controller.js';
 
@@ -13,7 +14,10 @@ it('consulta o usuário pelo id autenticado, sem depender de perfil administrado
   const findOne = vi.fn().mockResolvedValue(user);
   const module = await Test.createTestingModule({
     controllers: [MeController],
-    providers: [{ provide: UserService, useValue: { findOne } }],
+    providers: [
+      { provide: UserService, useValue: { findOne } },
+      { provide: UserCredentialsService, useValue: {} },
+    ],
   }).compile();
   const controller = module.get(MeController);
   await expect(controller.getMe({ user: { id: 8 } })).resolves.toEqual(user);
