@@ -109,6 +109,7 @@ describe('API HTTP (e2e)', () => {
     expect(response.body.openapi).toBe('3.0.0');
     expect(response.body.paths).toHaveProperty('/api/users/{id}');
     for (const [path, model] of [
+      ['/api/administradores', 'UserResponseDto'],
       ['/api/operadores', 'UserResponseDto'],
       ['/api/despachantes', 'UserResponseDto'],
       ['/api/produtos-quimicos', 'ProdutoQuimicoResponseDto'],
@@ -135,11 +136,11 @@ describe('API HTTP (e2e)', () => {
       });
     }
     expect(response.body.paths['/api/login'].post.security).toEqual([]);
-    const updateSchema = response.body.components.schemas.NewUpdateUserDto;
+    const updateSchema = response.body.components.schemas.UpdateUserRequestDto;
     expect(updateSchema.required).toContain('status');
     expect(updateSchema.properties).not.toHaveProperty('password');
     expect(updateSchema.properties.status).not.toHaveProperty('default');
-    const createSchema = response.body.components.schemas.NewCreateUserDto;
+    const createSchema = response.body.components.schemas.CreateUserRequestDto;
     expect(createSchema.required).not.toContain('status');
     expect(createSchema.properties.status).toMatchObject({ default: true });
     expect(
@@ -213,6 +214,7 @@ describe('API HTTP (e2e)', () => {
   );
 
   it.each([
+    { path: '/api/administradores', model: 'user', key: 'id' },
     { path: '/api/operadores', model: 'user', key: 'id' },
     { path: '/api/despachantes', model: 'user', key: 'id' },
     { path: '/api/produtos-quimicos', model: 'produtosQuimicos', key: 'id' },
@@ -435,7 +437,13 @@ describe('API HTTP (e2e)', () => {
       body: { newPassword },
       success: 200,
     },
-    ...(['operadores', 'despachantes'] as const).flatMap((segment) => {
+    ...(
+      [
+        { segment: 'administradores', targetRole: RolesEnum.ADMINISTRADOR },
+        { segment: 'operadores', targetRole: RolesEnum.OPERADOR },
+        { segment: 'despachantes', targetRole: RolesEnum.DESPACHANTE },
+      ] as const
+    ).flatMap(({ segment, targetRole }) => {
       const path = `/api/${segment}`;
       const operadorPermitido = segment === 'despachantes';
       const body = { name: user.name, email: user.email };
@@ -446,6 +454,7 @@ describe('API HTTP (e2e)', () => {
           body: { ...body, password },
           success: 201,
           operadorPermitido,
+          targetRole,
         },
         {
           method: 'get',
@@ -453,6 +462,7 @@ describe('API HTTP (e2e)', () => {
           body: undefined,
           success: 200,
           operadorPermitido,
+          targetRole,
         },
         {
           method: 'put',
@@ -460,6 +470,7 @@ describe('API HTTP (e2e)', () => {
           body: { ...body, status: true },
           success: 200,
           operadorPermitido,
+          targetRole,
         },
         {
           method: 'delete',
@@ -467,6 +478,7 @@ describe('API HTTP (e2e)', () => {
           body: undefined,
           success: 200,
           operadorPermitido,
+          targetRole,
         },
       ] as const;
     }),
@@ -477,10 +489,12 @@ describe('API HTTP (e2e)', () => {
     prismaMock.user.count.mockImplementation(async (args) =>
       args?.where?.email ? 0 : 1,
     );
-    prismaMock.user.findMany.mockResolvedValue([user]);
-    prismaMock.user.findUnique.mockResolvedValue(user);
-    prismaMock.user.create.mockResolvedValue(user);
-    prismaMock.user.update.mockResolvedValue(user);
+    const target =
+      'targetRole' in scenario ? { ...user, role: scenario.targetRole } : user;
+    prismaMock.user.findMany.mockResolvedValue([target]);
+    prismaMock.user.findUnique.mockResolvedValue(target);
+    prismaMock.user.create.mockResolvedValue(target);
+    prismaMock.user.update.mockResolvedValue(target);
     const token = await app
       .get(JwtService)
       .signAsync({ id: user.id, token_use: 'access' });
@@ -515,6 +529,38 @@ describe('API HTTP (e2e)', () => {
       await call().set('Authorization', `Bearer ${token}`).expect(success);
     }
   });
+
+  it.each(['put', 'delete'] as const)(
+    'impede inativar o último administrador ativo via %s',
+    async (method) => {
+      const admin = { ...user, role: RolesEnum.ADMINISTRADOR };
+      prismaMock.user.findFirst.mockResolvedValue(admin);
+      prismaMock.user.findUnique.mockResolvedValue(admin);
+      prismaMock.user.count.mockImplementation(async ({ where }) =>
+        where.id?.not === admin.id ? 0 : 1,
+      );
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: admin.id, token_use: 'access' });
+      const pending = request(app.getHttpServer())
+        [method](`/api/administradores/${admin.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      if (method === 'put') {
+        pending.send({ name: admin.name, email: admin.email, status: false });
+      }
+
+      await pending.expect(400);
+      expect(prismaMock.user.count).toHaveBeenCalledWith({
+        where: {
+          role: RolesEnum.ADMINISTRADOR,
+          status: true,
+          id: { not: admin.id },
+        },
+      });
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
+    },
+  );
 
   it('aplica validação global ao DTO de login', async () => {
     await request(app.getHttpServer())

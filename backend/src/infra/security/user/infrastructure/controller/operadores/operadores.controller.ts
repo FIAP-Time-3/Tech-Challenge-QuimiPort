@@ -27,9 +27,9 @@ import {
 } from '../../../../../swagger/contracts.js';
 import { UserResponseDto } from '../../dtos/user.response.dtos.js';
 import {
-  NewCreateUserDto,
+  CreateUserRequestDto,
   ListUserQueryDto,
-  NewUpdateUserDto,
+  UpdateUserRequestDto,
 } from '../../dtos/user.request.dtos.js';
 import { PaginatedResponseDto } from '../../../../../paginated-sort/pagination/paginated.response.dtos.js';
 
@@ -47,7 +47,7 @@ export class OperadoresController {
   @ApiOperation({ summary: 'Cadastrar Operador' })
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiErrors(400, 409)
-  async create(@Body() body: NewCreateUserDto): Promise<UserResponseDto> {
+  async create(@Body() body: CreateUserRequestDto): Promise<UserResponseDto> {
     return await this.service.create({
       body: {
         ...body,
@@ -84,7 +84,7 @@ export class OperadoresController {
   @ApiErrors(400, 404, 409)
   async update(
     @Param('id', new ParseIntPipe()) id: number,
-    @Body() body: NewUpdateUserDto,
+    @Body() body: UpdateUserRequestDto,
   ): Promise<UserResponseDto> {
     return await this.service.update({
       id,

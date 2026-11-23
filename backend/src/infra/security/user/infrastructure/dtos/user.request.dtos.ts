@@ -34,7 +34,7 @@ export class BaseUserDto {
   role: RolesEnum;
 }
 
-export class NewCreateUserDto {
+export class CreateUserRequestDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -57,7 +57,7 @@ export class NewCreateUserDto {
   status: boolean = true;
 }
 
-export class NewUpdateUserDto {
+export class UpdateUserRequestDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()

@@ -3,9 +3,9 @@ import { validate } from 'class-validator';
 import { RolesEnum } from '../../../enums/roles.enum.js';
 import {
   CreateFirstUserDto,
-  NewCreateUserDto,
+  CreateUserRequestDto,
   CreateUserDto,
-  NewUpdateUserDto,
+  UpdateUserRequestDto,
   UpdateUserDto,
 } from './user.request.dtos.js';
 
@@ -172,7 +172,7 @@ describe('validação dos DTOs de operador', () => {
   const body = { name: 'Operador', email: 'operador@example.com' };
 
   it('assume status ativo no cadastro quando omitido', async () => {
-    const dto = plainToInstance(NewCreateUserDto, {
+    const dto = plainToInstance(CreateUserRequestDto, {
       ...body,
       password: 'secret',
     });
@@ -185,7 +185,7 @@ describe('validação dos DTOs de operador', () => {
     'aceita status %s explícito na edição',
     async (status) => {
       await expect(
-        invalidFields(NewUpdateUserDto, { ...body, status }),
+        invalidFields(UpdateUserRequestDto, { ...body, status }),
       ).resolves.toEqual([]);
     },
   );
@@ -194,9 +194,9 @@ describe('validação dos DTOs de operador', () => {
     'recusa status %s na edição',
     async (status) => {
       const input = status === undefined ? body : { ...body, status };
-      await expect(invalidFields(NewUpdateUserDto, input)).resolves.toContain(
-        'status',
-      );
+      await expect(
+        invalidFields(UpdateUserRequestDto, input),
+      ).resolves.toContain('status');
     },
   );
 });

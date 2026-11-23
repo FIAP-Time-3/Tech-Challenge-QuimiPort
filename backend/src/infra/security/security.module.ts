@@ -13,6 +13,7 @@ import { MeController } from './user/infrastructure/controller/me/me.controller.
 import { UserController } from './user/infrastructure/controller/user.controller.js';
 import { OperadoresController } from './user/infrastructure/controller/operadores/operadores.controller.js';
 import { DespachantesController } from './user/infrastructure/controller/despachantes/despachantes.controller.js';
+import { AdministradoresController } from './user/infrastructure/controller/administradores/administradores.controller.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { DespachantesController } from './user/infrastructure/controller/despach
     UserController,
     OperadoresController,
     DespachantesController,
+    AdministradoresController,
     MeController,
     FirstAdminController,
   ],

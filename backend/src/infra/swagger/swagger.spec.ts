@@ -137,12 +137,14 @@ describe('contrato OpenAPI da API completa', () => {
   });
 
   it('descreve criação e edição de usuário sem expor senha na resposta', () => {
-    expect(schema('NewCreateUserDto').required).toEqual(
+    expect(schema('CreateUserRequestDto').required).toEqual(
       expect.arrayContaining(['name', 'email', 'password']),
     );
-    expect(schema('NewCreateUserDto').properties).not.toHaveProperty('role');
-    expect(schema('NewCreateUserDto').required).not.toContain('status');
-    const update = schema('NewUpdateUserDto');
+    expect(schema('CreateUserRequestDto').properties).not.toHaveProperty(
+      'role',
+    );
+    expect(schema('CreateUserRequestDto').required).not.toContain('status');
+    const update = schema('UpdateUserRequestDto');
     expect(update.required).toEqual(
       expect.arrayContaining(['name', 'email', 'status']),
     );
@@ -150,7 +152,7 @@ describe('contrato OpenAPI da API completa', () => {
     expect(update.additionalProperties).toBe(false);
     expect(schema('LoginRequestDto').additionalProperties).toBe(false);
     expect(update.properties?.status).not.toHaveProperty('default');
-    expect(schema('NewCreateUserDto').properties?.status).toMatchObject({
+    expect(schema('CreateUserRequestDto').properties?.status).toMatchObject({
       default: true,
     });
     expect(schema('UserResponseDto').properties?.role).toMatchObject({
