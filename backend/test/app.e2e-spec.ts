@@ -507,7 +507,10 @@ describe('API HTTP (e2e)', () => {
     prismaMock.user.findMany.mockResolvedValue([target]);
     prismaMock.user.findUnique.mockResolvedValue(target);
     prismaMock.user.create.mockResolvedValue(target);
-    prismaMock.user.update.mockResolvedValue(target);
+    prismaMock.user.update.mockImplementation(async ({ data }) => ({
+      ...target,
+      ...data,
+    }));
     const token = await app
       .get(JwtService)
       .signAsync({ id: user.id, token_use: 'access' });
@@ -538,13 +541,20 @@ describe('API HTTP (e2e)', () => {
     expect(prismaMock.user.update).not.toHaveBeenCalled();
 
     setActor(RolesEnum.ADMINISTRADOR);
-    await call().set('Authorization', `Bearer ${token}`).expect(success);
+    const response = await call()
+      .set('Authorization', `Bearer ${token}`)
+      .expect(success);
     if (operadorPermitido) {
       setActor(RolesEnum.OPERADOR);
-      await call().set('Authorization', `Bearer ${token}`).expect(success);
+      const operatorResponse = await call()
+        .set('Authorization', `Bearer ${token}`)
+        .expect(success);
+      if (method === 'patch')
+        expect(operatorResponse.body).not.toHaveProperty('password');
     }
 
     if (method === 'patch') {
+      expect(response.body).not.toHaveProperty('password');
       const { PasswordService } = await import(
         '../src/infra/security/password/password.service.js'
       );
@@ -561,14 +571,30 @@ describe('API HTTP (e2e)', () => {
     ['operadores', RolesEnum.OPERADOR],
     ['despachantes', RolesEnum.DESPACHANTE],
   ] as const)(
-    'impede consultar ou resetar outro perfil em /api/%s',
+    'retorna 404 ao acessar um ID de outro perfil em /api/%s',
     async (segment, role) => {
       const id = 2;
-      prismaMock.user.findUnique.mockResolvedValue(null);
-      prismaMock.user.findFirst.mockImplementation(async ({ where }) =>
-        where.id === user.id
+      const target = {
+        ...user,
+        id,
+        role:
+          role === RolesEnum.OPERADOR
+            ? RolesEnum.DESPACHANTE
+            : RolesEnum.OPERADOR,
+      };
+      interface UserLookup {
+        where: { id: number; role?: RolesEnum };
+      }
+      const findTarget = async ({ where }: UserLookup) =>
+        where.id === target.id &&
+        (where.role === undefined || where.role === target.role)
+          ? target
+          : null;
+      prismaMock.user.findUnique.mockImplementation(findTarget);
+      prismaMock.user.findFirst.mockImplementation(async (query: UserLookup) =>
+        query.where.id === user.id
           ? { ...user, role: RolesEnum.ADMINISTRADOR }
-          : null,
+          : findTarget(query),
       );
       const token = await app
         .get(JwtService)
@@ -584,13 +610,56 @@ describe('API HTTP (e2e)', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ newPassword })
         .expect(404);
+      await client
+        .put(`/api/${segment}/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: user.name, email: user.email, status: true })
+        .expect(404);
+      await client
+        .delete(`/api/${segment}/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
 
+      expect(prismaMock.user.findUnique).toHaveBeenCalledTimes(3);
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { id, role },
       });
       expect(prismaMock.user.findFirst).toHaveBeenCalledWith({
         where: { id, role },
       });
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['administradores', 'operadores', 'despachantes'])(
+    'valida o corpo de edição e de reset em /api/%s',
+    async (segment) => {
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: user.id, token_use: 'access' });
+      const client = request(app.getHttpServer());
+      const bearer = `Bearer ${token}`;
+      const editBody = { name: user.name, email: user.email, status: true };
+
+      for (const field of ['password', 'newPassword']) {
+        const response = await client
+          .put(`/api/${segment}/1`)
+          .set('Authorization', bearer)
+          .send({ ...editBody, [field]: newPassword })
+          .expect(400);
+        expect(response.body.message).toContain(
+          `property ${field} should not exist`,
+        );
+      }
+
+      for (const body of [{}, { newPassword: '' }, { newPassword: 123 }]) {
+        await client
+          .patch(`/api/${segment}/password/1`)
+          .set('Authorization', bearer)
+          .send(body)
+          .expect(400);
+      }
+
       expect(prismaMock.user.update).not.toHaveBeenCalled();
     },
   );
