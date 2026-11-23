@@ -13,15 +13,15 @@ Caixinhas marcadas indicam implementação concluída ou validação registrada.
 - [x] Mostrar `AccessDeniedPage`, em `src/infrastructure/defaultPages`, com sidebar para perfil sem permissão. Ao abrir uma página protegida sem sessão, levar ao login com alerta. O fluxo normal de login abre sem aviso.
 - [x] Organizar contratos em `infrastructure/backend/dtos` e chamadas em `infrastructure/backend/routes`, com um contrato de paginação compartilhado.
 - [x] Validar `/login` e `/first-access` no navegador com e sem administrador ativo. Cobrir acesso direto às duas URLs, cadastro concluído, tentativa simultânea de cadastro e erro seguido de nova tentativa na consulta de setup.
-- [ ] Validar login, logout, renovação simultânea, sessão inválida, acesso por URL e navegação com os três perfis no navegador.
 - [x] Exibir `NotFound`, em `src/infrastructure/defaultPages/NotFound.tsx`, pela rota de fallback `*`. Mostrar a mensagem de página não encontrada e oferecer retorno ao início.
+
 ### Estados das telas e formulários
 
 - [x] **Carregamento.** Usar `LoadingState` na primeira consulta de cada lista ou detalhe. Indicar quando a página muda ou uma ação está sendo enviada. Desabilitar o botão de envio enquanto a requisição estiver em andamento para evitar duplicidade.
 - [ ] **Lista vazia.** Mostrar uma mensagem específica quando ainda não houver registros. Se uma busca ou filtro deixar a lista vazia, informar que nenhum resultado foi encontrado e oferecer uma forma de limpar os filtros.
 - [ ] **Erros da API.** Usar `Feedback` para erros gerais. Mostrar mensagens de validação junto aos campos correspondentes e explicar conflitos de negócio, como e-mail duplicado. Em falhas de consulta recuperáveis, oferecer **Tentar novamente**. Manter o tratamento de sessão inválida e acesso negado no fluxo de autenticação.
 - [ ] **Validação de formulários.** Aplicar as regras dos DTOs a campos obrigatórios, formatos e limites antes do envio. Destacar campos inválidos, manter os dados preenchidos quando a API recusar o envio e limpar os erros conforme os campos forem corrigidos ou o formulário for reenviado.
-- [ ] **Confirmação de ações.** Reutilizar `ConfirmDialog` para inativar, excluir, bloquear ou cancelar, conforme o módulo. Identificar o registro, explicar a consequência e pedir motivo quando a API exigir. Após sucesso, atualizar a tela e confirmar a ação. Em caso de erro, preservar o contexto para nova tentativa.
+- [x] **Confirmação de ações nas listagens.** Usar `ConfirmButton` para inativar usuários, excluir produtos e bloquear ou cancelar cargas recentes. Identificar o registro e exigir motivo nas ações de carga. Atualizar a listagem após sucesso e manter o diálogo aberto em caso de erro.
 
 ## Módulos
 
@@ -33,7 +33,7 @@ As coleções `/api/administradores`, `/api/operadores` e `/api/despachantes` of
 - [x] Disponibilizar no cliente HTTP as operações de gestão por perfil, consulta da própria conta e troca de senha.
 - [ ] Adicionar busca por e-mail e links da listagem para detalhe, edição e demais ações.
 - [ ] Criar telas de cadastro, detalhe e edição. Cadastro envia nome, e-mail, senha e status opcional. Edição envia nome, e-mail e status. O servidor define o perfil pela rota. Exibir conflitos de e-mail no formulário.
-- [ ] Confirmar a inativação antes de `DELETE /:id`, atualizar a lista após sucesso e exibir erros como a restrição do último administrador ativo.
+- [x] Confirmar a inativação antes de `DELETE /:id`, atualizar a lista após sucesso e exibir erros como a restrição do último administrador ativo.
 - [ ] Criar formulário de reset administrativo via `PATCH /password/:id`.
 - [ ] Criar Minha conta com `GET /api/me` e troca de senha via `PATCH /api/me/password`, com senha atual, nova senha e confirmação.
 

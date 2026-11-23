@@ -8,10 +8,15 @@ import { excluirProdutoQuimico } from '@/modules/produtoQuimico/use-cases/exclui
 import { listarProdutosQuimicos } from '@/modules/produtoQuimico/use-cases/listarProdutosQuimicos';
 import type { ProdutoQuimico } from '@/modules/produtoQuimico/models/produtoQuimico';
 import ProdutoQuimicoTable from '@/modules/produtoQuimico/components/ProdutoQuimicoTable';
+import { UserRole } from '@/infrastructure/backend/dtos/user.dtos';
+import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { Button } from '@/shared/components/ui/button';
 
 function ListarProdutosQuimicosPage() {
   const location = useLocation();
+  const { role } = useCurrentUser();
+  const canManage =
+    role === UserRole.ADMINISTRADOR || role === UserRole.OPERADOR;
   const [success, setSuccess] = useState(() => {
     const state = location.state as { productMessage?: unknown } | null;
     return typeof state?.productMessage === 'string'
@@ -21,13 +26,8 @@ function ListarProdutosQuimicosPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
-  const [productToDelete, setProductToDelete] = useState<ProdutoQuimico | null>(
-    null,
-  );
   const [products, setProducts] = useState<ProdutoQuimico[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [deleting, setDeleting] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let isEffectActive = true;
@@ -61,28 +61,22 @@ function ListarProdutosQuimicosPage() {
         .includes(normalizedSearch),
   );
 
-  async function handleDelete() {
-    if (!productToDelete || deleting) return;
-    setDeleting(true);
-    setError('');
+  async function handleDelete(product: ProdutoQuimico) {
     setSuccess('');
     try {
-      await excluirProdutoQuimico(productToDelete.id);
+      await excluirProdutoQuimico(product.id);
       setProducts((current) =>
-        current.filter((product) => product.id !== productToDelete.id),
+        current.filter((item) => item.id !== product.id),
       );
-      setSuccess(`Produto ${productToDelete.nome} excluído com sucesso.`);
-      setProductToDelete(null);
+      setSuccess(`Produto ${product.nome} excluído com sucesso.`);
     } catch (error) {
-      setProductToDelete(null);
-      setError(
+      throw new Error(
         mensagemErroProdutoQuimico(
           error,
           'Não foi possível excluir o produto. Tente novamente.',
         ),
+        { cause: error },
       );
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -92,19 +86,20 @@ function ListarProdutosQuimicosPage() {
         eyebrow="Catálogo e classificação de risco"
         description="Cadastre e mantenha os produtos utilizados nas operações."
         actions={
-          <Button asChild>
-            <Link to="/produtos/novo">
-              <Plus aria-hidden="true" />
-              Novo produto
-            </Link>
-          </Button>
+          canManage && (
+            <Button asChild>
+              <Link to="/produtos/novo">
+                <Plus aria-hidden="true" />
+                Novo produto
+              </Link>
+            </Button>
+          )
         }
       >
         Produtos químicos
       </Title>
 
       {success && <Feedback variant="success">{success}</Feedback>}
-      {error && <Feedback variant="error">{error}</Feedback>}
       {loading && <LoadingState>Carregando produtos...</LoadingState>}
       {loadError && (
         <div
@@ -128,17 +123,12 @@ function ListarProdutosQuimicosPage() {
         <ProdutoQuimicoTable
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
-          deleting={deleting}
+          canManage={canManage}
           products={filteredProducts}
           totalProducts={products.length}
           search={search}
           onSearchChange={setSearch}
-          productToDelete={productToDelete}
-          onDeleteRequest={setProductToDelete}
-          onDeleteCancel={() => {
-            if (!deleting) setProductToDelete(null);
-          }}
-          onDeleteConfirm={handleDelete}
+          onDelete={handleDelete}
         />
       )}
     </>

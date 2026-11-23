@@ -3,6 +3,9 @@ import { Title } from '@/shared/components/layout/Title';
 import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { UserRole } from '@/infrastructure/backend/dtos/user.dtos';
+import type { CargaAction } from '@/modules/dashboard/components/CargaActionButton';
+import type { CargaQuimicaResumo } from '@/modules/dashboard/models/cargaQuimica';
 import { listAllPages } from '@/infrastructure/backend/listAllPages';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargaQuimica.routes';
@@ -27,6 +30,7 @@ import TabelaCargasRecentes from '@/modules/dashboard/components/TabelaCargasRec
 
 function DashboardPage() {
   const [search, setSearch] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
   const [data, setData] = useState<{
     loads: CargaQuimicaResponseDto[];
     totalProdutos: number | null;
@@ -34,6 +38,8 @@ function DashboardPage() {
   const [hasLoadError, setHasLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const user = useCurrentUser();
+  const canManageLoads =
+    user.role === UserRole.ADMINISTRADOR || user.role === UserRole.OPERADOR;
   useEffect(() => {
     let isEffectActive = true;
     Promise.all([
@@ -58,6 +64,41 @@ function DashboardPage() {
       isEffectActive = false;
     };
   }, [attempt]);
+
+  async function handleLoadAction(
+    load: CargaQuimicaResumo,
+    action: CargaAction,
+    reason: string,
+  ) {
+    setActionSuccess('');
+    try {
+      const { data: updated } = await cargaQuimicaApiRoutes[action](load.id, {
+        motivo: reason,
+      });
+      setData(
+        (current) =>
+          current && {
+            ...current,
+            loads: current.loads.map((item) =>
+              item.id === updated.id ? updated : item,
+            ),
+          },
+      );
+      setActionSuccess(
+        `Carga ${load.code} ${action === 'bloquear' ? 'bloqueada' : 'cancelada'}.`,
+      );
+    } catch (error) {
+      const message: unknown = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : undefined;
+      throw new Error(
+        typeof message === 'string'
+          ? message
+          : 'Não foi possível atualizar a carga.',
+        { cause: error },
+      );
+    }
+  }
 
   const loads = data?.loads ?? [];
   const activeLoads = loads.filter(
@@ -186,11 +227,15 @@ function DashboardPage() {
               </CardContent>
             </Card>
           </section>
+          {actionSuccess && (
+            <Feedback variant="success">{actionSuccess}</Feedback>
+          )}
           <TabelaCargasRecentes
             loads={filteredLoads}
             totalLoads={recentLoads.length}
             search={search}
             onSearchChange={setSearch}
+            onAction={canManageLoads ? handleLoadAction : undefined}
           />
         </>
       )}
