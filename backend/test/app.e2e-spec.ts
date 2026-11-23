@@ -542,9 +542,11 @@ describe('API HTTP (e2e)', () => {
       const token = await app
         .get(JwtService)
         .signAsync({ id: admin.id, token_use: 'access' });
-      const pending = request(app.getHttpServer())
-        [method](`/api/administradores/${admin.id}`)
-        .set('Authorization', `Bearer ${token}`);
+      const client = request(app.getHttpServer());
+      const pending = client[method](`/api/administradores/${admin.id}`).set(
+        'Authorization',
+        `Bearer ${token}`,
+      );
 
       if (method === 'put') {
         pending.send({ name: admin.name, email: admin.email, status: false });
