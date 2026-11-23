@@ -8,13 +8,13 @@ import type {
   UpdateUserRequestDto,
   UserPasswordResetDto,
   UserResponseDto,
-  UserRole,
 } from '../dtos/user.dtos';
+import { UserRole } from '../dtos/user.dtos';
 
 const pathsByRole: Record<UserRole, string> = {
-  ADMINISTRADOR: 'administradores',
-  OPERADOR: 'operadores',
-  DESPACHANTE: 'despachantes',
+  [UserRole.ADMINISTRADOR]: 'administradores',
+  [UserRole.OPERADOR]: 'operadores',
+  [UserRole.DESPACHANTE]: 'despachantes',
 };
 
 export const userApiRoutes = {

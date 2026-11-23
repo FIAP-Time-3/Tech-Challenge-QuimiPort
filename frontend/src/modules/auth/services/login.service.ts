@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isUserResponse } from '@/infrastructure/backend/dtos/user.dtos';
 import { loginApiRoutes } from '@/infrastructure/backend/routes/login.routes';
 import { meApiRoutes } from '@/infrastructure/backend/routes/me.routes';
 import { getStoredUser, saveUser } from '@/modules/auth/services/token.storage';
@@ -33,6 +34,7 @@ export async function validateAccessToken(
   try {
     if (!accessToken) return false;
     const { data } = await meApiRoutes.getMe();
+    if (!isUserResponse(data) || data.status !== true) return false;
     saveUser(data);
     return true;
   } catch {

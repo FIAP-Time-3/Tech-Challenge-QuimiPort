@@ -4,6 +4,7 @@ import { BrowserRouter, useRoutes } from 'react-router';
 import { authRoutes } from '@/modules/auth/routes';
 import { dashboardRoutes } from '@/modules/dashboard/routes';
 import { produtoQuimicoRoutes } from '@/modules/produtoQuimico/routes';
+import { administrationRoutes } from '@/modules/administracao/routes';
 import { healthRoutes } from '@/modules/health/routes';
 
 function AppRoutes() {
@@ -16,7 +17,11 @@ function AppRoutes() {
           <AppLayout />
         </ProtectedRoute>
       ),
-      children: [...dashboardRoutes, ...produtoQuimicoRoutes],
+      children: [
+        ...dashboardRoutes,
+        ...administrationRoutes,
+        ...produtoQuimicoRoutes,
+      ],
     },
   ]);
 }

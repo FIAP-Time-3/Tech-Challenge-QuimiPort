@@ -15,7 +15,7 @@ function subscribe(onChange: () => void): () => void {
 
 export function getCurrentUser() {
   const user = getStoredUser();
-  if (!user) return { name: 'Usuário', role: '', initials: 'U' };
+  if (!user) return { name: 'Usuário', role: null, initials: 'U' };
   const name = user.name || user.email;
   const words = name.trim().split(/\s+/u);
   const initials = (

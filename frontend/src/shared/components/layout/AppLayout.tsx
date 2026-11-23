@@ -14,8 +14,11 @@ export function AppLayout() {
   const user = useCurrentUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const items = getMenuItems(location);
-  const current = items.find((item) => item.active)?.label ?? 'Plataforma';
+  const items = getMenuItems(location, user.role);
+  const current =
+    items
+      .flatMap((item) => ('children' in item ? item.children : [item]))
+      .find((item) => item.active)?.label ?? 'Plataforma';
 
   function handleLogout() {
     logout();

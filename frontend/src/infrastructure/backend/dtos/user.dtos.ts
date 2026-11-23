@@ -1,6 +1,12 @@
-const userRoles = ['ADMINISTRADOR', 'OPERADOR', 'DESPACHANTE'] as const;
+export const UserRole = {
+  ADMINISTRADOR: 'ADMINISTRADOR',
+  OPERADOR: 'OPERADOR',
+  DESPACHANTE: 'DESPACHANTE',
+} as const;
 
-export type UserRole = (typeof userRoles)[number];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+const userRoles = Object.values(UserRole);
 
 export interface CreateFirstAdminRequestDto {
   name: string;

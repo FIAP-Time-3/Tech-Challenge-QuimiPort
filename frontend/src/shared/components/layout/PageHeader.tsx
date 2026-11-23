@@ -8,7 +8,7 @@ interface PageHeaderProps {
   title: string;
   user: {
     name: string;
-    role: string;
+    role: string | null;
     initials: string;
   };
   onLogout: () => void;
