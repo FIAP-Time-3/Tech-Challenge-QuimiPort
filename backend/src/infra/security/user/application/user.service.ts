@@ -174,11 +174,15 @@ export class UserService {
   async resetPassword({
     id,
     body,
+    roleFilter = undefined,
   }: {
     id: number;
     body: UserPasswordResetDto;
+    roleFilter?: RolesEnum;
   }) {
-    const user = await this.prisma.user.findFirst({ where: { id } });
+    const user = await this.prisma.user.findFirst({
+      where: { id, role: roleFilter ?? undefined },
+    });
 
     if (!user) {
       throw new NotFoundException('Usuário Invalido');

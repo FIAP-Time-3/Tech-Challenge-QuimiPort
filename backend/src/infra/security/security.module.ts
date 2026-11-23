@@ -10,7 +10,6 @@ import { LoginService } from './login/application/login.service.js';
 import { UserService } from './user/application/user.service.js';
 import { FirstAdminController } from './user/infrastructure/controller/first-admin/first-admin.controller.js';
 import { MeController } from './user/infrastructure/controller/me/me.controller.js';
-import { UserController } from './user/infrastructure/controller/user.controller.js';
 import { OperadoresController } from './user/infrastructure/controller/operadores/operadores.controller.js';
 import { DespachantesController } from './user/infrastructure/controller/despachantes/despachantes.controller.js';
 import { AdministradoresController } from './user/infrastructure/controller/administradores/administradores.controller.js';
@@ -27,7 +26,6 @@ import { AdministradoresController } from './user/infrastructure/controller/admi
   exports: [JwtModule],
   controllers: [
     LoginController,
-    UserController,
     OperadoresController,
     DespachantesController,
     AdministradoresController,

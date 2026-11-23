@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -30,6 +31,7 @@ import {
   CreateUserRequestDto,
   ListUserQueryDto,
   UpdateUserRequestDto,
+  UserPasswordResetDto,
 } from '../../dtos/user.request.dtos.js';
 import { PaginatedResponseDto } from '../../../../../paginated-sort/pagination/paginated.response.dtos.js';
 
@@ -71,6 +73,20 @@ export class OperadoresController {
     });
   }
 
+  @Get(':id')
+  @ApiAuthenticated()
+  @ApiErrors(403)
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
+  @ApiOperation({ summary: 'Consultar usuário' })
+  @ApiOkResponse({ type: UserResponseDto })
+  @ApiErrors(400, 404)
+  async findOne(
+    @Param('id', new ParseIntPipe())
+    id: number,
+  ): Promise<UserResponseDto> {
+    return await this.service.findOne({ id, roleFilter: this.role });
+  }
+
   @Put(':id')
   @ApiAuthenticated()
   @ApiErrors(403)
@@ -108,6 +124,27 @@ export class OperadoresController {
   ): Promise<{ id: number }> {
     return await this.service.remove({
       id,
+      roleFilter: this.role,
+    });
+  }
+
+  @Patch('password/:id')
+  @ApiAuthenticated()
+  @ApiErrors(403)
+  @ApiParam({ name: 'id', example: 1, type: 'integer' })
+  @ApiOperation({
+    summary: 'Reset de senha por ID',
+    description: '',
+  })
+  @ApiOkResponse({ type: UserResponseDto })
+  @ApiErrors(400, 404, 409)
+  async resetPassword(
+    @Param('id', new ParseIntPipe()) id: number,
+    @Body() body: UserPasswordResetDto,
+  ): Promise<UserResponseDto> {
+    return await this.service.resetPassword({
+      id,
+      body,
       roleFilter: this.role,
     });
   }

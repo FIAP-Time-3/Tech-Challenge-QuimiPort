@@ -64,7 +64,10 @@ beforeEach(async () => {
   adminToken = response.body.access_token;
 });
 
-function authorized(method: 'get' | 'post' | 'put' | 'delete', path: string) {
+function authorized(
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch',
+  path: string,
+) {
   const client = request(app.getHttpServer());
   return client[method](path).set('Authorization', `Bearer ${adminToken}`);
 }
@@ -100,7 +103,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
     });
     expect(secondPage.body.data).toHaveLength(1);
     expectSafeUser(secondPage.body.data[0], userBody.email);
-    const detail = await authorized('get', `/api/users/${id}`).expect(200);
+    const detail = await authorized('get', `/api/operadores/${id}`).expect(200);
     expectSafeUser(detail.body, userBody.email);
     const updated = await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, email: 'Novo@example.com' })
@@ -475,11 +478,15 @@ describe.each([
     });
   });
 
-  it('retorna 404 ao editar ou inativar um usuário de outro perfil', async () => {
+  it('retorna 404 ao consultar, editar, inativar ou resetar a senha de outro perfil', async () => {
     const target = await prisma.user.findFirstOrThrow({
       where: { role: 'ADMINISTRADOR' },
     });
     const path = `${base}/${target.id}`;
+    await authorized('get', path).expect(404);
+    await authorized('patch', `${base}/password/${target.id}`)
+      .send({ newPassword: 'nova-senha' })
+      .expect(404);
     await authorized('put', path)
       .send({ ...changes, status: false })
       .expect(404);
@@ -487,6 +494,29 @@ describe.each([
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
     ).toEqual(target);
+  });
+
+  it('redefine a senha e autentica com a nova senha no login compartilhado', async () => {
+    const target = await createProfile();
+    const path = `${base}/password/${target.id}`;
+    const newPassword = 'nova-senha';
+
+    await authorized('patch', path).send({}).expect(400);
+    const response = await authorized('patch', path)
+      .send({ newPassword })
+      .expect(200);
+    expectSafeUser(response.body, target.email);
+    expect(response.body).toMatchObject({ id: target.id, role: profileRole });
+
+    const client = request(app.getHttpServer());
+    await client
+      .post('/api/login')
+      .send({ email: target.email, password: body.password })
+      .expect(401);
+    await client
+      .post('/api/login')
+      .send({ email: target.email, password: newPassword })
+      .expect(201);
   });
 
   it.each(['OPERADOR', 'DESPACHANTE'])(

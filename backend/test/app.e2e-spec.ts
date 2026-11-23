@@ -107,7 +107,13 @@ describe('API HTTP (e2e)', () => {
       .get('/api/api-docs-json')
       .expect(200);
     expect(response.body.openapi).toBe('3.0.0');
-    expect(response.body.paths).toHaveProperty('/api/users/{id}');
+    expect(response.body.paths).toHaveProperty('/api/users/first_access');
+    for (const segment of ['administradores', 'operadores', 'despachantes']) {
+      expect(response.body.paths[`/api/${segment}/{id}`]).toHaveProperty('get');
+      expect(
+        response.body.paths[`/api/${segment}/password/{id}`],
+      ).toHaveProperty('patch');
+    }
     for (const [path, model] of [
       ['/api/administradores', 'UserResponseDto'],
       ['/api/operadores', 'UserResponseDto'],
@@ -430,13 +436,6 @@ describe('API HTTP (e2e)', () => {
   );
 
   it.each([
-    { method: 'get', path: '/api/users/1', body: undefined, success: 200 },
-    {
-      method: 'patch',
-      path: '/api/users/password/1',
-      body: { newPassword },
-      success: 200,
-    },
     ...(
       [
         { segment: 'administradores', targetRole: RolesEnum.ADMINISTRADOR },
@@ -465,6 +464,22 @@ describe('API HTTP (e2e)', () => {
           targetRole,
         },
         {
+          method: 'get',
+          path: `${path}/1`,
+          body: undefined,
+          success: 200,
+          operadorPermitido,
+          targetRole,
+        },
+        {
+          method: 'patch',
+          path: `${path}/password/1`,
+          body: { newPassword },
+          success: 200,
+          operadorPermitido,
+          targetRole,
+        },
+        {
           method: 'put',
           path: `${path}/1`,
           body: { ...body, status: true },
@@ -483,14 +498,12 @@ describe('API HTTP (e2e)', () => {
       ] as const;
     }),
   ] as const)('aplica as permissões de $method $path', async (scenario) => {
-    const { method, path, body, success } = scenario;
-    const operadorPermitido =
-      'operadorPermitido' in scenario && scenario.operadorPermitido;
+    const { method, path, body, success, operadorPermitido, targetRole } =
+      scenario;
     prismaMock.user.count.mockImplementation(async (args) =>
       args?.where?.email ? 0 : 1,
     );
-    const target =
-      'targetRole' in scenario ? { ...user, role: scenario.targetRole } : user;
+    const target = { ...user, role: targetRole };
     prismaMock.user.findMany.mockResolvedValue([target]);
     prismaMock.user.findUnique.mockResolvedValue(target);
     prismaMock.user.create.mockResolvedValue(target);
@@ -506,29 +519,81 @@ describe('API HTTP (e2e)', () => {
     };
 
     await call().expect(401);
+    const setActor = (role: RolesEnum) => {
+      prismaMock.user.findFirst.mockImplementation(async ({ where }) => {
+        if (where.role === undefined) return { ...user, role };
+        return where.id === target.id && where.role === target.role
+          ? target
+          : null;
+      });
+    };
     const deniedRoles = operadorPermitido
       ? [RolesEnum.DESPACHANTE]
       : [RolesEnum.OPERADOR, RolesEnum.DESPACHANTE];
     for (const role of deniedRoles) {
-      prismaMock.user.findFirst.mockResolvedValue({ ...user, role });
+      setActor(role);
       await call().set('Authorization', `Bearer ${token}`).expect(403);
     }
     expect(prismaMock.user.create).not.toHaveBeenCalled();
     expect(prismaMock.user.update).not.toHaveBeenCalled();
 
-    prismaMock.user.findFirst.mockResolvedValue({
-      ...user,
-      role: RolesEnum.ADMINISTRADOR,
-    });
+    setActor(RolesEnum.ADMINISTRADOR);
     await call().set('Authorization', `Bearer ${token}`).expect(success);
     if (operadorPermitido) {
-      prismaMock.user.findFirst.mockResolvedValue({
-        ...user,
-        role: RolesEnum.OPERADOR,
-      });
+      setActor(RolesEnum.OPERADOR);
       await call().set('Authorization', `Bearer ${token}`).expect(success);
     }
+
+    if (method === 'patch') {
+      const { PasswordService } = await import(
+        '../src/infra/security/password/password.service.js'
+      );
+      const [{ where, data }] = prismaMock.user.update.mock.calls[0];
+      expect(where).toEqual({ id: target.id });
+      await expect(
+        PasswordService.compare({ password: newPassword, hash: data.password }),
+      ).resolves.toBe(true);
+    }
   });
+
+  it.each([
+    ['administradores', RolesEnum.ADMINISTRADOR],
+    ['operadores', RolesEnum.OPERADOR],
+    ['despachantes', RolesEnum.DESPACHANTE],
+  ] as const)(
+    'impede consultar ou resetar outro perfil em /api/%s',
+    async (segment, role) => {
+      const id = 2;
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.user.findFirst.mockImplementation(async ({ where }) =>
+        where.id === user.id
+          ? { ...user, role: RolesEnum.ADMINISTRADOR }
+          : null,
+      );
+      const token = await app
+        .get(JwtService)
+        .signAsync({ id: user.id, token_use: 'access' });
+      const client = request(app.getHttpServer());
+
+      await client
+        .get(`/api/${segment}/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+      await client
+        .patch(`/api/${segment}/password/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ newPassword })
+        .expect(404);
+
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id, role },
+      });
+      expect(prismaMock.user.findFirst).toHaveBeenCalledWith({
+        where: { id, role },
+      });
+      expect(prismaMock.user.update).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(['put', 'delete'] as const)(
     'impede inativar o último administrador ativo via %s',
