@@ -7,10 +7,11 @@ import configurations from '../configurations/configurations.js';
 import { LoginController } from './login/infrastructure/controller/login.controller.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { LoginService } from './login/application/login.service.js';
-import { UserController } from './user/infrastructure/controller/user.controller.js';
 import { UserService } from './user/application/user.service.js';
 import { FirstAdminController } from './user/infrastructure/controller/first-admin/first-admin.controller.js';
 import { MeController } from './user/infrastructure/controller/me/me.controller.js';
+import { UserController } from './user/infrastructure/controller/user.controller.js';
+import { OperadoresController } from './user/infrastructure/controller/operadores/operadores.controller.js';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { MeController } from './user/infrastructure/controller/me/me.controller.
   controllers: [
     LoginController,
     UserController,
+    OperadoresController,
     MeController,
     FirstAdminController,
   ],

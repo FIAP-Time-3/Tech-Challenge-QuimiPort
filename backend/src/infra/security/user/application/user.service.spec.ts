@@ -203,12 +203,14 @@ describe('UserService', () => {
         paginatedSort: { page: 2, limit: 2, column: 'name', order: 'desc' },
       });
 
+      const where = { role: undefined, email: { contains: '' } };
       expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+        where,
         skip: 2,
         take: 2,
         orderBy: { name: 'desc' },
       });
-      expect(prismaMock.user.count).toHaveBeenCalledOnce();
+      expect(prismaMock.user.count).toHaveBeenCalledExactlyOnceWith({ where });
       expect(result).toMatchObject({
         data: [{ id: 20, email: 'bruno@email.com' }],
         page: 2,

@@ -239,9 +239,13 @@ describe('API HTTP (e2e)', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 2, take: 2 }),
     );
-    expect(count.mock.calls.filter((args) => args.length === 0)).toHaveLength(
-      1,
-    );
+    if (model === 'user') {
+      const [query] = findMany.mock.lastCall ?? [];
+      expect(query?.where).toBeDefined();
+      expect(count).toHaveBeenLastCalledWith({ where: query?.where });
+    } else {
+      expect(count).toHaveBeenCalledExactlyOnceWith();
+    }
   });
 
   it('pagina o histórico da carga em ordem de etapa', async () => {

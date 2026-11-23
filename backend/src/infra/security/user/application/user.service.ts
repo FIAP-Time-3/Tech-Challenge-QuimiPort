@@ -79,17 +79,31 @@ export class UserService {
 
   async findAll({
     paginatedSort,
+    email = '',
+    roleFilter = undefined,
   }: {
     paginatedSort: PaginatedSortQueryDto;
+    email?: string;
+    roleFilter?: RolesEnum;
   }): Promise<PaginatedResponseDto<UserResponseDto>> {
+    const filters = {
+      role: roleFilter ?? undefined,
+      email: {
+        contains: email,
+      },
+    };
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
+        where: filters,
         ...adjustPaginationAndSortOptions({
           paginatedSort,
           fields: this.fields,
         }),
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: filters,
+      }),
     ]);
 
     return new PaginatedResponseDto(
@@ -101,11 +115,11 @@ export class UserService {
   }
 
   async findOne(
-    { id }: { id: number },
+    { id, roleFilter = undefined }: { id: number; roleFilter?: RolesEnum },
     database: Pick<PrismaService, 'user'> = this.prisma,
   ): Promise<UserResponseDto> {
     const user = await database.user.findUnique({
-      where: { id },
+      where: { id, role: roleFilter ?? undefined },
     });
 
     if (!user) {
@@ -118,13 +132,15 @@ export class UserService {
   async update({
     id,
     body,
+    roleFilter = undefined,
   }: {
     id: number;
     body: UpdateUserDto;
+    roleFilter?: RolesEnum;
   }): Promise<UserResponseDto> {
     return this.withAdminLock(async (transaction) => {
       const user = await transaction.user.findUnique({
-        where: { id },
+        where: { id, role: roleFilter ?? undefined },
       });
 
       if (!user) {
@@ -224,9 +240,15 @@ export class UserService {
     return this.toResponse(updatedUser);
   }
 
-  async remove({ id }: { id: number }): Promise<{ id: number }> {
+  async remove({
+    id,
+    roleFilter = undefined,
+  }: {
+    id: number;
+    roleFilter?: RolesEnum;
+  }): Promise<{ id: number }> {
     return this.withAdminLock(async (transaction) => {
-      const user = await this.findOne({ id }, transaction);
+      const user = await this.findOne({ id, roleFilter }, transaction);
 
       if (user.role === RolesEnum.ADMINISTRADOR && user.status) {
         await this.validateUniqueAdmin({ id }, transaction);
