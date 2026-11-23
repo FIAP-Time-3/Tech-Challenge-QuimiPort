@@ -1,30 +1,45 @@
-import { api } from '../api';
+import { api, authApi } from '../api';
 import type {
   CreateFirstAdminRequestDto,
-  CreateOrUpdateUserRequestDto,
+  CreateUserRequestDto,
+  ListUserQueryDto,
+  ListUserResponseDto,
   RemoveUserResponseDto,
+  UpdateUserRequestDto,
+  UserPasswordResetDto,
   UserResponseDto,
+  UserRole,
 } from '../dtos/user.dtos';
 
-const baseUrl = 'users';
+const pathsByRole: Record<UserRole, string> = {
+  ADMINISTRADOR: 'administradores',
+  OPERADOR: 'operadores',
+  DESPACHANTE: 'despachantes',
+};
 
 export const userApiRoutes = {
   createFirstAdmin: (data: CreateFirstAdminRequestDto) => {
-    return api.post<UserResponseDto>(`${baseUrl}/first_access`, data);
+    return authApi.post<UserResponseDto>('users/first_access', data);
   },
-  create: (data: CreateOrUpdateUserRequestDto) => {
-    return api.post<UserResponseDto>(baseUrl, data);
+  create: (role: UserRole, data: CreateUserRequestDto) => {
+    return api.post<UserResponseDto>(pathsByRole[role], data);
   },
-  findAll: () => {
-    return api.get<UserResponseDto[]>(baseUrl);
+  findAll: (role: UserRole, params?: ListUserQueryDto) => {
+    return api.get<ListUserResponseDto>(pathsByRole[role], { params });
   },
-  findOne: (id: number) => {
-    return api.get<UserResponseDto>(`${baseUrl}/${id}`);
+  findOne: (role: UserRole, id: number) => {
+    return api.get<UserResponseDto>(`${pathsByRole[role]}/${id}`);
   },
-  update: (id: number, data: CreateOrUpdateUserRequestDto) => {
-    return api.put<UserResponseDto>(`${baseUrl}/${id}`, data);
+  update: (role: UserRole, id: number, data: UpdateUserRequestDto) => {
+    return api.put<UserResponseDto>(`${pathsByRole[role]}/${id}`, data);
   },
-  remove: (id: number) => {
-    return api.delete<RemoveUserResponseDto>(`${baseUrl}/${id}`);
+  remove: (role: UserRole, id: number) => {
+    return api.delete<RemoveUserResponseDto>(`${pathsByRole[role]}/${id}`);
+  },
+  resetPassword: (role: UserRole, id: number, data: UserPasswordResetDto) => {
+    return api.patch<UserResponseDto>(
+      `${pathsByRole[role]}/password/${id}`,
+      data,
+    );
   },
 };

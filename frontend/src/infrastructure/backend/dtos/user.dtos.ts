@@ -1,31 +1,69 @@
-export type UserRole =
-  | 'ADMINISTRADOR'
-  | 'GESTOR'
-  | 'OPERADOR'
-  | 'TECNICO'
-  | 'DOCUMENTACAO'
-  | 'QUALIDADE'
-  | 'INSPETOR';
+const userRoles = ['ADMINISTRADOR', 'OPERADOR', 'DESPACHANTE'] as const;
+
+export type UserRole = (typeof userRoles)[number];
 
 export interface CreateFirstAdminRequestDto {
-  username: string;
   name: string;
+  email: string;
   password: string;
 }
 
-export interface CreateOrUpdateUserRequestDto extends CreateFirstAdminRequestDto {
-  roles?: UserRole[];
+export interface CreateUserRequestDto extends CreateFirstAdminRequestDto {
   status?: boolean;
+}
+
+export interface UpdateUserRequestDto {
+  name: string;
+  email: string;
+  status: boolean;
+}
+
+export interface ListUserQueryDto {
+  email?: string;
+  page?: number;
+  limit?: number;
+  column?: string;
+  order?: 'asc' | 'desc';
 }
 
 export interface UserResponseDto {
   id: number;
-  username: string;
   name: string;
-  roles: UserRole[];
+  email: string;
+  role: UserRole;
   status: boolean;
+}
+
+export interface ListUserResponseDto {
+  data: UserResponseDto[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface RemoveUserResponseDto {
   id: number;
+}
+
+export interface UserPasswordResetDto {
+  newPassword: string;
+}
+
+export interface UserPasswordChangeDto extends UserPasswordResetDto {
+  currentPassword: string;
+  newPasswordConfirm: string;
+}
+
+export function isUserResponse(user: unknown): user is UserResponseDto {
+  if (!user || typeof user !== 'object') return false;
+
+  const { id, name, email, role, status } = user as Partial<UserResponseDto>;
+  return (
+    Number.isSafeInteger(id) &&
+    typeof name === 'string' &&
+    typeof email === 'string' &&
+    userRoles.some((allowedRole) => allowedRole === role) &&
+    typeof status === 'boolean'
+  );
 }

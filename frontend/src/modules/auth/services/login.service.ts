@@ -5,12 +5,12 @@ import { getStoredUser, saveUser } from '@/modules/auth/services/token.storage';
 import type { AuthSession } from '@/modules/auth/models/auth';
 
 export async function authenticate(
-  username: string,
+  email: string,
   password: string,
 ): Promise<AuthSession | null> {
   try {
     const { data } = await loginApiRoutes.login({
-      username: username.trim(),
+      email: email.trim(),
       password,
     });
     const user = getStoredUser();

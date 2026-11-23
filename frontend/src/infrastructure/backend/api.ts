@@ -6,7 +6,7 @@ import {
   saveTokens,
   saveUser,
 } from '@/modules/auth/services/token.storage';
-import type { UserResponseDto } from './dtos/user.dtos';
+import { isUserResponse, type UserResponseDto } from './dtos/user.dtos';
 import type { LoginResponseDto } from './dtos/login.dtos';
 
 const options = {
@@ -59,14 +59,7 @@ export async function establishSession(
   const { data: user } = await authApi.get<UserResponseDto>('me', {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
-  if (
-    !user ||
-    !Number.isSafeInteger(user.id) ||
-    typeof user.name !== 'string' ||
-    typeof user.username !== 'string' ||
-    !Array.isArray(user.roles) ||
-    user.status !== true
-  ) {
+  if (!isUserResponse(user) || user.status !== true) {
     throw new Error('Resposta de usuário inválida');
   }
   if (

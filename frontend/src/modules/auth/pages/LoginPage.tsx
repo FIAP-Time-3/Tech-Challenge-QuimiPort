@@ -33,7 +33,7 @@ function LoginPage() {
   const [name, setName] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +64,7 @@ function LoginPage() {
       setErrorMessage('As senhas não conferem.');
       return;
     }
-    if (!username.trim() || (setup === 'required' && !name.trim())) {
+    if (!email.trim() || (setup === 'required' && !name.trim())) {
       setErrorMessage('Preencha os campos obrigatórios.');
       return;
     }
@@ -74,20 +74,20 @@ function LoginPage() {
       if (setup === 'required') {
         await userApiRoutes.createFirstAdmin({
           name: name.trim(),
-          username: username.trim(),
+          email: email.trim(),
           password,
         });
-        setUsername(username.trim());
+        setEmail(email.trim());
         setPassword('');
         setConfirmation('');
         setSetup('ready');
         setSuccessMessage('Administrador criado. Entre para continuar.');
         return;
       }
-      const session = await login(username, password);
+      const session = await login(email, password);
       if (!session) {
         setErrorMessage(
-          'Usuário ou senha inválidos. Confira os dados e tente novamente.',
+          'E-mail ou senha inválidos. Confira os dados e tente novamente.',
         );
         return;
       }
@@ -104,9 +104,7 @@ function LoginPage() {
           return;
         }
         if (error.response?.status === 409) {
-          setErrorMessage(
-            'Esse usuário já está em uso. Escolha outro nome de usuário.',
-          );
+          setErrorMessage('Esse e-mail já está em uso. Informe outro e-mail.');
           return;
         }
         if (error.response?.status === 400) {
@@ -239,17 +237,17 @@ function LoginPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium">
-                    Usuário
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    E-mail
                   </Label>
                   <Input
-                    id="username"
-                    name="username"
-                    type="text"
+                    id="email"
+                    name="email"
+                    type="email"
                     autoComplete="username"
-                    placeholder="Digite seu usuário"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
+                    placeholder="Digite seu e-mail"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
                     className="h-10 bg-background"
                   />
