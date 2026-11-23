@@ -1,5 +1,9 @@
 import { api } from '../api';
 import type {
+  PaginatedResponseDto,
+  PaginationQueryDto,
+} from '../dtos/pagination.dtos';
+import type {
   CargaQuimicaResponseDto,
   CreateDocumentoRequestDto,
   CreateOrUpdateCargaQuimicaRequestDto,
@@ -20,8 +24,10 @@ export const cargaQuimicaApiRoutes = {
   create: (data: CreateOrUpdateCargaQuimicaRequestDto) => {
     return api.post<CargaQuimicaResponseDto>(baseUrl, data);
   },
-  findAll: () => {
-    return api.get<CargaQuimicaResponseDto[]>(baseUrl);
+  findAll: (params?: PaginationQueryDto) => {
+    return api.get<PaginatedResponseDto<CargaQuimicaResponseDto>>(baseUrl, {
+      params,
+    });
   },
   findOne: (id: number) => {
     return api.get<CargaQuimicaResponseDto>(`${baseUrl}/${id}`);
@@ -29,8 +35,11 @@ export const cargaQuimicaApiRoutes = {
   update: (id: number, data: CreateOrUpdateCargaQuimicaRequestDto) => {
     return api.put<CargaQuimicaResponseDto>(`${baseUrl}/${id}`, data);
   },
-  historico: (id: number) => {
-    return api.get<MovimentacaoResponseDto[]>(`${baseUrl}/${id}/historico`);
+  historico: (id: number, params?: PaginationQueryDto) => {
+    return api.get<PaginatedResponseDto<MovimentacaoResponseDto>>(
+      `${baseUrl}/${id}/historico`,
+      { params },
+    );
   },
   atualizarStatus: (id: number, data: UpdateStatusRequestDto) => {
     return api.patch<CargaQuimicaResponseDto>(`${baseUrl}/${id}/status`, data);

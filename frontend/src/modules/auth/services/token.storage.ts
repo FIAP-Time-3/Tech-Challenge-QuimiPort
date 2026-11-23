@@ -1,4 +1,7 @@
-import type { UserResponseDto } from '@/infrastructure/backend/dtos/user.dtos';
+import {
+  isUserResponse,
+  type UserResponseDto,
+} from '@/infrastructure/backend/dtos/user.dtos';
 const accessTokenStorageKey = 'quimiport.access-token';
 
 export function getAccessToken(): string | null {
@@ -43,7 +46,8 @@ export function getStoredUserJson(): string | null {
 export function getStoredUser(): UserResponseDto | null {
   try {
     const stored = getStoredUserJson();
-    return stored ? (JSON.parse(stored) as UserResponseDto) : null;
+    const user: unknown = stored ? JSON.parse(stored) : null;
+    return isUserResponse(user) ? user : null;
   } catch {
     return null;
   }

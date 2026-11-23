@@ -15,15 +15,15 @@ function subscribe(onChange: () => void): () => void {
 
 export function getCurrentUser() {
   const user = getStoredUser();
-  if (!user) return { name: 'Usuário', role: '', initials: 'U' };
-  const name = user.name || user.username;
+  if (!user) return { name: 'Usuário', role: null, initials: 'U' };
+  const name = user.name || user.email;
   const words = name.trim().split(/\s+/u);
   const initials = (
     words.length > 1
       ? words[0][0] + words[words.length - 1][0]
       : name.slice(0, 2)
   ).toLocaleUpperCase('pt-BR');
-  return { name, role: user.roles.join(', '), initials };
+  return { name, role: user.role, initials };
 }
 
 export function useCurrentUser() {

@@ -1,5 +1,9 @@
 import { api } from '../api';
 import type {
+  PaginatedResponseDto,
+  PaginationQueryDto,
+} from '../dtos/pagination.dtos';
+import type {
   CreateOrUpdateProdutoQuimicoRequestDto,
   ProdutoQuimicoResponseDto,
   RemoveProdutoQuimicoResponseDto,
@@ -11,8 +15,10 @@ export const produtoQuimicoApiRoutes = {
   create: (data: CreateOrUpdateProdutoQuimicoRequestDto) => {
     return api.post<ProdutoQuimicoResponseDto>(baseUrl, data);
   },
-  findAll: () => {
-    return api.get<ProdutoQuimicoResponseDto[]>(baseUrl);
+  findAll: (params?: PaginationQueryDto) => {
+    return api.get<PaginatedResponseDto<ProdutoQuimicoResponseDto>>(baseUrl, {
+      params,
+    });
   },
   findOne: (id: number) => {
     return api.get<ProdutoQuimicoResponseDto>(`${baseUrl}/${id}`);

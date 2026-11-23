@@ -5,13 +5,15 @@ import { X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/shared/components/ui/sheet';
 
-export interface SideNavigationItem {
+interface NavigationLink {
   label: string;
   href: string;
-  icon: LucideIcon;
-  badge?: string;
   active?: boolean;
 }
+
+export type SideNavigationItem =
+  | (NavigationLink & { icon: LucideIcon })
+  | { label: string; icon: LucideIcon; children: NavigationLink[] };
 interface SideNavigationProps {
   brand: string;
   description?: string;
@@ -39,6 +41,21 @@ function SideNavigation({
     query.addEventListener('change', closeOnDesktop);
     return () => query.removeEventListener('change', closeOnDesktop);
   }, [onMobileClose]);
+
+  function renderLink(item: NavigationLink, Icon?: LucideIcon) {
+    return (
+      <Link
+        key={item.href}
+        to={item.href}
+        onClick={onMobileClose}
+        aria-current={item.active ? 'page' : undefined}
+        className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${item.active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
+      >
+        {Icon && <Icon className="size-4" aria-hidden="true" />}
+        {item.label}
+      </Link>
+    );
+  }
 
   const content = (
     <>
@@ -68,23 +85,26 @@ function SideNavigation({
         <p className="px-3 pb-2 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Menu principal
         </p>
-        {items.map(({ icon: Icon, ...item }) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            onClick={onMobileClose}
-            aria-current={item.active ? 'page' : undefined}
-            className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${item.active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {item.label}
-            {item.badge && (
-              <span className="ml-auto rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
-                {item.badge}
-              </span>
-            )}
-          </Link>
-        ))}
+        {items.map(({ icon: Icon, ...item }) =>
+          'children' in item ? (
+            <div key={item.label}>
+              <p className="flex h-10 items-center gap-3 px-3 text-sm font-medium text-muted-foreground">
+                <Icon className="size-4" aria-hidden="true" />
+                {item.label}
+              </p>
+              <ul
+                className="ml-5 space-y-1 border-l border-sidebar-border pl-2"
+                aria-label={item.label}
+              >
+                {item.children.map((child) => (
+                  <li key={child.href}>{renderLink(child)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            renderLink(item, Icon)
+          ),
+        )}
       </nav>
     </>
   );

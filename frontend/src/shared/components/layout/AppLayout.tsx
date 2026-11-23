@@ -1,5 +1,5 @@
 import { FlaskConical } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { logout } from '@/modules/auth/use-cases/logout';
@@ -8,14 +8,17 @@ import PageHeader from './PageHeader';
 import { MainContent } from './MainContent';
 import { getMenuItems } from '@/shared/navigation/menuItems';
 
-export function AppLayout() {
+export function AppLayout({ children }: { children?: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const user = useCurrentUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const items = getMenuItems(location);
-  const current = items.find((item) => item.active)?.label ?? 'Plataforma';
+  const items = getMenuItems(location, user.role);
+  const current =
+    items
+      .flatMap((item) => ('children' in item ? item.children : [item]))
+      .find((item) => item.active)?.label ?? 'Plataforma';
 
   function handleLogout() {
     logout();
@@ -47,9 +50,7 @@ export function AppLayout() {
           onMenuOpen={() => setMenuOpen(true)}
           menuOpen={menuOpen}
         />
-        <MainContent>
-          <Outlet />
-        </MainContent>
+        <MainContent>{children ?? <Outlet />}</MainContent>
         <footer className="mx-auto w-full max-w-[1440px] px-4 pb-5 text-xs text-muted-foreground sm:px-8">
           QuimiPort · Gestão segura de operações químicas
         </footer>

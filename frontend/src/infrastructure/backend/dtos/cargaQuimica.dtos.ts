@@ -63,7 +63,7 @@ export interface MovimentacaoResponseDto {
 export interface ResponsavelTecnicoDto {
   id: number;
   name: string;
-  username: string;
+  email: string;
 }
 
 export interface CargaQuimicaResponseDto {

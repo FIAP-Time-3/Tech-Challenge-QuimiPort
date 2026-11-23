@@ -10,7 +10,7 @@ import {
   LockKeyhole,
 } from 'lucide-react';
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { login } from '@/modules/auth/use-cases/login';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -26,6 +26,14 @@ import { Label } from '@/shared/components/ui/label';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { pathname, search, hash, state } = useLocation();
+  const [accessDenied] = useState(() => state?.accessDenied === true);
+
+  useEffect(() => {
+    if (state?.accessDenied === true) {
+      void navigate({ pathname, search, hash }, { replace: true, state: null });
+    }
+  }, [hash, navigate, pathname, search, state]);
   const [setup, setSetup] = useState<
     'loading' | 'required' | 'ready' | 'error'
   >('loading');
@@ -33,7 +41,7 @@ function LoginPage() {
   const [name, setName] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +72,7 @@ function LoginPage() {
       setErrorMessage('As senhas não conferem.');
       return;
     }
-    if (!username.trim() || (setup === 'required' && !name.trim())) {
+    if (!email.trim() || (setup === 'required' && !name.trim())) {
       setErrorMessage('Preencha os campos obrigatórios.');
       return;
     }
@@ -74,20 +82,20 @@ function LoginPage() {
       if (setup === 'required') {
         await userApiRoutes.createFirstAdmin({
           name: name.trim(),
-          username: username.trim(),
+          email: email.trim(),
           password,
         });
-        setUsername(username.trim());
+        setEmail(email.trim());
         setPassword('');
         setConfirmation('');
         setSetup('ready');
         setSuccessMessage('Administrador criado. Entre para continuar.');
         return;
       }
-      const session = await login(username, password);
+      const session = await login(email, password);
       if (!session) {
         setErrorMessage(
-          'Usuário ou senha inválidos. Confira os dados e tente novamente.',
+          'E-mail ou senha inválidos. Confira os dados e tente novamente.',
         );
         return;
       }
@@ -104,9 +112,7 @@ function LoginPage() {
           return;
         }
         if (error.response?.status === 409) {
-          setErrorMessage(
-            'Esse usuário já está em uso. Escolha outro nome de usuário.',
-          );
+          setErrorMessage('Esse e-mail já está em uso. Informe outro e-mail.');
           return;
         }
         if (error.response?.status === 400) {
@@ -205,6 +211,13 @@ function LoginPage() {
           </CardHeader>
 
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
+            {accessDenied && (
+              <div className="mb-4">
+                <Feedback>
+                  Acesso Negado. Entre na sua conta para acessar esta página.
+                </Feedback>
+              </div>
+            )}
             {setup === 'loading' ? (
               <LoadingState>Verificando configuração inicial...</LoadingState>
             ) : setup === 'error' ? (
@@ -239,17 +252,17 @@ function LoginPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium">
-                    Usuário
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    E-mail
                   </Label>
                   <Input
-                    id="username"
-                    name="username"
-                    type="text"
+                    id="email"
+                    name="email"
+                    type="email"
                     autoComplete="username"
-                    placeholder="Digite seu usuário"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
+                    placeholder="Digite seu e-mail"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
                     className="h-10 bg-background"
                   />

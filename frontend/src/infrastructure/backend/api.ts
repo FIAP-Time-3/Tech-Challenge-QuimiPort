@@ -6,7 +6,7 @@ import {
   saveTokens,
   saveUser,
 } from '@/modules/auth/services/token.storage';
-import type { UserResponseDto } from './dtos/user.dtos';
+import { isUserResponse, type UserResponseDto } from './dtos/user.dtos';
 import type { LoginResponseDto } from './dtos/login.dtos';
 
 const options = {
@@ -23,15 +23,6 @@ type RetryConfig = InternalAxiosRequestConfig & {
   retriedAfterRefresh?: boolean;
 };
 let refreshPromise: Promise<void> | null = null;
-let redirecting = false;
-
-function endSession(): void {
-  clearTokens();
-  if (!redirecting && window.location.pathname !== '/login') {
-    redirecting = true;
-    window.location.assign('/login');
-  }
-}
 
 async function refreshTokens(): Promise<void> {
   const refreshToken = getRefreshToken();
@@ -59,14 +50,7 @@ export async function establishSession(
   const { data: user } = await authApi.get<UserResponseDto>('me', {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
-  if (
-    !user ||
-    !Number.isSafeInteger(user.id) ||
-    typeof user.name !== 'string' ||
-    typeof user.username !== 'string' ||
-    !Array.isArray(user.roles) ||
-    user.status !== true
-  ) {
+  if (!isUserResponse(user) || user.status !== true) {
     throw new Error('Resposta de usuário inválida');
   }
   if (
@@ -92,7 +76,6 @@ export function refreshSession(): Promise<void> {
 api.interceptors.request.use((config) => {
   const accessToken = getAccessToken();
   if (accessToken) {
-    redirecting = false;
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
@@ -108,7 +91,7 @@ api.interceptors.response.use(
     const config = error.config as RetryConfig | undefined;
     const expired = error.response.data?.code === 'ACCESS_TOKEN_EXPIRED';
     if (!config || !expired || config.retriedAfterRefresh) {
-      endSession();
+      clearTokens();
       return Promise.reject(error);
     }
 
@@ -123,7 +106,7 @@ api.interceptors.response.use(
         await refreshSession();
       }
     } catch (refreshError) {
-      endSession();
+      clearTokens();
       return Promise.reject(refreshError);
     }
 

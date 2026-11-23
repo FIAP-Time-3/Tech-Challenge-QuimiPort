@@ -3,6 +3,7 @@ import { Title } from '@/shared/components/layout/Title';
 import { Boxes, FlaskConical, Ship, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { listAllPages } from '@/infrastructure/backend/listAllPages';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { cargaQuimicaApiRoutes } from '@/infrastructure/backend/routes/cargaQuimica.routes';
 import { produtoQuimicoApiRoutes } from '@/infrastructure/backend/routes/produtoQuimico.routes';
@@ -36,8 +37,8 @@ function DashboardPage() {
   useEffect(() => {
     let isEffectActive = true;
     Promise.all([
-      cargaQuimicaApiRoutes.findAll(),
-      produtoQuimicoApiRoutes.findAll().catch((error: unknown) => {
+      listAllPages(cargaQuimicaApiRoutes.findAll),
+      produtoQuimicoApiRoutes.findAll({ limit: 1 }).catch((error: unknown) => {
         if (axios.isAxiosError(error) && error.response?.status === 403)
           return null;
         throw error;
@@ -46,8 +47,8 @@ function DashboardPage() {
       .then(([loads, products]) => {
         if (isEffectActive)
           setData({
-            loads: loads.data,
-            totalProdutos: products?.data.length ?? null,
+            loads,
+            totalProdutos: products?.data.total ?? null,
           });
       })
       .catch(() => {
