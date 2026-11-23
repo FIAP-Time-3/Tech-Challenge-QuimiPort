@@ -27,9 +27,9 @@ import {
 } from '../../../../../swagger/contracts.js';
 import { UserResponseDto } from '../../dtos/user.response.dtos.js';
 import {
-  CreateOperadorDto,
+  NewCreateUserDto,
   ListUserQueryDto,
-  UpdateOperadorDto,
+  NewUpdateUserDto,
 } from '../../dtos/user.request.dtos.js';
 import { PaginatedResponseDto } from '../../../../../paginated-sort/pagination/paginated.response.dtos.js';
 
@@ -37,6 +37,8 @@ import { PaginatedResponseDto } from '../../../../../paginated-sort/pagination/p
 @Controller('operadores')
 @AllowedRoles([RolesEnum.ADMINISTRADOR])
 export class OperadoresController {
+  private readonly role = RolesEnum.OPERADOR;
+
   constructor(private readonly service: UserService) {}
 
   @Post()
@@ -45,11 +47,11 @@ export class OperadoresController {
   @ApiOperation({ summary: 'Cadastrar Operador' })
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiErrors(400, 409)
-  async create(@Body() body: CreateOperadorDto): Promise<UserResponseDto> {
+  async create(@Body() body: NewCreateUserDto): Promise<UserResponseDto> {
     return await this.service.create({
       body: {
         ...body,
-        role: RolesEnum.OPERADOR,
+        role: this.role,
       },
     });
   }
@@ -65,7 +67,7 @@ export class OperadoresController {
     return await this.service.findAll({
       paginatedSort: query,
       email: query.email,
-      roleFilter: RolesEnum.OPERADOR,
+      roleFilter: this.role,
     });
   }
 
@@ -82,12 +84,12 @@ export class OperadoresController {
   @ApiErrors(400, 404, 409)
   async update(
     @Param('id', new ParseIntPipe()) id: number,
-    @Body() body: UpdateOperadorDto,
+    @Body() body: NewUpdateUserDto,
   ): Promise<UserResponseDto> {
     return await this.service.update({
       id,
-      body: { ...body, role: RolesEnum.OPERADOR },
-      roleFilter: RolesEnum.OPERADOR,
+      body: { ...body, role: this.role },
+      roleFilter: this.role,
     });
   }
 
@@ -97,8 +99,7 @@ export class OperadoresController {
   @ApiParam({ name: 'id', example: 1, type: 'integer' })
   @ApiOperation({
     summary: 'Inativar usuário',
-    description:
-      'Exclusão lógica; preserva o registro. A proteção atual exige outro administrador ativo.',
+    description: 'Exclusão lógica; preserva o registro.',
   })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiErrors(400, 404)
@@ -107,7 +108,7 @@ export class OperadoresController {
   ): Promise<{ id: number }> {
     return await this.service.remove({
       id,
-      roleFilter: RolesEnum.OPERADOR,
+      roleFilter: this.role,
     });
   }
 }

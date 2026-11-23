@@ -15,14 +15,12 @@ const userBody = {
   email: 'Bruno@example.com',
   name: 'Bruno Dias',
   password: 'secret',
-  role: 'OPERADOR',
   status: true,
 };
 
 const updateBody = {
   email: userBody.email,
   name: userBody.name,
-  role: userBody.role,
   status: userBody.status,
 };
 
@@ -73,22 +71,25 @@ function authorized(method: 'get' | 'post' | 'put' | 'delete', path: string) {
 
 describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it('expõe email e oculta username/senha em criação, listagem, detalhe, edição e /me', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     expectSafeUser(created.body, userBody.email);
     const id = created.body.id;
-    const list = await authorized('get', '/api/users').expect(200);
+    const list = await authorized('get', '/api/operadores').expect(200);
     expect(list.body).toMatchObject({
       page: 1,
       limit: 10,
-      total: 2,
+      total: 1,
       totalPages: 1,
     });
-    expect(list.body.data).toHaveLength(2);
-    expectSafeUser(list.body.data[0], credentials.email);
-    expectSafeUser(list.body.data[1], userBody.email);
-    const secondPage = await authorized('get', '/api/users')
+    expect(list.body.data).toHaveLength(1);
+    expectSafeUser(list.body.data[0], userBody.email);
+    const otherEmail = 'outro@example.com';
+    await authorized('post', '/api/operadores')
+      .send({ ...userBody, email: otherEmail })
+      .expect(201);
+    const secondPage = await authorized('get', '/api/operadores')
       .query({ page: 2, limit: 1, column: 'id', order: 'desc' })
       .expect(200);
     expect(secondPage.body).toMatchObject({
@@ -98,10 +99,10 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       totalPages: 2,
     });
     expect(secondPage.body.data).toHaveLength(1);
-    expectSafeUser(secondPage.body.data[0], credentials.email);
+    expectSafeUser(secondPage.body.data[0], userBody.email);
     const detail = await authorized('get', `/api/users/${id}`).expect(200);
     expectSafeUser(detail.body, userBody.email);
-    const updated = await authorized('put', `/api/users/${id}`)
+    const updated = await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, email: 'Novo@example.com' })
       .expect(200);
     expectSafeUser(updated.body, 'Novo@example.com');
@@ -110,13 +111,13 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('recusa username legado na criação, edição, login e primeiro acesso', async () => {
-    await authorized('post', '/api/users')
+    await authorized('post', '/api/operadores')
       .send({ ...userBody, username: 'bruno' })
       .expect(400);
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
-    await authorized('put', `/api/users/${created.body.id}`)
+    await authorized('put', `/api/operadores/${created.body.id}`)
       .send({ ...updateBody, username: 'bruno' })
       .expect(400);
     await request(app.getHttpServer())
@@ -132,7 +133,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it.each([undefined, '', 'email-invalido'])(
     'recusa cadastro com email inválido: %s',
     async (email) => {
-      await authorized('post', '/api/users')
+      await authorized('post', '/api/operadores')
         .send({ ...userBody, email })
         .expect(400);
       expect(await prisma.user.count()).toBe(1);
@@ -140,14 +141,14 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   );
 
   it('retorna 409 para email duplicado no cadastro e na edição, ignorando caixa', async () => {
-    await authorized('post', '/api/users').send(userBody).expect(201);
-    await authorized('post', '/api/users')
+    await authorized('post', '/api/operadores').send(userBody).expect(201);
+    await authorized('post', '/api/operadores')
       .send({ ...userBody, email: 'BRUNO@EXAMPLE.COM' })
       .expect(409);
-    const other = await authorized('post', '/api/users')
+    const other = await authorized('post', '/api/operadores')
       .send({ ...userBody, email: 'other@example.com' })
       .expect(201);
-    await authorized('put', `/api/users/${other.body.id}`)
+    await authorized('put', `/api/operadores/${other.body.id}`)
       .send({ ...updateBody, email: 'BRUNO@EXAMPLE.COM' })
       .expect(409);
     expect(
@@ -157,7 +158,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('executa criação → login → /me → troca de email → novo login', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const login = await request(app.getHttpServer())
@@ -169,7 +170,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       .set('Authorization', `Bearer ${login.body.access_token}`)
       .expect(200);
     expectSafeUser(me.body, userBody.email);
-    await authorized('put', `/api/users/${created.body.id}`)
+    await authorized('put', `/api/operadores/${created.body.id}`)
       .send({ ...updateBody, email: 'Novo@example.com' })
       .expect(200);
     await request(app.getHttpServer())
@@ -188,14 +189,16 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('mantém exclusão lógica e recusa login, acesso e refresh após inativação', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const login = await request(app.getHttpServer())
       .post('/api/login')
       .send({ email: userBody.email, password: userBody.password })
       .expect(201);
-    await authorized('delete', `/api/users/${created.body.id}`).expect(200);
+    await authorized('delete', `/api/operadores/${created.body.id}`).expect(
+      200,
+    );
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
     ).toMatchObject({ status: false, email: userBody.email });
@@ -214,18 +217,18 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('preserva o hash ao editar sem senha e rejeita troca de senha no PUT atual', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const id = created.body.id;
     const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-    const rejected = await authorized('put', `/api/users/${id}`)
+    const rejected = await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, password: 'nova-senha' })
       .expect(400);
     expect(rejected.body.message).toContain(
       'property password should not exist',
     );
-    await authorized('put', `/api/users/${id}`)
+    await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, name: 'Novo Nome' })
       .expect(200);
     const after = await prisma.user.findUniqueOrThrow({ where: { id } });
@@ -238,29 +241,27 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it.each([true, false])(
-    'preserva status %s e hash ao editar nome e e-mail',
+    'preserva o status explícito %s e o hash ao editar nome e e-mail',
     async (status) => {
-      const created = await authorized('post', '/api/users')
+      const created = await authorized('post', '/api/operadores')
         .send({ ...userBody, status })
         .expect(201);
       const id = created.body.id;
       const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-      const result = await authorized('put', `/api/users/${id}`)
+      const result = await authorized('put', `/api/operadores/${id}`)
         .send({
           name: 'Nome Alterado',
           email: 'alterado@example.com',
-          role: userBody.role,
+          status,
         })
         .expect(200);
       expect(result.body).toMatchObject({
         status,
-        role: userBody.role,
         email: 'alterado@example.com',
       });
       const after = await prisma.user.findUniqueOrThrow({ where: { id } });
       expect(after).toMatchObject({
         status,
-        role: userBody.role,
         name: 'Nome Alterado',
         email: 'alterado@example.com',
       });
@@ -275,25 +276,25 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it.each([true, false])(
     'permite alterar status explicitamente para %s',
     async (status) => {
-      const created = await authorized('post', '/api/users')
+      const created = await authorized('post', '/api/operadores')
         .send({ ...userBody, status: !status })
         .expect(201);
-      await authorized('put', `/api/users/${created.body.id}`)
+      await authorized('put', `/api/operadores/${created.body.id}`)
         .send({ ...updateBody, status })
         .expect(200);
       expect(
         await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-      ).toMatchObject({ status, role: userBody.role });
+      ).toMatchObject({ status, role: 'OPERADOR' });
     },
   );
 
   it('recusa status textual sem alterar dados persistidos', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send({ ...userBody, status: false })
       .expect(201);
     const id = created.body.id;
     const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-    await authorized('put', `/api/users/${id}`)
+    await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, name: 'Não Persistir', status: 'true' })
       .expect(400);
     expect(await prisma.user.findUniqueOrThrow({ where: { id } })).toEqual(
@@ -302,18 +303,17 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('aplica status ativo padrão no cadastro sem status', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send({
         name: userBody.name,
         email: userBody.email,
         password: userBody.password,
-        role: userBody.role,
       })
       .expect(201);
-    expect(created.body).toMatchObject({ status: true, role: userBody.role });
+    expect(created.body).toMatchObject({ status: true, role: 'OPERADOR' });
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-    ).toMatchObject({ status: true, role: userBody.role });
+    ).toMatchObject({ status: true, role: 'OPERADOR' });
   });
 
   it('consulta setup e impede repetir o primeiro acesso', async () => {
@@ -329,8 +329,12 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 });
 
-describe('Rotas de operadores', () => {
-  const base = '/api/operadores';
+describe.each([
+  { segment: 'operadores', profileRole: 'OPERADOR' },
+  { segment: 'despachantes', profileRole: 'DESPACHANTE' },
+] as const)('Rotas de $segment', ({ segment, profileRole }) => {
+  const base = `/api/${segment}`;
+  const otherRole = profileRole === 'OPERADOR' ? 'DESPACHANTE' : 'OPERADOR';
   const body = {
     name: userBody.name,
     email: userBody.email,
@@ -338,7 +342,7 @@ describe('Rotas de operadores', () => {
   };
   const changes = { name: 'Nome Editado', email: 'editado@example.com' };
 
-  async function createOperador(
+  async function createProfile(
     overrides: { email?: string; status?: boolean } = {},
   ) {
     const response = await authorized('post', base)
@@ -348,14 +352,14 @@ describe('Rotas de operadores', () => {
   }
 
   it.each([undefined, false])(
-    'cadastra operador com status enviado %s',
+    'cadastra com status enviado %s',
     async (status) => {
-      const created = await createOperador(
+      const created = await createProfile(
         status === undefined ? {} : { status },
       );
       expectSafeUser(created, body.email);
       expect(created).toMatchObject({
-        role: 'OPERADOR',
+        role: profileRole,
         status: status ?? true,
       });
       const saved = await prisma.user.findUniqueOrThrow({
@@ -382,16 +386,18 @@ describe('Rotas de operadores', () => {
   });
 
   it('aplica os filtros de perfil e e-mail tanto na página quanto no total', async () => {
-    const first = await createOperador({
+    const first = await createProfile({
       email: 'equipe-primeiro@example.com',
     });
-    await createOperador({ email: 'equipe-segundo@example.com' });
-    await createOperador({ email: 'avulso@example.com' });
-    await authorized('post', '/api/users')
+    await createProfile({ email: 'equipe-segundo@example.com' });
+    await createProfile({ email: 'avulso@example.com' });
+    await authorized(
+      'post',
+      otherRole === 'OPERADOR' ? '/api/operadores' : '/api/despachantes',
+    )
       .send({
         ...body,
-        email: 'equipe-despachante@example.com',
-        role: 'DESPACHANTE',
+        email: 'equipe-outro@example.com',
       })
       .expect(201);
 
@@ -415,12 +421,12 @@ describe('Rotas de operadores', () => {
     expectSafeUser(response.body.data[0], first.email);
     expect(response.body.data[0]).toMatchObject({
       id: first.id,
-      role: 'OPERADOR',
+      role: profileRole,
     });
   });
 
   it('exige status booleano e rejeita alteração de senha e perfil no PUT', async () => {
-    const { id } = await createOperador();
+    const { id } = await createProfile();
     const path = `${base}/${id}`;
     await authorized('put', path).send(changes).expect(400);
     await authorized('put', path)
@@ -438,12 +444,12 @@ describe('Rotas de operadores', () => {
       email: body.email,
       name: body.name,
       status: true,
-      role: 'OPERADOR',
+      role: profileRole,
     });
   });
 
   it('edita com status explícito e inativa sem apagar o registro', async () => {
-    const { id } = await createOperador();
+    const { id } = await createProfile();
     const path = `${base}/${id}`;
     const original = await prisma.user.findUniqueOrThrow({ where: { id } });
     for (const status of [false, true]) {
@@ -454,7 +460,7 @@ describe('Rotas de operadores', () => {
       expect(response.body).toMatchObject({
         ...changes,
         status,
-        role: 'OPERADOR',
+        role: profileRole,
       });
     }
     const response = await authorized('delete', path).expect(200);
@@ -464,7 +470,7 @@ describe('Rotas de operadores', () => {
     ).toMatchObject({
       ...changes,
       status: false,
-      role: 'OPERADOR',
+      role: profileRole,
       password: original.password,
     });
   });
@@ -484,12 +490,16 @@ describe('Rotas de operadores', () => {
   });
 
   it.each(['OPERADOR', 'DESPACHANTE'])(
-    'bloqueia as quatro rotas para %s',
+    'aplica as permissões das quatro rotas para %s',
     async (role) => {
-      const target = await createOperador();
+      const target = await createProfile();
+      const allowed = profileRole === 'DESPACHANTE' && role === 'OPERADOR';
       const actor = { email: 'ator@example.com', password: body.password };
-      await authorized('post', '/api/users')
-        .send({ ...actor, name: 'Ator', role })
+      await authorized(
+        'post',
+        role === 'OPERADOR' ? '/api/operadores' : '/api/despachantes',
+      )
+        .send({ ...actor, name: 'Ator' })
         .expect(201);
       const client = request(app.getHttpServer());
       const login = await client.post('/api/login').send(actor).expect(201);
@@ -498,15 +508,21 @@ describe('Rotas de operadores', () => {
       await client
         .post(base)
         .set('Authorization', bearer)
-        .send(body)
-        .expect(403);
-      await client.get(base).set('Authorization', bearer).expect(403);
+        .send({ ...body, email: 'novo-perfil@example.com' })
+        .expect(allowed ? 201 : 403);
+      await client
+        .get(base)
+        .set('Authorization', bearer)
+        .expect(allowed ? 200 : 403);
       await client
         .put(path)
         .set('Authorization', bearer)
-        .send({ ...changes, status: false })
-        .expect(403);
-      await client.delete(path).set('Authorization', bearer).expect(403);
+        .send({ ...changes, status: true })
+        .expect(allowed ? 200 : 403);
+      await client
+        .delete(path)
+        .set('Authorization', bearer)
+        .expect(allowed ? 200 : 403);
     },
   );
 });

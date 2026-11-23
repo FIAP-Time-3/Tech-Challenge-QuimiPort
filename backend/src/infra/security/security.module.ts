@@ -12,6 +12,7 @@ import { FirstAdminController } from './user/infrastructure/controller/first-adm
 import { MeController } from './user/infrastructure/controller/me/me.controller.js';
 import { UserController } from './user/infrastructure/controller/user.controller.js';
 import { OperadoresController } from './user/infrastructure/controller/operadores/operadores.controller.js';
+import { DespachantesController } from './user/infrastructure/controller/despachantes/despachantes.controller.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { OperadoresController } from './user/infrastructure/controller/operadore
     LoginController,
     UserController,
     OperadoresController,
+    DespachantesController,
     MeController,
     FirstAdminController,
   ],
