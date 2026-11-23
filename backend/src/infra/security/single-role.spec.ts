@@ -3,15 +3,15 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CargaQuimicaService } from '../../modules/cargaQuimica/application/CargaQuimica.service.js';
-import { StatusCargaEnum } from '../../modules/cargaQuimica/domain/value-objects/StatusCarga.enum.js';
+import { CargaQuimicaService } from '../../modules/carga-quimica/application/carga-quimica.service.js';
+import { StatusCargaEnum } from '../../modules/carga-quimica/domain/value-objects/status-carga.enum.js';
 import { PrismaService } from '../database/prisma.service.js';
-import { AllowedRoles } from './decorators/allowedRoles.decorator.js';
+import { AllowedRoles } from './decorators/allowed-roles.decorator.js';
 import { RolesEnum } from './enums/roles.enum.js';
 import { RolesGuard } from './guards/roles.guard.js';
-import { LoginService } from './login/application/Login.service.js';
-import { UserService } from './user/application/User.service.js';
-import { CreateUserDto } from './user/infrastructure/dtos/User.request.dtos.js';
+import { LoginService } from './login/application/login.service.js';
+import { UserService } from './user/application/user.service.js';
+import { CreateUserDto } from './user/infrastructure/dtos/user.request.dtos.js';
 
 const userInput = {
   name: 'Usuário de teste',

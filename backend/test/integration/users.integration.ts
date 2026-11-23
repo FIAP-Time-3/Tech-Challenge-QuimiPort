@@ -7,8 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
-import { UserService } from '../../src/infra/security/user/application/User.service.js';
-import { LoginService } from '../../src/infra/security/login/application/Login.service.js';
+import { UserService } from '../../src/infra/security/user/application/user.service.js';
+import { LoginService } from '../../src/infra/security/login/application/login.service.js';
 import { PasswordService } from '../../src/infra/security/password/password.service.js';
 import { RolesEnum } from '../../src/infra/security/enums/roles.enum.js';
 import { configureTestDatabase } from '../support/database-env.js';
@@ -271,24 +271,34 @@ describe('Seed do primeiro administrador', () => {
     password: 'senha-exclusiva-do-seed',
   };
 
+  const runCommand = promisify(execFile);
+
+  beforeAll(async () => {
+    await runCommand('npm', ['run', 'build']);
+  }, 30000);
+
   async function runSeed({ name, email, password } = seedCredentials) {
     const url = configureTestDatabase();
     const database = new URL(url);
-    await promisify(execFile)('npm', ['run', 'seed:admin'], {
-      timeout: 10000,
-      env: {
-        ...process.env,
-        DATABASE_URL: url,
-        DATABASE_HOSTNAME: database.hostname,
-        DATABASE_PORT: database.port || '5432',
-        DATABASE_NAME: database.pathname.slice(1),
-        DATABASE_USERNAME: decodeURIComponent(database.username),
-        DATABASE_PASSWORD: decodeURIComponent(database.password),
-        SEED_ADMIN_NAME: name,
-        SEED_ADMIN_EMAIL: email,
-        SEED_ADMIN_PASSWORD: password,
+    await runCommand(
+      process.execPath,
+      ['--import', 'dotenv/config', 'dist/infra/security/user/seed-admin.js'],
+      {
+        timeout: 10000,
+        env: {
+          ...process.env,
+          DATABASE_URL: url,
+          DATABASE_HOSTNAME: database.hostname,
+          DATABASE_PORT: database.port || '5432',
+          DATABASE_NAME: database.pathname.slice(1),
+          DATABASE_USERNAME: decodeURIComponent(database.username),
+          DATABASE_PASSWORD: decodeURIComponent(database.password),
+          SEED_ADMIN_NAME: name,
+          SEED_ADMIN_EMAIL: email,
+          SEED_ADMIN_PASSWORD: password,
+        },
       },
-    });
+    );
   }
 
   it('cria um administrador ativo em banco limpo com senha válida para login', async () => {
@@ -322,7 +332,12 @@ describe('Seed do primeiro administrador', () => {
   it('recusa credenciais incompletas sem criar usuário', async () => {
     await expect(
       runSeed({ ...seedCredentials, password: '' }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining(
+        'Informe SEED_ADMIN_NAME, SEED_ADMIN_EMAIL válido e SEED_ADMIN_PASSWORD.',
+      ),
+    });
     expect(await prisma.user.count()).toBe(0);
   });
 });

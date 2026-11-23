@@ -1,7 +1,7 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AllowedRoles } from '../decorators/allowedRoles.decorator.js';
-import { SetPublic } from '../decorators/setPublic.decorator.js';
+import { AllowedRoles } from '../decorators/allowed-roles.decorator.js';
+import { SetPublic } from '../decorators/set-public.decorator.js';
 import { RolesEnum } from '../enums/roles.enum.js';
 import { RolesGuard } from './roles.guard.js';
 

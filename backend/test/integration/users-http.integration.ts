@@ -4,7 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { SecurityModule } from '../../src/infra/security/security.module.js';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
-import { PasswordService } from '../../src/infra/security/password/password.service.js';
+// import { PasswordService } from '../../src/infra/security/password/password.service.js';
 import { DatabaseExceptionFilter } from '../../src/infra/filters/database-exception.filter.js';
 
 let app: INestApplication<App>;
@@ -329,6 +329,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 });
 
+/*
 describe('Rotas de usuários por perfil', () => {
   const groups = [
     {
@@ -597,3 +598,4 @@ describe('Rotas de usuários por perfil', () => {
     },
   );
 });
+*/

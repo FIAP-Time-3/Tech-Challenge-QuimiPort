@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service.js';
-import { isPublic } from '../decorators/setPublic.decorator.js';
+import { isPublic } from '../decorators/set-public.decorator.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {

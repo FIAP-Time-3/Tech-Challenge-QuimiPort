@@ -289,18 +289,18 @@ npm run test:watch    # modo observação
 
 | Cenário | Onde está |
 |---|---|
-| Cadastro de produto químico | `ProdutoQuimico.service.spec.ts` |
-| Produto sem nome | `ProdutoQuimico.dtos.spec.ts` |
-| Produto sem classe de risco | `ProdutoQuimico.dtos.spec.ts` |
-| Registro de carga química | `CargaQuimica.service.spec.ts` |
-| Carga com produto inativo | `CargaQuimica.service.spec.ts` |
-| Quantidade menor ou igual a zero | `CargaQuimica.request.dtos.spec.ts` |
-| Liberação sem documentação obrigatória | `CargaQuimica.service.spec.ts` |
-| Atualização de status | `CargaQuimica.service.spec.ts` |
-| Transições permitidas | `CargaQuimica.transicoes.spec.ts` |
-| Transições proibidas | `CargaQuimica.transicoes.spec.ts` |
-| Cancelamento de carga | `CargaQuimica.service.spec.ts` |
-| Movimentar carga bloqueada | `CargaQuimica.service.spec.ts` |
+| Cadastro de produto químico | `produto-quimico.service.spec.ts` |
+| Produto sem nome | `produto-quimico.request.dtos.spec.ts` |
+| Produto sem classe de risco | `produto-quimico.request.dtos.spec.ts` |
+| Registro de carga química | `carga-quimica.service.spec.ts` |
+| Carga com produto inativo | `carga-quimica.service.spec.ts` |
+| Quantidade menor ou igual a zero | `carga-quimica.request.dtos.spec.ts` |
+| Liberação sem documentação obrigatória | `carga-quimica.service.spec.ts` |
+| Atualização de status | `carga-quimica.service.spec.ts` |
+| Transições permitidas | `carga-quimica.transicoes.spec.ts` |
+| Transições proibidas | `carga-quimica.transicoes.spec.ts` |
+| Cancelamento de carga | `carga-quimica.service.spec.ts` |
+| Movimentar carga bloqueada | `carga-quimica.service.spec.ts` |
 
 Nos testes de service, o acesso ao banco é substituído por *mocks* (`vi.fn()`), o que os mantém rápidos e independentes do PostgreSQL.
 
@@ -476,24 +476,24 @@ src/
 │       ├── user/                   # CRUD de usuários
 │       └── security.module.ts
 └── modules/                        # Módulos de negócio
-    ├── produtoQuimico/
-    │   ├── ProdutoQuimico.module.ts
+    ├── produto-quimico/
+    │   ├── produto-quimico.module.ts
     │   ├── application/            # Service: casos de uso do produto
     │   ├── domain/
-    │   │   └── value-objects/      # ClasseRisco.enum.ts
+    │   │   └── value-objects/      # classe-risco.enum.ts
     │   └── infrastructure/
     │       ├── controller/         # Rotas HTTP
     │       └── dtos/               # Entrada e saída (request/response)
-    └── cargaQuimica/
-        ├── CargaQuimica.module.ts
+    └── carga-quimica/
+        ├── carga-quimica.module.ts
         ├── application/
-        │   ├── CargaQuimica.service.ts      # Casos de uso: registrar, transicionar, documentos...
-        │   └── CargaQuimica.permissoes.ts   # Perfis que atuam em cada etapa
+        │   ├── carga-quimica.service.ts      # Casos de uso: registrar, transicionar, documentos...
+        │   └── carga-quimica.permissoes.ts   # Perfis que atuam em cada etapa
         ├── domain/
-        │   ├── CargaQuimica.transicoes.ts   # Matriz de transições (funções puras)
-        │   ├── CargaQuimica.documentos.ts   # Documentos obrigatórios
-        │   ├── CargaQuimica.codigo.ts       # Código público da carga (CQ-000001)
-        │   └── value-objects/               # StatusCarga.enum.ts e TipoDocumento.enum.ts
+        │   ├── carga-quimica.transicoes.ts   # Matriz de transições (funções puras)
+        │   ├── carga-quimica.documentos.ts   # Documentos obrigatórios
+        │   ├── carga-quimica.codigo.ts       # Código público da carga (CQ-000001)
+        │   └── value-objects/               # status-carga.enum.ts e tipo-documento.enum.ts
         └── infrastructure/
             ├── controller/
             └── dtos/
@@ -918,9 +918,9 @@ Padrões já adotados no código, que devem ser mantidos:
 - Mudanças de status da carga passam **sempre** por `CargaQuimicaService.transicionar`.
 
 **Nomes de arquivos**
-- `Entidade.service.ts`, `Entidade.controller.ts` e `Entidade.module.ts`.
-- DTOs em `Entidade.request.dtos.ts` e `Entidade.response.dtos.ts`.
-- Enums em `Nome.enum.ts` e testes em `*.spec.ts`, ao lado do código.
+- Arquivos e pastas em kebab-case, como `produto-quimico/`, `produto-quimico.service.ts`, `produto-quimico.controller.ts` e `produto-quimico.module.ts`.
+- DTOs em `produto-quimico.request.dtos.ts` e `produto-quimico.response.dtos.ts`.
+- Enums em `classe-risco.enum.ts` e testes em `*.spec.ts`, ao lado do código.
 - Os imports usam a extensão `.js` (o projeto usa módulos ES), por exemplo `import { X } from './x.js'`.
 
 **API**

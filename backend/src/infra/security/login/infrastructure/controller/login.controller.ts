@@ -14,8 +14,8 @@ import {
   LoginRequestDto,
   RefreshRequestDto,
 } from '../dtos/login.request.dtos.js';
-import { SetPublic } from '../../../decorators/setPublic.decorator.js';
-import { LoginService } from '../../application/Login.service.js';
+import { SetPublic } from '../../../decorators/set-public.decorator.js';
+import { LoginService } from '../../application/login.service.js';
 
 @ApiTags('Autenticação')
 @SetPublic()
