@@ -8,10 +8,17 @@ import DataTable, {
 import { Input } from '@/shared/components/ui/input';
 import type { CargaQuimicaResumo } from '@/modules/dashboard/models/cargaQuimica';
 
+import CargaActionButton, { type CargaAction } from './CargaActionButton';
+
 interface TabelaCargasRecentesProps {
   loads: CargaQuimicaResumo[];
   totalLoads: number;
   search: string;
+  onAction?: (
+    load: CargaQuimicaResumo,
+    action: CargaAction,
+    reason: string,
+  ) => Promise<void>;
   onSearchChange: (value: string) => void;
 }
 
@@ -35,6 +42,7 @@ function TabelaCargasRecentes({
   totalLoads,
   search,
   onSearchChange,
+  onAction,
 }: TabelaCargasRecentesProps) {
   const columns: DataTableColumn<CargaQuimicaResumo>[] = [
     {
@@ -79,6 +87,33 @@ function TabelaCargasRecentes({
       className: 'text-muted-foreground',
     },
   ];
+
+  if (onAction) {
+    columns.push({
+      key: 'actions',
+      header: 'Ações',
+      render: (load) => {
+        if (load.statusCode === 'FINALIZADA' || load.statusCode === 'CANCELADA')
+          return null;
+        return (
+          <div className="flex gap-2">
+            {load.statusCode === 'EM_INSPECAO' && (
+              <CargaActionButton
+                action="bloquear"
+                code={load.code}
+                onConfirm={(reason) => onAction(load, 'bloquear', reason)}
+              />
+            )}
+            <CargaActionButton
+              action="cancelar"
+              code={load.code}
+              onConfirm={(reason) => onAction(load, 'cancelar', reason)}
+            />
+          </div>
+        );
+      },
+    });
+  }
 
   return (
     <div id="loads">

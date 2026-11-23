@@ -1,0 +1,62 @@
+# TODO do frontend
+
+Caixinhas marcadas indicam implementação concluída ou validação registrada. As verificações com a API em execução têm itens próprios.
+
+## Estrutura e segurança
+
+- [x] Implementar login por e-mail em `/login` (`POST /api/login`).
+- [x] Separar o cadastro do primeiro administrador em `/first-access` (`POST /api/users/first_access`). As duas páginas compartilham o layout. O estado de `GET /api/login/setup` controla os redirecionamentos, e o cadastro concluído volta ao login com o e-mail preenchido.
+- [x] Remover a opção de recuperação de senha do login. A troca de senha pela própria conta e o reset administrativo continuam no módulo de Usuários.
+- [x] Carregar `GET /api/me` e montar o menu conforme o perfil em desktop e mobile.
+- [x] Enviar o access token como Bearer, renovar em `POST /api/login/refresh`, compartilhar a renovação entre requisições simultâneas e repetir a requisição após sucesso. Limpar a sessão no logout ou quando a renovação falhar.
+- [x] Proteger páginas com `ProtectedRoute` e declarar `allowedRoles` em `routes.tsx`. Sem essa prop, permitir qualquer usuário logado.
+- [x] Mostrar `AccessDeniedPage`, em `src/infrastructure/defaultPages`, com sidebar para perfil sem permissão. Ao abrir uma página protegida sem sessão, levar ao login com alerta. O fluxo normal de login abre sem aviso.
+- [x] Organizar contratos em `infrastructure/backend/dtos` e chamadas em `infrastructure/backend/routes`, com um contrato de paginação compartilhado.
+- [x] Validar `/login` e `/first-access` no navegador com e sem administrador ativo. Cobrir acesso direto às duas URLs, cadastro concluído, tentativa simultânea de cadastro e erro seguido de nova tentativa na consulta de setup.
+- [x] Exibir `NotFound`, em `src/infrastructure/defaultPages/NotFound.tsx`, pela rota de fallback `*`. Mostrar a mensagem de página não encontrada e oferecer retorno ao início.
+
+### Estados das telas e formulários
+
+- [x] **Carregamento.** Usar `LoadingState` na primeira consulta de cada lista ou detalhe. Indicar quando a página muda ou uma ação está sendo enviada. Desabilitar o botão de envio enquanto a requisição estiver em andamento para evitar duplicidade.
+- [ ] **Lista vazia.** Mostrar uma mensagem específica quando ainda não houver registros. Se uma busca ou filtro deixar a lista vazia, informar que nenhum resultado foi encontrado e oferecer uma forma de limpar os filtros.
+- [ ] **Erros da API.** Usar `Feedback` para erros gerais. Mostrar mensagens de validação junto aos campos correspondentes e explicar conflitos de negócio, como e-mail duplicado. Em falhas de consulta recuperáveis, oferecer **Tentar novamente**. Manter o tratamento de sessão inválida e acesso negado no fluxo de autenticação.
+- [ ] **Validação de formulários.** Aplicar as regras dos DTOs a campos obrigatórios, formatos e limites antes do envio. Destacar campos inválidos, manter os dados preenchidos quando a API recusar o envio e limpar os erros conforme os campos forem corrigidos ou o formulário for reenviado.
+- [x] **Confirmação de ações nas listagens.** Usar `ConfirmButton` para inativar usuários, excluir produtos e bloquear ou cancelar cargas recentes. Identificar o registro e exigir motivo nas ações de carga. Atualizar a listagem após sucesso e manter o diálogo aberto em caso de erro.
+
+## Módulos
+
+### Usuários
+
+As coleções `/api/administradores`, `/api/operadores` e `/api/despachantes` oferecem `GET` e `POST` na coleção, `GET`, `PUT` e `DELETE` em `/:id` e `PATCH /password/:id`. Administradores gerenciam os três grupos. Operadores gerenciam Despachantes. Os três perfis podem acessar a própria conta.
+
+- [x] Criar listagens administrativas paginadas e protegidas por perfil.
+- [x] Disponibilizar no cliente HTTP as operações de gestão por perfil, consulta da própria conta e troca de senha.
+- [ ] Adicionar busca por e-mail e links da listagem para detalhe, edição e demais ações.
+- [ ] Criar telas de cadastro, detalhe e edição. Cadastro envia nome, e-mail, senha e status opcional. Edição envia nome, e-mail e status. O servidor define o perfil pela rota. Exibir conflitos de e-mail no formulário.
+- [x] Confirmar a inativação antes de `DELETE /:id`, atualizar a lista após sucesso e exibir erros como a restrição do último administrador ativo.
+- [ ] Criar formulário de reset administrativo via `PATCH /password/:id`.
+- [ ] Criar Minha conta com `GET /api/me` e troca de senha via `PATCH /api/me/password`, com senha atual, nova senha e confirmação.
+
+### Cargas químicas
+
+A coleção fica em `/api/cargas-quimicas`. Os três perfis podem consultar cargas, histórico e documentos. Administradores e operadores executam as ações de escrita conforme o estado da carga.
+
+- [x] Exibir indicadores e cargas recentes no painel com dados da API paginada.
+- [x] Disponibilizar no cliente HTTP as operações de cadastro, edição, consulta, histórico, transições e documentos.
+- [ ] Criar listagem própria com paginação em `GET /api/cargas-quimicas` e apontar o item Cargas Químicas do menu para ela.
+- [ ] Criar detalhe com `GET /:id` e histórico paginado com `GET /:id/historico`. Exibir status, produto, responsável técnico e documentos.
+- [ ] Criar formulários de cadastro e edição com `POST` na coleção e `PUT /:id`. Selecionar produto ativo e informar quantidade inteira positiva, unidade, origem, destino e responsável técnico.
+- [ ] Definir a fonte do seletor de responsáveis para quem opera com perfil Operador. O backend aceita administradores e operadores ativos como responsáveis. A consulta às duas listagens administrativas é restrita ao Administrador.
+- [ ] Consultar `GET /transicoes/:status` e implementar `PATCH /:id/status`, `PATCH /:id/bloquear`, `PATCH /:id/liberar` e `PATCH /:id/cancelar`. Pedir motivo para bloqueio e cancelamento e atualizar detalhe e histórico após sucesso.
+- [ ] Anexar PDF de até 10 MiB em `POST /:id/documentos`. Oferecer download por `GET /:id/documentos/:docId` e validação por `PATCH /:id/documentos/:docId/validar`. Mostrar a situação da FISPQ e da nota fiscal, obrigatórias para liberação.
+
+### Produtos químicos
+
+Os três perfis podem consultar `/api/produtos-quimicos`. Administradores e operadores podem cadastrar, editar, inativar e excluir.
+
+- [x] Criar listagem e detalhe com `GET /api/produtos-quimicos` e `GET /:id`. A listagem lê as páginas da API e permite busca local.
+- [x] Criar telas de cadastro (`POST` na coleção) e edição (`PUT /:id`) e proteger as rotas por perfil.
+- [x] Implementar inativação (`PATCH /:id/inativar`) no detalhe e exclusão (`DELETE /:id`) na lista, com diálogos de confirmação.
+- [ ] Incluir `numeroONU` nos DTOs, formulário, listagem e detalhe. Validar o campo obrigatório como texto de quatro dígitos para preservar zeros à esquerda.
+- [ ] Ocultar ações de escrita para Despachante na listagem e no detalhe.
+- [ ] Validar cadastro e edição com número ONU, produto inexistente, retorno após salvar, confirmações e conflitos de inativação ou exclusão.

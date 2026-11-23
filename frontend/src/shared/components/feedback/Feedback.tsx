@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 
@@ -30,7 +31,13 @@ export function LoadingState({ children }: { children: ReactNode }) {
       role="status"
       className="space-y-3 rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground"
     >
-      <p>{children}</p>
+      <p className="flex items-center gap-2">
+        <LoaderCircle
+          aria-hidden="true"
+          className="size-4 shrink-0 motion-safe:animate-spin"
+        />
+        {children}
+      </p>
       <Skeleton aria-hidden="true" className="h-3 w-2/3" />
       <Skeleton aria-hidden="true" className="h-3 w-1/3" />
     </div>
