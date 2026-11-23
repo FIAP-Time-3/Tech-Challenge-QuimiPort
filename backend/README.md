@@ -562,17 +562,23 @@ Todas as rotas têm prefixo **`/api`**. O Swagger permite autenticar (botão **A
 | `POST` | `/api/login` | Autentica e retorna `access_token` e `refresh_token` |
 | `POST` | `/api/login/refresh` | Gera novos tokens a partir do `refresh_token` |
 
-**Usuários** (somente `ADMINISTRADOR`)
+**Usuários**
+
+Em `/api/{perfil}`, use `administradores`, `operadores` ou `despachantes`. Apenas `ADMINISTRADOR` gerencia administradores e operadores. Tanto `ADMINISTRADOR` quanto `OPERADOR` podem executar todas as operações de gestão de despachantes, inclusive o reset de senha.
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/users` | Cria usuário, com seus perfis |
-| `GET` | `/api/users` | Lista usuários |
-| `GET` | `/api/users/:id` | Busca usuário |
-| `PUT` | `/api/users/:id` | Atualiza usuário |
-| `DELETE` | `/api/users/:id` | Remove usuário |
+| `POST` | `/api/{perfil}` | Cadastra no perfil da rota. `status` é opcional e assume `true`. |
+| `GET` | `/api/{perfil}` | Lista o perfil com paginação (`page`, `limit`) e filtro parcial por `email`. |
+| `GET` | `/api/{perfil}/:id` | Consulta um usuário do perfil. |
+| `PUT` | `/api/{perfil}/:id` | Atualiza `name`, `email` e `status`, todos obrigatórios. |
+| `DELETE` | `/api/{perfil}/:id` | Inativa o usuário. |
+| `PATCH` | `/api/{perfil}/password/:id` | Redefine a senha com o campo `newPassword`. |
+| `POST` | `/api/users/first_access` | Configura o primeiro administrador enquanto não houver um administrador ativo. |
+| `GET` | `/api/me` | Consulta a conta autenticada. |
+| `PATCH` | `/api/me/password` | Troca a senha da própria conta com confirmação da senha atual. |
 
-O corpo de cada requisição está descrito no Swagger.
+IDs de outro perfil retornam `404`. O `PUT` rejeita campos de senha, e a API omite a senha e o hash nas respostas. O reset mantém válidos os tokens já emitidos até o vencimento, enquanto a conta estiver ativa. O login de todos os perfis usa `POST /api/login`.
 
 **Produtos químicos** (`ADMINISTRADOR`, `GESTOR`, `OPERADOR`, `TECNICO`)
 

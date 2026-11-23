@@ -4,7 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { SecurityModule } from '../../src/infra/security/security.module.js';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
-// import { PasswordService } from '../../src/infra/security/password/password.service.js';
+import { PasswordService } from '../../src/infra/security/password/password.service.js';
 import { DatabaseExceptionFilter } from '../../src/infra/filters/database-exception.filter.js';
 
 let app: INestApplication<App>;
@@ -15,14 +15,12 @@ const userBody = {
   email: 'Bruno@example.com',
   name: 'Bruno Dias',
   password: 'secret',
-  role: 'OPERADOR',
   status: true,
 };
 
 const updateBody = {
   email: userBody.email,
   name: userBody.name,
-  role: userBody.role,
   status: userBody.status,
 };
 
@@ -66,29 +64,35 @@ beforeEach(async () => {
   adminToken = response.body.access_token;
 });
 
-function authorized(method: 'get' | 'post' | 'put' | 'delete', path: string) {
+function authorized(
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch',
+  path: string,
+) {
   const client = request(app.getHttpServer());
   return client[method](path).set('Authorization', `Bearer ${adminToken}`);
 }
 
 describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it('expõe email e oculta username/senha em criação, listagem, detalhe, edição e /me', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     expectSafeUser(created.body, userBody.email);
     const id = created.body.id;
-    const list = await authorized('get', '/api/users').expect(200);
+    const list = await authorized('get', '/api/operadores').expect(200);
     expect(list.body).toMatchObject({
       page: 1,
       limit: 10,
-      total: 2,
+      total: 1,
       totalPages: 1,
     });
-    expect(list.body.data).toHaveLength(2);
-    expectSafeUser(list.body.data[0], credentials.email);
-    expectSafeUser(list.body.data[1], userBody.email);
-    const secondPage = await authorized('get', '/api/users')
+    expect(list.body.data).toHaveLength(1);
+    expectSafeUser(list.body.data[0], userBody.email);
+    const otherEmail = 'outro@example.com';
+    await authorized('post', '/api/operadores')
+      .send({ ...userBody, email: otherEmail })
+      .expect(201);
+    const secondPage = await authorized('get', '/api/operadores')
       .query({ page: 2, limit: 1, column: 'id', order: 'desc' })
       .expect(200);
     expect(secondPage.body).toMatchObject({
@@ -98,10 +102,10 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       totalPages: 2,
     });
     expect(secondPage.body.data).toHaveLength(1);
-    expectSafeUser(secondPage.body.data[0], credentials.email);
-    const detail = await authorized('get', `/api/users/${id}`).expect(200);
+    expectSafeUser(secondPage.body.data[0], userBody.email);
+    const detail = await authorized('get', `/api/operadores/${id}`).expect(200);
     expectSafeUser(detail.body, userBody.email);
-    const updated = await authorized('put', `/api/users/${id}`)
+    const updated = await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, email: 'Novo@example.com' })
       .expect(200);
     expectSafeUser(updated.body, 'Novo@example.com');
@@ -110,13 +114,13 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('recusa username legado na criação, edição, login e primeiro acesso', async () => {
-    await authorized('post', '/api/users')
+    await authorized('post', '/api/operadores')
       .send({ ...userBody, username: 'bruno' })
       .expect(400);
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
-    await authorized('put', `/api/users/${created.body.id}`)
+    await authorized('put', `/api/operadores/${created.body.id}`)
       .send({ ...updateBody, username: 'bruno' })
       .expect(400);
     await request(app.getHttpServer())
@@ -132,7 +136,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it.each([undefined, '', 'email-invalido'])(
     'recusa cadastro com email inválido: %s',
     async (email) => {
-      await authorized('post', '/api/users')
+      await authorized('post', '/api/operadores')
         .send({ ...userBody, email })
         .expect(400);
       expect(await prisma.user.count()).toBe(1);
@@ -140,14 +144,14 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   );
 
   it('retorna 409 para email duplicado no cadastro e na edição, ignorando caixa', async () => {
-    await authorized('post', '/api/users').send(userBody).expect(201);
-    await authorized('post', '/api/users')
+    await authorized('post', '/api/operadores').send(userBody).expect(201);
+    await authorized('post', '/api/operadores')
       .send({ ...userBody, email: 'BRUNO@EXAMPLE.COM' })
       .expect(409);
-    const other = await authorized('post', '/api/users')
+    const other = await authorized('post', '/api/operadores')
       .send({ ...userBody, email: 'other@example.com' })
       .expect(201);
-    await authorized('put', `/api/users/${other.body.id}`)
+    await authorized('put', `/api/operadores/${other.body.id}`)
       .send({ ...updateBody, email: 'BRUNO@EXAMPLE.COM' })
       .expect(409);
     expect(
@@ -157,7 +161,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('executa criação → login → /me → troca de email → novo login', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const login = await request(app.getHttpServer())
@@ -169,7 +173,7 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
       .set('Authorization', `Bearer ${login.body.access_token}`)
       .expect(200);
     expectSafeUser(me.body, userBody.email);
-    await authorized('put', `/api/users/${created.body.id}`)
+    await authorized('put', `/api/operadores/${created.body.id}`)
       .send({ ...updateBody, email: 'Novo@example.com' })
       .expect(200);
     await request(app.getHttpServer())
@@ -188,14 +192,16 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('mantém exclusão lógica e recusa login, acesso e refresh após inativação', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const login = await request(app.getHttpServer())
       .post('/api/login')
       .send({ email: userBody.email, password: userBody.password })
       .expect(201);
-    await authorized('delete', `/api/users/${created.body.id}`).expect(200);
+    await authorized('delete', `/api/operadores/${created.body.id}`).expect(
+      200,
+    );
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
     ).toMatchObject({ status: false, email: userBody.email });
@@ -214,18 +220,18 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('preserva o hash ao editar sem senha e rejeita troca de senha no PUT atual', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send(userBody)
       .expect(201);
     const id = created.body.id;
     const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-    const rejected = await authorized('put', `/api/users/${id}`)
+    const rejected = await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, password: 'nova-senha' })
       .expect(400);
     expect(rejected.body.message).toContain(
       'property password should not exist',
     );
-    await authorized('put', `/api/users/${id}`)
+    await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, name: 'Novo Nome' })
       .expect(200);
     const after = await prisma.user.findUniqueOrThrow({ where: { id } });
@@ -238,29 +244,27 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it.each([true, false])(
-    'preserva status %s e hash ao editar nome e e-mail',
+    'preserva o status explícito %s e o hash ao editar nome e e-mail',
     async (status) => {
-      const created = await authorized('post', '/api/users')
+      const created = await authorized('post', '/api/operadores')
         .send({ ...userBody, status })
         .expect(201);
       const id = created.body.id;
       const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-      const result = await authorized('put', `/api/users/${id}`)
+      const result = await authorized('put', `/api/operadores/${id}`)
         .send({
           name: 'Nome Alterado',
           email: 'alterado@example.com',
-          role: userBody.role,
+          status,
         })
         .expect(200);
       expect(result.body).toMatchObject({
         status,
-        role: userBody.role,
         email: 'alterado@example.com',
       });
       const after = await prisma.user.findUniqueOrThrow({ where: { id } });
       expect(after).toMatchObject({
         status,
-        role: userBody.role,
         name: 'Nome Alterado',
         email: 'alterado@example.com',
       });
@@ -275,25 +279,25 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   it.each([true, false])(
     'permite alterar status explicitamente para %s',
     async (status) => {
-      const created = await authorized('post', '/api/users')
+      const created = await authorized('post', '/api/operadores')
         .send({ ...userBody, status: !status })
         .expect(201);
-      await authorized('put', `/api/users/${created.body.id}`)
+      await authorized('put', `/api/operadores/${created.body.id}`)
         .send({ ...updateBody, status })
         .expect(200);
       expect(
         await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-      ).toMatchObject({ status, role: userBody.role });
+      ).toMatchObject({ status, role: 'OPERADOR' });
     },
   );
 
   it('recusa status textual sem alterar dados persistidos', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send({ ...userBody, status: false })
       .expect(201);
     const id = created.body.id;
     const before = await prisma.user.findUniqueOrThrow({ where: { id } });
-    await authorized('put', `/api/users/${id}`)
+    await authorized('put', `/api/operadores/${id}`)
       .send({ ...updateBody, name: 'Não Persistir', status: 'true' })
       .expect(400);
     expect(await prisma.user.findUniqueOrThrow({ where: { id } })).toEqual(
@@ -302,18 +306,17 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 
   it('aplica status ativo padrão no cadastro sem status', async () => {
-    const created = await authorized('post', '/api/users')
+    const created = await authorized('post', '/api/operadores')
       .send({
         name: userBody.name,
         email: userBody.email,
         password: userBody.password,
-        role: userBody.role,
       })
       .expect(201);
-    expect(created.body).toMatchObject({ status: true, role: userBody.role });
+    expect(created.body).toMatchObject({ status: true, role: 'OPERADOR' });
     expect(
       await prisma.user.findUniqueOrThrow({ where: { id: created.body.id } }),
-    ).toMatchObject({ status: true, role: userBody.role });
+    ).toMatchObject({ status: true, role: 'OPERADOR' });
   });
 
   it('consulta setup e impede repetir o primeiro acesso', async () => {
@@ -329,273 +332,227 @@ describe('Contratos HTTP de usuários com PostgreSQL real', () => {
   });
 });
 
-/*
-describe('Rotas de usuários por perfil', () => {
-  const groups = [
-    {
-      segment: 'administradores',
-      role: 'ADMINISTRADOR',
-      otherRole: 'OPERADOR',
-    },
-    { segment: 'operadores', role: 'OPERADOR', otherRole: 'DESPACHANTE' },
-    { segment: 'despachantes', role: 'DESPACHANTE', otherRole: 'OPERADOR' },
-  ] as const;
-  const creatable = groups.filter(({ role }) => role !== 'ADMINISTRADOR');
-  const profileBody = {
-    email: 'perfil@example.com',
-    name: 'Novo Usuário',
+describe.each([
+  { segment: 'operadores', profileRole: 'OPERADOR' },
+  { segment: 'despachantes', profileRole: 'DESPACHANTE' },
+] as const)('Rotas de $segment', ({ segment, profileRole }) => {
+  const base = `/api/${segment}`;
+  const otherRole = profileRole === 'OPERADOR' ? 'DESPACHANTE' : 'OPERADOR';
+  const body = {
+    name: userBody.name,
+    email: userBody.email,
     password: userBody.password,
   };
-  const changes = { email: 'editado@example.com', name: 'Nome Editado' };
+  const changes = { name: 'Nome Editado', email: 'editado@example.com' };
 
-  async function createUser(role: string, email: string, status = true) {
-    return prisma.user.create({
-      data: {
-        ...userBody,
-        role,
-        email,
-        status,
-        password: await PasswordService.hash({ password: userBody.password }),
-      },
-    });
-  }
-
-  async function tokenFor(role: string) {
-    const { email } = await createUser(role, 'ator@example.com');
-    const response = await request(app.getHttpServer())
-      .post('/api/login')
-      .send({ email, password: userBody.password })
+  async function createProfile(
+    overrides: { email?: string; status?: boolean } = {},
+  ) {
+    const response = await authorized('post', base)
+      .send({ ...body, ...overrides })
       .expect(201);
-    return response.body.access_token as string;
+    return response.body as { id: number; email: string; status: boolean };
   }
 
-  it.each(groups)(
-    'pagina somente $segment',
-    async ({ segment, role, otherRole }) => {
-      await createUser(role, 'primeiro@example.com');
-      const target = await createUser(role, 'segundo@example.com');
-      await createUser(otherRole, 'outro@example.com');
-
-      const response = await authorized('get', `/api/users/${segment}`)
-        .query({ page: 2, limit: 1, column: 'id', order: 'desc' })
-        .expect(200);
-      expect(response.body).toMatchObject({
-        page: 2,
-        limit: 1,
-        total: role === 'ADMINISTRADOR' ? 3 : 2,
-        totalPages: role === 'ADMINISTRADOR' ? 3 : 2,
+  it.each([undefined, false])(
+    'cadastra com status enviado %s',
+    async (status) => {
+      const created = await createProfile(
+        status === undefined ? {} : { status },
+      );
+      expectSafeUser(created, body.email);
+      expect(created).toMatchObject({
+        role: profileRole,
+        status: status ?? true,
       });
-      expect(response.body.data).toHaveLength(1);
-      expectSafeUser(response.body.data[0], 'primeiro@example.com');
-      expect(response.body.data[0]).toMatchObject({ role });
-      expect(response.body.data[0].id).not.toBe(target.id);
-    },
-  );
-
-  it.each(creatable)(
-    'filtra $segment por email parcial sem diferenciar caixa, inclusive na contagem',
-    async ({ segment, role, otherRole }) => {
-      await createUser(role, 'equipe-primeiro@example.com');
-      await createUser(otherRole, 'equipe-outro@example.com');
-      await createUser(role, 'avulso@example.com');
-      await createUser(role, 'Equipe-Segundo@example.com');
-
-      const response = await authorized('get', `/api/users/${segment}`)
-        .query({ email: 'EQUIPE-', page: 2, limit: 1 })
-        .expect(200);
-      expect(response.body).toMatchObject({
-        page: 2,
-        limit: 1,
-        total: 2,
-        totalPages: 2,
-      });
-      expect(response.body.data).toHaveLength(1);
-      expectSafeUser(response.body.data[0], 'Equipe-Segundo@example.com');
-    },
-  );
-
-  it.each(creatable)(
-    'cria $segment com o perfil da rota',
-    async ({ segment, role }) => {
-      const response = await authorized('post', `/api/users/${segment}`)
-        .send(profileBody)
-        .expect(201);
-      expectSafeUser(response.body, profileBody.email);
-      expect(response.body).toMatchObject({ role, status: true });
       const saved = await prisma.user.findUniqueOrThrow({
-        where: { id: response.body.id },
+        where: { id: created.id },
       });
-      expect(saved.role).toBe(role);
-      expect(saved.password).not.toBe(profileBody.password);
+      expect(saved.status).toBe(status ?? true);
+      expect(saved.password).not.toBe(body.password);
       await expect(
         PasswordService.compare({
           hash: saved.password,
-          password: profileBody.password,
+          password: body.password,
         }),
       ).resolves.toBe(true);
     },
   );
 
-  it.each(creatable)(
-    'recusa injeção de perfil no cadastro de $segment',
-    async ({ segment }) => {
-      await authorized('post', `/api/users/${segment}`)
-        .send({ ...profileBody, role: 'ADMINISTRADOR' })
-        .expect(400);
-      expect(
-        await prisma.user.count({ where: { email: profileBody.email } }),
-      ).toBe(0);
-    },
-  );
+  it('recusa perfil explícito no cadastro', async () => {
+    await authorized('post', base)
+      .send({ ...body, role: 'ADMINISTRADOR' })
+      .expect(400);
+    expect(
+      await prisma.user.findUnique({ where: { email: body.email } }),
+    ).toBeNull();
+  });
 
-  it.each([
-    ['OPERADOR', 'operadores', 403],
-    ['OPERADOR', 'despachantes', 201],
-    ['DESPACHANTE', 'operadores', 403],
-    ['DESPACHANTE', 'despachantes', 403],
-  ] as const)(
-    'aplica permissão de %s no cadastro de %s',
-    async (actor, segment, status) => {
-      const token = await tokenFor(actor);
-      await request(app.getHttpServer())
-        .post(`/api/users/${segment}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(profileBody)
-        .expect(status);
-      const saved = await prisma.user.findUnique({
-        where: { email: profileBody.email },
-      });
-      if (status === 201) {
-        expect(saved).toMatchObject({ role: 'DESPACHANTE', status: true });
-      } else {
-        expect(saved).toBeNull();
-      }
-    },
-  );
+  it('aplica os filtros de perfil e e-mail tanto na página quanto no total', async () => {
+    const first = await createProfile({
+      email: 'equipe-primeiro@example.com',
+    });
+    await createProfile({ email: 'equipe-segundo@example.com' });
+    await createProfile({ email: 'avulso@example.com' });
+    await authorized(
+      'post',
+      otherRole === 'OPERADOR' ? '/api/operadores' : '/api/despachantes',
+    )
+      .send({
+        ...body,
+        email: 'equipe-outro@example.com',
+      })
+      .expect(201);
 
-  it.each(groups)(
-    'edita e inativa $segment sem trocar perfil nem hash',
-    async ({ segment, role }) => {
-      const target = await createUser(role, 'alvo@example.com');
-      const path = `/api/users/${segment}/${target.id}`;
-      const response = await authorized('put', path).send(changes).expect(200);
+    const response = await authorized('get', base)
+      .query({
+        email: 'equipe-',
+        page: 2,
+        limit: 1,
+        column: 'id',
+        order: 'desc',
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      page: 2,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
+    expect(response.body.data).toHaveLength(1);
+    expectSafeUser(response.body.data[0], first.email);
+    expect(response.body.data[0]).toMatchObject({
+      id: first.id,
+      role: profileRole,
+    });
+  });
+
+  it('exige status booleano e rejeita alteração de senha e perfil no PUT', async () => {
+    const { id } = await createProfile();
+    const path = `${base}/${id}`;
+    await authorized('put', path).send(changes).expect(400);
+    await authorized('put', path)
+      .send({ ...changes, status: 'false' })
+      .expect(400);
+    await authorized('put', path)
+      .send({ ...changes, status: true, password: 'outra' })
+      .expect(400);
+    await authorized('put', path)
+      .send({ ...changes, status: true, role: 'ADMINISTRADOR' })
+      .expect(400);
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id } }),
+    ).toMatchObject({
+      email: body.email,
+      name: body.name,
+      status: true,
+      role: profileRole,
+    });
+  });
+
+  it('edita com status explícito e inativa sem apagar o registro', async () => {
+    const { id } = await createProfile();
+    const path = `${base}/${id}`;
+    const original = await prisma.user.findUniqueOrThrow({ where: { id } });
+    for (const status of [false, true]) {
+      const response = await authorized('put', path)
+        .send({ ...changes, status })
+        .expect(200);
       expectSafeUser(response.body, changes.email);
       expect(response.body).toMatchObject({
-        name: changes.name,
-        role,
-        status: true,
-      });
-      await authorized('delete', path).expect(200);
-      expect(
-        await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
-      ).toMatchObject({
         ...changes,
-        role,
-        status: false,
-        password: target.password,
+        status,
+        role: profileRole,
       });
-    },
-  );
+    }
+    const response = await authorized('delete', path).expect(200);
+    expect(response.body).toEqual({ id });
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id } }),
+    ).toMatchObject({
+      ...changes,
+      status: false,
+      role: profileRole,
+      password: original.password,
+    });
+  });
 
-  it.each(groups)(
-    'recusa editar ou inativar outro perfil através de $segment',
-    async ({ segment, otherRole }) => {
-      const target = await createUser(otherRole, 'alvo@example.com');
-      const path = `/api/users/${segment}/${target.id}`;
-      await authorized('put', path).send(changes).expect(404);
-      await authorized('delete', path).expect(404);
-      expect(
-        await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
-      ).toEqual(target);
-    },
-  );
+  it('retorna 404 ao consultar, editar, inativar ou resetar a senha de outro perfil', async () => {
+    const target = await prisma.user.findFirstOrThrow({
+      where: { role: 'ADMINISTRADOR' },
+    });
+    const path = `${base}/${target.id}`;
+    await authorized('get', path).expect(404);
+    await authorized('patch', `${base}/password/${target.id}`)
+      .send({ newPassword: 'nova-senha' })
+      .expect(404);
+    await authorized('put', path)
+      .send({ ...changes, status: false })
+      .expect(404);
+    await authorized('delete', path).expect(404);
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
+    ).toEqual(target);
+  });
 
-  it.each(groups)(
-    'recusa senha e perfil no PUT de $segment',
-    async ({ segment, role }) => {
-      const target = await createUser(role, 'alvo@example.com');
-      const path = `/api/users/${segment}/${target.id}`;
-      await authorized('put', path)
-        .send({ ...changes, password: 'outra-senha' })
-        .expect(400);
-      await authorized('put', path)
-        .send({ ...changes, role: 'ADMINISTRADOR' })
-        .expect(400);
-      expect(
-        await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
-      ).toEqual(target);
-    },
-  );
+  it('redefine a senha e autentica com a nova senha no login compartilhado', async () => {
+    const target = await createProfile();
+    const path = `${base}/password/${target.id}`;
+    const newPassword = 'nova-senha';
+
+    await authorized('patch', path).send({}).expect(400);
+    const response = await authorized('patch', path)
+      .send({ newPassword })
+      .expect(200);
+    expectSafeUser(response.body, target.email);
+    expect(response.body).toMatchObject({ id: target.id, role: profileRole });
+
+    const client = request(app.getHttpServer());
+    await client
+      .post('/api/login')
+      .send({ email: target.email, password: body.password })
+      .expect(401);
+    await client
+      .post('/api/login')
+      .send({ email: target.email, password: newPassword })
+      .expect(201);
+  });
 
   it.each(['OPERADOR', 'DESPACHANTE'])(
-    'bloqueia listagem, edição e inativação por %s',
-    async (actor) => {
-      const token = await tokenFor(actor);
-      for (const { segment, role } of groups) {
-        const target = await createUser(role, `${segment}@example.com`);
-        const base = `/api/users/${segment}`;
-        const client = request(app.getHttpServer());
-        const bearer = `Bearer ${token}`;
-        await client.get(base).set('Authorization', bearer).expect(403);
-        await client
-          .put(`${base}/${target.id}`)
-          .set('Authorization', bearer)
-          .send(changes)
-          .expect(403);
-        await client
-          .delete(`${base}/${target.id}`)
-          .set('Authorization', bearer)
-          .expect(403);
-        expect(
-          await prisma.user.findUniqueOrThrow({ where: { id: target.id } }),
-        ).toEqual(target);
-      }
-    },
-  );
-
-  it.each(creatable)(
-    'autentica $segment por email e devolve tokens aceitos por /me',
-    async ({ segment, role }) => {
-      const target = await createUser(role, 'alvo@example.com');
-      const response = await request(app.getHttpServer())
-        .post(`/api/users/${segment}/login`)
-        .send({
-          email: target.email.toUpperCase(),
-          password: userBody.password,
-        })
+    'aplica as permissões das quatro rotas para %s',
+    async (role) => {
+      const target = await createProfile();
+      const allowed = profileRole === 'DESPACHANTE' && role === 'OPERADOR';
+      const actor = { email: 'ator@example.com', password: body.password };
+      await authorized(
+        'post',
+        role === 'OPERADOR' ? '/api/operadores' : '/api/despachantes',
+      )
+        .send({ ...actor, name: 'Ator' })
         .expect(201);
-      expect(response.body).toMatchObject({
-        access_token: expect.any(String),
-        refresh_token: expect.any(String),
-      });
-      const me = await request(app.getHttpServer())
-        .get('/api/me')
-        .set('Authorization', `Bearer ${response.body.access_token}`)
-        .expect(200);
-      expectSafeUser(me.body, target.email);
-      expect(me.body).toMatchObject({ id: target.id, role });
-    },
-  );
-
-  it.each(creatable)(
-    'recusa perfil divergente, inativo e senha inválida no login de $segment',
-    async ({ segment, role, otherRole }) => {
-      const wrongRole = await createUser(otherRole, 'outro@example.com');
-      const inactive = await createUser(role, 'inativo@example.com', false);
-      const active = await createUser(role, 'ativo@example.com');
-      for (const [email, password] of [
-        [wrongRole.email, userBody.password],
-        [inactive.email, userBody.password],
-        [active.email, 'senha-errada'],
-      ]) {
-        const response = await request(app.getHttpServer())
-          .post(`/api/users/${segment}/login`)
-          .send({ email, password })
-          .expect(401);
-        expect(response.body).not.toHaveProperty('access_token');
-        expect(response.body).not.toHaveProperty('refresh_token');
-      }
+      const client = request(app.getHttpServer());
+      const login = await client.post('/api/login').send(actor).expect(201);
+      const bearer = `Bearer ${login.body.access_token}`;
+      const path = `${base}/${target.id}`;
+      await client
+        .post(base)
+        .set('Authorization', bearer)
+        .send({ ...body, email: 'novo-perfil@example.com' })
+        .expect(allowed ? 201 : 403);
+      await client
+        .get(base)
+        .set('Authorization', bearer)
+        .expect(allowed ? 200 : 403);
+      await client
+        .put(path)
+        .set('Authorization', bearer)
+        .send({ ...changes, status: true })
+        .expect(allowed ? 200 : 403);
+      await client
+        .delete(path)
+        .set('Authorization', bearer)
+        .expect(allowed ? 200 : 403);
     },
   );
 });
-*/

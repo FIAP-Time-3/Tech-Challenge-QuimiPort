@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../src/infra/database/prisma.service.js';
+import { FirstAdminService } from '../../src/infra/security/user/application/first-admin.service.js';
 import { UserService } from '../../src/infra/security/user/application/user.service.js';
 import { LoginService } from '../../src/infra/security/login/application/login.service.js';
 import { PasswordService } from '../../src/infra/security/password/password.service.js';
@@ -15,6 +16,7 @@ import { configureTestDatabase } from '../support/database-env.js';
 
 const prisma = new PrismaService();
 const users = new UserService(prisma);
+const firstAdmin = new FirstAdminService(prisma, users);
 const jwt = new JwtService({ secret: 'integration-test-secret' });
 const login = new LoginService(prisma, jwt);
 const body = {
@@ -201,8 +203,12 @@ describe('Usuários com PostgreSQL real', () => {
 
   it('serializa o cadastro simultâneo do administrador inicial', async () => {
     const results = await Promise.allSettled([
-      users.createFirst({ body: { ...body, email: 'admin1@example.com' } }),
-      users.createFirst({ body: { ...body, email: 'admin2@example.com' } }),
+      firstAdmin.createFirst({
+        body: { ...body, email: 'admin1@example.com' },
+      }),
+      firstAdmin.createFirst({
+        body: { ...body, email: 'admin2@example.com' },
+      }),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     expect(await prisma.user.count()).toBe(1);

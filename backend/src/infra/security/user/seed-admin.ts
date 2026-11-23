@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { isEmail } from 'class-validator';
 import { PrismaService } from '../../database/prisma.service.js';
+import { FirstAdminService } from './application/first-admin.service.js';
 import { UserService } from './application/user.service.js';
 
 async function seedAdmin() {
@@ -16,7 +17,7 @@ async function seedAdmin() {
 
   const prisma = new PrismaService();
   try {
-    await new UserService(prisma).createFirst({
+    await new FirstAdminService(prisma, new UserService(prisma)).createFirst({
       body: { name, email, password },
     });
   } catch (error) {

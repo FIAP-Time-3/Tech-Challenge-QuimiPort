@@ -5,15 +5,12 @@ import { RolesGuard } from './guards/roles.guard.js';
 import { JwtModule } from '@nestjs/jwt';
 import configurations from '../configurations/configurations.js';
 import { LoginController } from './login/infrastructure/controller/login.controller.js';
-import { PrismaService } from '../database/prisma.service.js';
+import { UsersModule } from './user/users.module.js';
 import { LoginService } from './login/application/login.service.js';
-import { UserController } from './user/infrastructure/controller/user.controller.js';
-import { UserService } from './user/application/user.service.js';
-import { FirstAdminController } from './user/infrastructure/controller/first-admin/first-admin.controller.js';
-import { MeController } from './user/infrastructure/controller/me/me.controller.js';
 
 @Module({
   imports: [
+    UsersModule,
     JwtModule.register({
       secret: configurations().jwt.secret,
       signOptions: {
@@ -22,15 +19,8 @@ import { MeController } from './user/infrastructure/controller/me/me.controller.
     }),
   ],
   exports: [JwtModule],
-  controllers: [
-    LoginController,
-    UserController,
-    MeController,
-    FirstAdminController,
-  ],
+  controllers: [LoginController],
   providers: [
-    UserService,
-    PrismaService,
     LoginService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

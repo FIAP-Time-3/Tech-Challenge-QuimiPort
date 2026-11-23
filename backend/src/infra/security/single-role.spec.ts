@@ -11,7 +11,7 @@ import { RolesEnum } from './enums/roles.enum.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { LoginService } from './login/application/login.service.js';
 import { UserService } from './user/application/user.service.js';
-import { CreateUserDto } from './user/infrastructure/dtos/user.request.dtos.js';
+import { CreateUserRequestDto } from './user/infrastructure/dtos/user.request.dtos.js';
 
 const userInput = {
   name: 'Usuário de teste',
@@ -20,31 +20,19 @@ const userInput = {
 };
 
 describe('Contrato de perfil único', () => {
-  it.each(Object.values(RolesEnum))(
-    'aceita role escalar %s na criação',
+  it.each([null, 'TECNICO', ...Object.values(RolesEnum), [RolesEnum.OPERADOR]])(
+    'rejeita role fornecido pelo cliente na criação: %j',
     async (role) => {
-      const dto = plainToInstance(CreateUserDto, { ...userInput, role });
+      const dto = plainToInstance(CreateUserRequestDto, { ...userInput, role });
 
-      await expect(validate(dto)).resolves.toEqual([]);
+      await expect(
+        validate(dto, {
+          whitelist: true,
+          forbidNonWhitelisted: true,
+        }),
+      ).resolves.toContainEqual(expect.objectContaining({ property: 'role' }));
     },
   );
-
-  it.each([
-    { description: 'ausente', role: undefined },
-    { description: 'nulo', role: null },
-    { description: 'desconhecido', role: 'TECNICO' },
-    { description: 'lista com um valor', role: [RolesEnum.OPERADOR] },
-    {
-      description: 'lista com dois valores',
-      role: [RolesEnum.OPERADOR, RolesEnum.DESPACHANTE],
-    },
-  ])('recusa role $description na criação', async ({ role }) => {
-    const dto = plainToInstance(CreateUserDto, { ...userInput, role });
-
-    await expect(validate(dto)).resolves.toContainEqual(
-      expect.objectContaining({ property: 'role' }),
-    );
-  });
 
   it.each([
     { role: RolesEnum.ADMINISTRADOR, allowed: true },

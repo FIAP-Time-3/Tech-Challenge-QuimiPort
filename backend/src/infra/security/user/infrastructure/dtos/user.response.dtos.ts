@@ -1,5 +1,5 @@
 import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, plainToInstance } from 'class-transformer';
 import { RolesEnum } from '../../../enums/roles.enum.js';
 
 export class UserResponseDto {
@@ -26,4 +26,12 @@ export class UserResponseDto {
   @ApiProperty({ enum: RolesEnum })
   @Expose()
   role: RolesEnum;
+}
+
+export function toUserResponse<T extends { password: string }>(
+  user: T,
+): UserResponseDto {
+  const safeUser = { ...user };
+  Reflect.deleteProperty(safeUser, 'password');
+  return plainToInstance(UserResponseDto, safeUser);
 }

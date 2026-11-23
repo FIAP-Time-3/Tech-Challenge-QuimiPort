@@ -2,14 +2,20 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
-import { RolesEnum } from '../../../enums/roles.enum.js';
+import { PaginatedSortQueryDto } from '../../../../paginated-sort/paginated-sort.query.dtos.js';
 
-export class BaseUserDto {
+export class ListUserQueryDto extends PaginatedSortQueryDto {
+  @ApiPropertyOptional({ description: 'Filtro parcial por e-mail.' })
+  @IsOptional()
+  @IsString()
+  email?: string;
+}
+
+export class CreateUserRequestDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -21,12 +27,6 @@ export class BaseUserDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ enum: RolesEnum, description: 'Perfil do usuário.' })
-  @IsEnum(RolesEnum)
-  role: RolesEnum;
-}
-
-export class CreateUserDto extends BaseUserDto {
   @ApiProperty({ format: 'password', writeOnly: true })
   @IsString()
   @IsNotEmpty()
@@ -38,13 +38,21 @@ export class CreateUserDto extends BaseUserDto {
   status: boolean = true;
 }
 
-export class UpdateUserDto extends BaseUserDto {
-  @ApiPropertyOptional({
-    description: 'Quando omitido, preserva o status atual.',
-  })
+export class UpdateUserRequestDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ format: 'email', example: 'usuario@example.com' })
+  @IsString()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty()
   @IsBoolean()
-  @IsOptional()
-  status?: boolean;
+  status: boolean;
 }
 
 export class CreateFirstUserDto {
