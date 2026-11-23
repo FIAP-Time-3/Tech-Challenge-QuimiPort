@@ -14,7 +14,7 @@ Caixinhas marcadas indicam implementação presente no código. A validação co
 - [x] Organizar contratos em `infrastructure/backend/dtos` e chamadas em `infrastructure/backend/routes`, com um contrato de paginação compartilhado.
 - [x] Validar `/login` e `/first-access` no navegador com e sem administrador ativo. Cobrir acesso direto às duas URLs, cadastro concluído, tentativa simultânea de cadastro e erro seguido de nova tentativa na consulta de setup.
 - [ ] Validar login, logout, renovação simultânea, sessão inválida, acesso por URL e navegação com os três perfis no navegador.
-- [ ] Adicionar uma página de rota inexistente para evitar tela branca em URLs sem correspondência.
+- [x] Adicionar uma página de rota inexistente para evitar tela branca em URLs sem correspondência.
 - [ ] Padronizar carregamento, lista vazia, mensagens da API, validação de formulários e confirmação de ações.
 
 ## Módulos

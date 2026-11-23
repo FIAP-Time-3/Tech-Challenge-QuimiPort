@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import AccessDeniedPage from '@/modules/auth/pages/AccessDeniedPage';
+import AccessDeniedPage from '@/infrastructure/defaultPages/AccessDeniedPage';
 import { AppLayout } from '@/shared/components/layout/AppLayout';
 import type { UserRole } from '@/infrastructure/backend/dtos/user.dtos';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
