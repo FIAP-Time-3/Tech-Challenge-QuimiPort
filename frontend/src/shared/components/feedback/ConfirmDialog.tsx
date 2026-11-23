@@ -53,7 +53,7 @@ function ConfirmDialog({
           <Button
             type="button"
             variant="destructive"
-            disabled={pending}
+            pending={pending}
             onClick={onConfirm}
           >
             {confirmLabel}

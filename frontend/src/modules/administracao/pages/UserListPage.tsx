@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
+import ConfirmButton from '@/shared/components/feedback/ConfirmButton';
 import type {
   ListUserResponseDto,
   UserResponseDto,
@@ -27,6 +29,7 @@ export default function UserListPage({ section }: { section: Section }) {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<ListUserResponseDto | null>(null);
   const [failed, setFailed] = useState(false);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -49,42 +52,92 @@ export default function UserListPage({ section }: { section: Section }) {
     setPage(nextPage);
   }
 
+  async function deactivateUser(user: UserResponseDto) {
+    setSuccess('');
+    try {
+      await userApiRoutes.remove(section.role, user.id);
+    } catch (error) {
+      const message: unknown = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : undefined;
+      throw new Error(
+        typeof message === 'string'
+          ? message
+          : 'Não foi possível inativar o usuário.',
+        { cause: error },
+      );
+    }
+
+    setResult(
+      (current) =>
+        current && {
+          ...current,
+          data: current.data.map((item) =>
+            item.id === user.id ? { ...item, status: false } : item,
+          ),
+        },
+    );
+    setSuccess(`Usuário ${user.name} inativado.`);
+  }
+
   if (failed)
     return <Feedback>Não foi possível carregar os usuários.</Feedback>;
-  if (!result) return <LoadingState>Carregando usuários...</LoadingState>;
+  if (!result) {
+    return <LoadingState>Carregando usuários da página {page}...</LoadingState>;
+  }
 
   return (
-    <DataTable
-      title={section.label}
-      columns={columns}
-      rows={result.data}
-      getRowKey={(user) => user.id}
-      minWidth="420px"
-      footer={
-        result.totalPages > 1 && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => goToPage(page - 1)}
-            >
-              Anterior
-            </Button>
-            <span>
-              Página {page} de {result.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= result.totalPages}
-              onClick={() => goToPage(page + 1)}
-            >
-              Próxima
-            </Button>
-          </>
-        )
-      }
-    />
+    <>
+      {success && <Feedback variant="success">{success}</Feedback>}
+      <DataTable
+        title={section.label}
+        columns={[
+          ...columns,
+          {
+            key: 'actions',
+            header: 'Ações',
+            render: (user) =>
+              user.status && (
+                <ConfirmButton
+                  variant="outline"
+                  size="sm"
+                  message={`Inativar a conta de “${user.name}”? O usuário perderá o acesso ao sistema.`}
+                  onConfirm={() => deactivateUser(user)}
+                >
+                  Inativar
+                </ConfirmButton>
+              ),
+          },
+        ]}
+        rows={result.data}
+        getRowKey={(user) => user.id}
+        minWidth="420px"
+        footer={
+          result.totalPages > 1 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => goToPage(page - 1)}
+              >
+                Anterior
+              </Button>
+              <span>
+                Página {page} de {result.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= result.totalPages}
+                onClick={() => goToPage(page + 1)}
+              >
+                Próxima
+              </Button>
+            </>
+          )
+        }
+      />
+    </>
   );
 }

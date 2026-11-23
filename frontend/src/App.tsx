@@ -1,3 +1,4 @@
+import NotFound from '@/infrastructure/defaultPages/NotFound';
 import { AppLayout } from '@/shared/components/layout/AppLayout';
 import ProtectedRoute from '@/modules/auth/components/ProtectedRoute';
 import { BrowserRouter, useRoutes } from 'react-router';
@@ -23,6 +24,7 @@ function AppRoutes() {
         ...produtoQuimicoRoutes,
       ],
     },
+    { path: '*', element: <NotFound /> },
   ]);
 }
 

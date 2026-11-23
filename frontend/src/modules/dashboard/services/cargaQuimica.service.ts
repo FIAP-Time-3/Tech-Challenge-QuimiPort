@@ -19,6 +19,8 @@ export function paraCargaQuimicaResumo(
   load: CargaQuimicaResponseDto,
 ): CargaQuimicaResumo {
   return {
+    id: load.id,
+    statusCode: load.statusCarga,
     code: load.codigo,
     product: load.produtoQuimico.nome,
     category: `Classe ${load.classeRiscoONU}`,
