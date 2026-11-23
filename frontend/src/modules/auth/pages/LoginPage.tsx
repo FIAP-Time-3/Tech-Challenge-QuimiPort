@@ -10,7 +10,7 @@ import {
   LockKeyhole,
 } from 'lucide-react';
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { login } from '@/modules/auth/use-cases/login';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -26,6 +26,14 @@ import { Label } from '@/shared/components/ui/label';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { pathname, search, hash, state } = useLocation();
+  const [accessDenied] = useState(() => state?.accessDenied === true);
+
+  useEffect(() => {
+    if (state?.accessDenied === true) {
+      void navigate({ pathname, search, hash }, { replace: true, state: null });
+    }
+  }, [hash, navigate, pathname, search, state]);
   const [setup, setSetup] = useState<
     'loading' | 'required' | 'ready' | 'error'
   >('loading');
@@ -203,6 +211,13 @@ function LoginPage() {
           </CardHeader>
 
           <CardContent className="px-6 pt-6 pb-7 sm:px-8 sm:pb-8">
+            {accessDenied && (
+              <div className="mb-4">
+                <Feedback>
+                  Acesso Negado. Entre na sua conta para acessar esta página.
+                </Feedback>
+              </div>
+            )}
             {setup === 'loading' ? (
               <LoadingState>Verificando configuração inicial...</LoadingState>
             ) : setup === 'error' ? (

@@ -23,15 +23,6 @@ type RetryConfig = InternalAxiosRequestConfig & {
   retriedAfterRefresh?: boolean;
 };
 let refreshPromise: Promise<void> | null = null;
-let redirecting = false;
-
-function endSession(): void {
-  clearTokens();
-  if (!redirecting && window.location.pathname !== '/login') {
-    redirecting = true;
-    window.location.assign('/login');
-  }
-}
 
 async function refreshTokens(): Promise<void> {
   const refreshToken = getRefreshToken();
@@ -85,7 +76,6 @@ export function refreshSession(): Promise<void> {
 api.interceptors.request.use((config) => {
   const accessToken = getAccessToken();
   if (accessToken) {
-    redirecting = false;
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
@@ -101,7 +91,7 @@ api.interceptors.response.use(
     const config = error.config as RetryConfig | undefined;
     const expired = error.response.data?.code === 'ACCESS_TOKEN_EXPIRED';
     if (!config || !expired || config.retriedAfterRefresh) {
-      endSession();
+      clearTokens();
       return Promise.reject(error);
     }
 
@@ -116,7 +106,7 @@ api.interceptors.response.use(
         await refreshSession();
       }
     } catch (refreshError) {
-      endSession();
+      clearTokens();
       return Promise.reject(refreshError);
     }
 

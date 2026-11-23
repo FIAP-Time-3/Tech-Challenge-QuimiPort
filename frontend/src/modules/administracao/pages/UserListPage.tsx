@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router';
 import type {
   ListUserResponseDto,
   UserResponseDto,
 } from '@/infrastructure/backend/dtos/user.dtos';
 import { userApiRoutes } from '@/infrastructure/backend/routes/user.routes';
-import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import DataTable, {
   type DataTableColumn,
 } from '@/shared/components/data-display/DataTable';
@@ -26,15 +24,6 @@ const columns: DataTableColumn<UserResponseDto>[] = [
 type Section = (typeof administrationSections)[number];
 
 export default function UserListPage({ section }: { section: Section }) {
-  const user = useCurrentUser();
-  if (!user.role || !section.allowedRoles.some((role) => role === user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <UserList section={section} />;
-}
-
-function UserList({ section }: { section: Section }) {
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<ListUserResponseDto | null>(null);
   const [failed, setFailed] = useState(false);
