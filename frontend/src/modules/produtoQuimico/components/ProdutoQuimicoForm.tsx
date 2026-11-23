@@ -135,7 +135,7 @@ function ProdutoQuimicoForm({
               <Button asChild variant="outline">
                 <Link to="/produtos">Cancelar</Link>
               </Button>
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" pending={saving}>
                 {saving ? 'Salvando...' : 'Salvar produto'}
               </Button>
             </div>

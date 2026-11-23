@@ -123,7 +123,7 @@ export default function FirstAccessPage() {
           />
         </div>
         {errorMessage && <Feedback>{errorMessage}</Feedback>}
-        <Button type="submit" className="h-10 w-full" disabled={isSubmitting}>
+        <Button type="submit" className="h-10 w-full" pending={isSubmitting}>
           {isSubmitting ? 'Aguarde...' : 'Criar administrador'}
           {!isSubmitting && <ArrowRight aria-hidden="true" />}
         </Button>

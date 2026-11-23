@@ -1,6 +1,6 @@
 # TODO do frontend
 
-Caixinhas marcadas indicam implementação presente no código. A validação com a API em execução está listada separadamente.
+Caixinhas marcadas indicam implementação concluída ou validação registrada. As verificações com a API em execução têm itens próprios.
 
 ## Estrutura e segurança
 
@@ -10,12 +10,18 @@ Caixinhas marcadas indicam implementação presente no código. A validação co
 - [x] Carregar `GET /api/me` e montar o menu conforme o perfil em desktop e mobile.
 - [x] Enviar o access token como Bearer, renovar em `POST /api/login/refresh`, compartilhar a renovação entre requisições simultâneas e repetir a requisição após sucesso. Limpar a sessão no logout ou quando a renovação falhar.
 - [x] Proteger páginas com `ProtectedRoute` e declarar `allowedRoles` em `routes.tsx`. Sem essa prop, permitir qualquer usuário logado.
-- [x] Mostrar Acesso Negado com sidebar para perfil sem permissão. Ao abrir uma página protegida sem sessão, levar ao login com alerta. O fluxo normal de login abre sem aviso.
+- [x] Mostrar `AccessDeniedPage`, em `src/infrastructure/defaultPages`, com sidebar para perfil sem permissão. Ao abrir uma página protegida sem sessão, levar ao login com alerta. O fluxo normal de login abre sem aviso.
 - [x] Organizar contratos em `infrastructure/backend/dtos` e chamadas em `infrastructure/backend/routes`, com um contrato de paginação compartilhado.
 - [x] Validar `/login` e `/first-access` no navegador com e sem administrador ativo. Cobrir acesso direto às duas URLs, cadastro concluído, tentativa simultânea de cadastro e erro seguido de nova tentativa na consulta de setup.
 - [ ] Validar login, logout, renovação simultânea, sessão inválida, acesso por URL e navegação com os três perfis no navegador.
-- [x] Adicionar uma página de rota inexistente para evitar tela branca em URLs sem correspondência.
-- [ ] Padronizar carregamento, lista vazia, mensagens da API, validação de formulários e confirmação de ações.
+- [x] Exibir `NotFound`, em `src/infrastructure/defaultPages/NotFound.tsx`, pela rota de fallback `*`. Mostrar a mensagem de página não encontrada e oferecer retorno ao início.
+### Estados das telas e formulários
+
+- [x] **Carregamento.** Usar `LoadingState` na primeira consulta de cada lista ou detalhe. Indicar quando a página muda ou uma ação está sendo enviada. Desabilitar o botão de envio enquanto a requisição estiver em andamento para evitar duplicidade.
+- [ ] **Lista vazia.** Mostrar uma mensagem específica quando ainda não houver registros. Se uma busca ou filtro deixar a lista vazia, informar que nenhum resultado foi encontrado e oferecer uma forma de limpar os filtros.
+- [ ] **Erros da API.** Usar `Feedback` para erros gerais. Mostrar mensagens de validação junto aos campos correspondentes e explicar conflitos de negócio, como e-mail duplicado. Em falhas de consulta recuperáveis, oferecer **Tentar novamente**. Manter o tratamento de sessão inválida e acesso negado no fluxo de autenticação.
+- [ ] **Validação de formulários.** Aplicar as regras dos DTOs a campos obrigatórios, formatos e limites antes do envio. Destacar campos inválidos, manter os dados preenchidos quando a API recusar o envio e limpar os erros conforme os campos forem corrigidos ou o formulário for reenviado.
+- [ ] **Confirmação de ações.** Reutilizar `ConfirmDialog` para inativar, excluir, bloquear ou cancelar, conforme o módulo. Identificar o registro, explicar a consequência e pedir motivo quando a API exigir. Após sucesso, atualizar a tela e confirmar a ação. Em caso de erro, preservar o contexto para nova tentativa.
 
 ## Módulos
 
@@ -50,7 +56,7 @@ Os três perfis podem consultar `/api/produtos-quimicos`. Administradores e oper
 
 - [x] Criar listagem e detalhe com `GET /api/produtos-quimicos` e `GET /:id`. A listagem lê as páginas da API e permite busca local.
 - [x] Criar telas de cadastro (`POST` na coleção) e edição (`PUT /:id`) e proteger as rotas por perfil.
-- [x] Implementar inativação (`PATCH /:id/inativar`) no detalhe e exclusão (`DELETE /:id`) na lista.
+- [x] Implementar inativação (`PATCH /:id/inativar`) no detalhe e exclusão (`DELETE /:id`) na lista, com diálogos de confirmação.
 - [ ] Incluir `numeroONU` nos DTOs, formulário, listagem e detalhe. Validar o campo obrigatório como texto de quatro dígitos para preservar zeros à esquerda.
 - [ ] Ocultar ações de escrita para Despachante na listagem e no detalhe.
 - [ ] Validar cadastro e edição com número ONU, produto inexistente, retorno após salvar, confirmações e conflitos de inativação ou exclusão.

@@ -9,6 +9,7 @@ import { Navigate, useLocation } from 'react-router';
 import AccessDeniedPage from '@/infrastructure/defaultPages/AccessDeniedPage';
 import { AppLayout } from '@/shared/components/layout/AppLayout';
 import type { UserRole } from '@/infrastructure/backend/dtos/user.dtos';
+import { LoadingState } from '@/shared/components/feedback/Feedback';
 import { useCurrentUser } from '@/modules/auth/hooks/useCurrentUser';
 import { validateSession } from '@/modules/auth/use-cases/validateSession';
 
@@ -46,7 +47,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   if (sessionStatus === null) {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background text-sm text-muted-foreground">
-        Verificando acesso...
+        <LoadingState>Verificando acesso...</LoadingState>
       </main>
     );
   }

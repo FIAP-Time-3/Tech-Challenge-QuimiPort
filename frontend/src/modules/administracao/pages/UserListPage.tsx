@@ -51,7 +51,13 @@ export default function UserListPage({ section }: { section: Section }) {
 
   if (failed)
     return <Feedback>Não foi possível carregar os usuários.</Feedback>;
-  if (!result) return <LoadingState>Carregando usuários...</LoadingState>;
+  if (!result) {
+    return (
+      <LoadingState>
+        Carregando usuários da página {page}...
+      </LoadingState>
+    );
+  }
 
   return (
     <DataTable

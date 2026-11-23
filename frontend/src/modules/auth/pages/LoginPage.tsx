@@ -108,7 +108,7 @@ export default function LoginPage() {
           onToggle={() => setShowPassword((visible) => !visible)}
         />
         {errorMessage && <Feedback>{errorMessage}</Feedback>}
-        <Button type="submit" className="h-10 w-full" disabled={isSubmitting}>
+        <Button type="submit" className="h-10 w-full" pending={isSubmitting}>
           {isSubmitting ? 'Aguarde...' : 'Entrar'}
           {!isSubmitting && <ArrowRight aria-hidden="true" />}
         </Button>
