@@ -519,8 +519,8 @@ describe('API HTTP (e2e)', () => {
       .get(JwtService)
       .signAsync({ id: 1, token_use: 'access' });
 
-    await request(app.getHttpServer())
-      [method](path)
+    const client = request(app.getHttpServer());
+    await client[method](path)
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
   });
