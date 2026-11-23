@@ -289,18 +289,18 @@ npm run test:watch    # modo observação
 
 | Cenário | Onde está |
 |---|---|
-| Cadastro de produto químico | `ProdutoQuimico.service.spec.ts` |
-| Produto sem nome | `ProdutoQuimico.dtos.spec.ts` |
-| Produto sem classe de risco | `ProdutoQuimico.dtos.spec.ts` |
-| Registro de carga química | `CargaQuimica.service.spec.ts` |
-| Carga com produto inativo | `CargaQuimica.service.spec.ts` |
-| Quantidade menor ou igual a zero | `CargaQuimica.request.dtos.spec.ts` |
-| Liberação sem documentação obrigatória | `CargaQuimica.service.spec.ts` |
-| Atualização de status | `CargaQuimica.service.spec.ts` |
-| Transições permitidas | `CargaQuimica.transicoes.spec.ts` |
-| Transições proibidas | `CargaQuimica.transicoes.spec.ts` |
-| Cancelamento de carga | `CargaQuimica.service.spec.ts` |
-| Movimentar carga bloqueada | `CargaQuimica.service.spec.ts` |
+| Cadastro de produto químico | `produto-quimico.service.spec.ts` |
+| Produto sem nome | `produto-quimico.request.dtos.spec.ts` |
+| Produto sem classe de risco | `produto-quimico.request.dtos.spec.ts` |
+| Registro de carga química | `carga-quimica.service.spec.ts` |
+| Carga com produto inativo | `carga-quimica.service.spec.ts` |
+| Quantidade menor ou igual a zero | `carga-quimica.request.dtos.spec.ts` |
+| Liberação sem documentação obrigatória | `carga-quimica.service.spec.ts` |
+| Atualização de status | `carga-quimica.service.spec.ts` |
+| Transições permitidas | `carga-quimica.transicoes.spec.ts` |
+| Transições proibidas | `carga-quimica.transicoes.spec.ts` |
+| Cancelamento de carga | `carga-quimica.service.spec.ts` |
+| Movimentar carga bloqueada | `carga-quimica.service.spec.ts` |
 
 Nos testes de service, o acesso ao banco é substituído por *mocks* (`vi.fn()`), o que os mantém rápidos e independentes do PostgreSQL.
 
@@ -476,24 +476,24 @@ src/
 │       ├── user/                   # CRUD de usuários
 │       └── security.module.ts
 └── modules/                        # Módulos de negócio
-    ├── produtoQuimico/
-    │   ├── ProdutoQuimico.module.ts
+    ├── produto-quimico/
+    │   ├── produto-quimico.module.ts
     │   ├── application/            # Service: casos de uso do produto
     │   ├── domain/
-    │   │   └── value-objects/      # ClasseRisco.enum.ts
+    │   │   └── value-objects/      # classe-risco.enum.ts
     │   └── infrastructure/
     │       ├── controller/         # Rotas HTTP
     │       └── dtos/               # Entrada e saída (request/response)
-    └── cargaQuimica/
-        ├── CargaQuimica.module.ts
+    └── carga-quimica/
+        ├── carga-quimica.module.ts
         ├── application/
-        │   ├── CargaQuimica.service.ts      # Casos de uso: registrar, transicionar, documentos...
-        │   └── CargaQuimica.permissoes.ts   # Perfis que atuam em cada etapa
+        │   ├── carga-quimica.service.ts      # Casos de uso: registrar, transicionar, documentos...
+        │   └── carga-quimica.permissoes.ts   # Perfis que atuam em cada etapa
         ├── domain/
-        │   ├── CargaQuimica.transicoes.ts   # Matriz de transições (funções puras)
-        │   ├── CargaQuimica.documentos.ts   # Documentos obrigatórios
-        │   ├── CargaQuimica.codigo.ts       # Código público da carga (CQ-000001)
-        │   └── value-objects/               # StatusCarga.enum.ts e TipoDocumento.enum.ts
+        │   ├── carga-quimica.transicoes.ts   # Matriz de transições (funções puras)
+        │   ├── carga-quimica.documentos.ts   # Documentos obrigatórios
+        │   ├── carga-quimica.codigo.ts       # Código público da carga (CQ-000001)
+        │   └── value-objects/               # status-carga.enum.ts e tipo-documento.enum.ts
         └── infrastructure/
             ├── controller/
             └── dtos/
@@ -562,17 +562,23 @@ Todas as rotas têm prefixo **`/api`**. O Swagger permite autenticar (botão **A
 | `POST` | `/api/login` | Autentica e retorna `access_token` e `refresh_token` |
 | `POST` | `/api/login/refresh` | Gera novos tokens a partir do `refresh_token` |
 
-**Usuários** (somente `ADMINISTRADOR`)
+**Usuários**
+
+Em `/api/{perfil}`, use `administradores`, `operadores` ou `despachantes`. Apenas `ADMINISTRADOR` gerencia administradores e operadores. Tanto `ADMINISTRADOR` quanto `OPERADOR` podem executar todas as operações de gestão de despachantes, inclusive o reset de senha.
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/users` | Cria usuário, com seus perfis |
-| `GET` | `/api/users` | Lista usuários |
-| `GET` | `/api/users/:id` | Busca usuário |
-| `PUT` | `/api/users/:id` | Atualiza usuário |
-| `DELETE` | `/api/users/:id` | Remove usuário |
+| `POST` | `/api/{perfil}` | Cadastra no perfil da rota. `status` é opcional e assume `true`. |
+| `GET` | `/api/{perfil}` | Lista o perfil com paginação (`page`, `limit`) e filtro parcial por `email`. |
+| `GET` | `/api/{perfil}/:id` | Consulta um usuário do perfil. |
+| `PUT` | `/api/{perfil}/:id` | Atualiza `name`, `email` e `status`, todos obrigatórios. |
+| `DELETE` | `/api/{perfil}/:id` | Inativa o usuário. |
+| `PATCH` | `/api/{perfil}/password/:id` | Redefine a senha com o campo `newPassword`. |
+| `POST` | `/api/users/first_access` | Configura o primeiro administrador enquanto não houver um administrador ativo. |
+| `GET` | `/api/me` | Consulta a conta autenticada. |
+| `PATCH` | `/api/me/password` | Troca a senha da própria conta com confirmação da senha atual. |
 
-O corpo de cada requisição está descrito no Swagger.
+IDs de outro perfil retornam `404`. O `PUT` rejeita campos de senha, e a API omite a senha e o hash nas respostas. O reset mantém válidos os tokens já emitidos até o vencimento, enquanto a conta estiver ativa. O login de todos os perfis usa `POST /api/login`.
 
 **Produtos químicos** (`ADMINISTRADOR`, `GESTOR`, `OPERADOR`, `TECNICO`)
 
@@ -918,9 +924,9 @@ Padrões já adotados no código, que devem ser mantidos:
 - Mudanças de status da carga passam **sempre** por `CargaQuimicaService.transicionar`.
 
 **Nomes de arquivos**
-- `Entidade.service.ts`, `Entidade.controller.ts` e `Entidade.module.ts`.
-- DTOs em `Entidade.request.dtos.ts` e `Entidade.response.dtos.ts`.
-- Enums em `Nome.enum.ts` e testes em `*.spec.ts`, ao lado do código.
+- Arquivos e pastas em kebab-case, como `produto-quimico/`, `produto-quimico.service.ts`, `produto-quimico.controller.ts` e `produto-quimico.module.ts`.
+- DTOs em `produto-quimico.request.dtos.ts` e `produto-quimico.response.dtos.ts`.
+- Enums em `classe-risco.enum.ts` e testes em `*.spec.ts`, ao lado do código.
 - Os imports usam a extensão `.js` (o projeto usa módulos ES), por exemplo `import { X } from './x.js'`.
 
 **API**
@@ -963,3 +969,61 @@ Padrões já adotados no código, que devem ser mantidos:
 | `403` ao criar ou alterar uma carga | O perfil do usuário não está entre os permitidos para a rota ou para a etapa |
 | `400` ao enviar um campo que parece correto | A API rejeita campos desconhecidos. Confira os nomes no Swagger |
 | Comportamento estranho do banco ao alternar entre as opções | Execute `docker compose down -v` e suba novamente (apaga os dados do banco) |
+
+## Testes de integração com PostgreSQL real
+
+As variáveis `TEST_DATABASE_*` ficam no mesmo arquivo que configura o banco
+normal. Use `backend/.env` ao executar a API diretamente ou
+`backend/.env.docker` ao executar no Compose. A suíte gera o Prisma Client,
+**reseta apenas o banco de testes e reaplica todas as migrations** antes de
+executar os casos.
+
+| Variável | Local (`.env`) | Docker (`.env.docker`) |
+| --- | --- | --- |
+| `TEST_DATABASE_HOSTNAME` | `localhost` | `postgres-test` |
+| `TEST_DATABASE_PORT` | `55432` | `5432` |
+| `TEST_DATABASE_NAME` | `quimiport_test` | `quimiport_test` |
+| `TEST_DATABASE_USERNAME` | `quimiport_test` | `quimiport_test` |
+| `TEST_DATABASE_PASSWORD` | `quimiport_test` | `quimiport_test` |
+
+Os dois modelos de ambiente já incluem esses valores. Em uma instalação
+existente, adicione apenas o bloco `TEST_DATABASE_*` do modelo correspondente.
+
+Para rodar o backend localmente com o PostgreSQL de testes no Docker, execute
+em `backend/`:
+
+```bash
+docker compose -f compose.test.yml up -d --wait
+npm run test:integration
+```
+
+Para rodar a suíte inteira dentro do Docker, execute na raiz do repositório:
+
+```bash
+docker compose -f docker-compose.yml -f backend/compose.test.yml up -d --wait postgres-test
+docker compose -f docker-compose.yml -f backend/compose.test.yml run --rm --no-deps --build api npm run test:integration
+```
+
+Use somente uma dessas formas de subir o serviço `postgres-test` por vez, pois
+ambas publicam a porta `55432` no host. Para pará-lo, rode
+`docker compose -f compose.test.yml down` em `backend/` se ele foi iniciado
+com o primeiro comando. Se ele foi iniciado com ambos os arquivos, use
+`docker compose -f docker-compose.yml -f backend/compose.test.yml rm -sf postgres-test`
+na raiz. Os dados do contêiner de testes são voláteis.
+
+Para usar um PostgreSQL já instalado, ajuste `TEST_DATABASE_*` no arquivo de
+ambiente correspondente. O nome do banco de testes deve terminar em `_test` e
+ser diferente do banco da aplicação. O usuário de testes precisa poder
+executar migrations, recriar o schema e habilitar `citext`. Execute uma
+instância da suíte por banco de testes de cada vez.
+
+Os casos cobrem a ausência de `username`, tipo/obrigatoriedade de `email`,
+unicidade case insensitive em criação, atualização e inserções simultâneas,
+preservação da escrita original, hash de senha, login, refresh, inativos, troca de
+email e concorrência no cadastro do primeiro administrador.
+
+`npm test` continua executando os testes unitários sem resetar nenhum banco.
+`npm run test:e2e` mantém sua suíte HTTP com mocks separada. A suíte
+`test:integration` cobre serviços e contratos HTTP de usuários com PostgreSQL real,
+incluindo validação dos DTOs, rejeição de username legado, respostas sem senha,
+conflitos de email (409), /me e inativação com bloqueio de login/acesso/refresh.

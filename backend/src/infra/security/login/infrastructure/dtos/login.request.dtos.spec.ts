@@ -14,15 +14,15 @@ describe('validação dos DTOs de autenticação', () => {
   it('aceita credenciais de login válidas', async () => {
     await expect(
       invalidFields(LoginRequestDto, {
-        username: 'bruno',
+        email: 'bruno@email.com',
         password: 'secret',
       }),
     ).resolves.toEqual([]);
   });
 
-  it.each(['username', 'password'])('recusa login sem %s', async (field) => {
+  it.each(['email', 'password'])('recusa login sem %s', async (field) => {
     const body: Record<string, unknown> = {
-      username: 'bruno',
+      email: 'bruno@email.com',
       password: 'secret',
     };
     delete body[field];
@@ -34,8 +34,8 @@ describe('validação dos DTOs de autenticação', () => {
 
   it('recusa campos vazios ou não textuais no login', async () => {
     await expect(
-      invalidFields(LoginRequestDto, { username: '', password: 123 }),
-    ).resolves.toEqual(expect.arrayContaining(['username', 'password']));
+      invalidFields(LoginRequestDto, { email: '', password: 123 }),
+    ).resolves.toEqual(expect.arrayContaining(['email', 'password']));
   });
 
   it('aceita refresh token textual e não vazio', async () => {

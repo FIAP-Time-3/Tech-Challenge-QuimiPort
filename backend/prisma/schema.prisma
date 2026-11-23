@@ -14,6 +14,7 @@ datasource db {
 
 model ProdutosQuimicos {
   id            Int             @id @default(autoincrement())
+  numeroONU     String
   nome          String          @unique
   descricao     String?
   classeRisco   Int
@@ -84,10 +85,10 @@ model Inspecoes {
 
 model User {
   id                Int             @id @default(autoincrement())
-  username          String          @unique
   name              String
+  email             String          @unique @db.Citext
   password          String
-  roles             String[]
+  role              String
   status            Boolean         @default(true)
   cargasComoTecnico CargaQuimicas[] @relation("ResponsavelTecnico")
 }

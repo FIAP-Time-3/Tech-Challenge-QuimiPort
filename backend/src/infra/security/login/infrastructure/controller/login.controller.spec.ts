@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoginService } from '../../application/Login.service.js';
+import { LoginService } from '../../application/login.service.js';
 import { LoginController } from './login.controller.js';
 
 describe('LoginController', () => {
   let controller: LoginController;
   const serviceMock = {
+    getSetup: vi.fn(),
     login: vi.fn(),
     refresh: vi.fn(),
   };
@@ -19,8 +20,15 @@ describe('LoginController', () => {
     controller = module.get(LoginController);
   });
 
+  it('consulta a configuração inicial', async () => {
+    serviceMock.getSetup.mockResolvedValue({ requiresSetup: true });
+    await expect(controller.getSetup()).resolves.toEqual({
+      requiresSetup: true,
+    });
+  });
+
   it('encaminha credenciais ao serviço de login', async () => {
-    const body = { username: 'bruno', password: 'secret' };
+    const body = { email: 'bruno@email.com', password: 'secret' };
     const tokens = { access_token: 'access', refresh_token: 'refresh' };
     serviceMock.login.mockResolvedValue(tokens);
 
